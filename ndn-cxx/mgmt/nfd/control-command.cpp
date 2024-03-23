@@ -100,6 +100,7 @@ FaceCreateCommand::FaceCreateCommand()
 {
   m_requestValidator
     .required(CONTROL_PARAMETER_URI)
+    .optional(CONTROL_PARAMETER_PRIORITY)
     .optional(CONTROL_PARAMETER_LOCAL_URI)
     .optional(CONTROL_PARAMETER_FACE_PERSISTENCY)
     .optional(CONTROL_PARAMETER_BASE_CONGESTION_MARKING_INTERVAL)
@@ -109,6 +110,7 @@ FaceCreateCommand::FaceCreateCommand()
     .optional(CONTROL_PARAMETER_MASK);
   m_responseValidator
     .required(CONTROL_PARAMETER_FACE_ID)
+    .optional(CONTROL_PARAMETER_PRIORITY)
     .required(CONTROL_PARAMETER_URI)
     .required(CONTROL_PARAMETER_LOCAL_URI)
     .required(CONTROL_PARAMETER_FACE_PERSISTENCY)
@@ -141,6 +143,7 @@ FaceUpdateCommand::FaceUpdateCommand()
 {
   m_requestValidator
     .optional(CONTROL_PARAMETER_FACE_ID)
+    .optional(CONTROL_PARAMETER_PRIORITY)
     .optional(CONTROL_PARAMETER_FACE_PERSISTENCY)
     .optional(CONTROL_PARAMETER_BASE_CONGESTION_MARKING_INTERVAL)
     .optional(CONTROL_PARAMETER_DEFAULT_CONGESTION_THRESHOLD)
@@ -149,6 +152,7 @@ FaceUpdateCommand::FaceUpdateCommand()
     .optional(CONTROL_PARAMETER_MASK);
   m_responseValidator
     .required(CONTROL_PARAMETER_FACE_ID)
+    .optional(CONTROL_PARAMETER_PRIORITY)
     .required(CONTROL_PARAMETER_FACE_PERSISTENCY)
     .optional(CONTROL_PARAMETER_BASE_CONGESTION_MARKING_INTERVAL)
     .optional(CONTROL_PARAMETER_DEFAULT_CONGESTION_THRESHOLD)
