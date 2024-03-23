@@ -88,6 +88,9 @@ ControlParameters::wireEncode(EncodingImpl<TAG>& encoder) const
   if (this->hasUri()) {
     totalLength += prependStringBlock(encoder, tlv::nfd::Uri, m_uri);
   }
+  if (this->hasPriority()) {
+    totalLength += prependNonNegativeIntegerBlock(encoder, tlv::nfd::Priority, m_priority);
+  }
   if (this->hasFaceId()) {
     totalLength += prependNonNegativeIntegerBlock(encoder, tlv::nfd::FaceId, m_faceId);
   }
@@ -139,6 +142,12 @@ ControlParameters::wireDecode(const Block& block)
   m_hasFields[CONTROL_PARAMETER_FACE_ID] = val != m_wire.elements_end();
   if (this->hasFaceId()) {
     m_faceId = readNonNegativeInteger(*val);
+  }
+
+  val = m_wire.find(tlv::nfd::Priority);
+  m_hasFields[CONTROL_PARAMETER_PRIORITY] = val != m_wire.elements_end();
+  if (this->hasPriority()) {
+    m_priority = readNonNegativeIntegerAs<uint8_t>(*val);
   }
 
   val = m_wire.find(tlv::nfd::Uri);
@@ -316,6 +325,10 @@ operator<<(std::ostream& os, const ControlParameters& parameters)
 
   if (parameters.hasFaceId()) {
     os << "FaceId: " << parameters.getFaceId() << ", ";
+  }
+
+  if (parameters.hasPriority()) {
+    os << "Priority: " << parameters.getPriority() << ", ";
   }
 
   if (parameters.hasUri()) {

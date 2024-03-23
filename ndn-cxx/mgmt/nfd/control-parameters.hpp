@@ -24,6 +24,7 @@
 
 #include "ndn-cxx/name.hpp"
 #include "ndn-cxx/encoding/nfd-constants.hpp"
+#include "ndn-cxx/interest-priority.hpp"
 #include "ndn-cxx/mgmt/control-parameters.hpp"
 #include "ndn-cxx/util/time.hpp"
 
@@ -35,6 +36,7 @@ namespace ndn::nfd {
 enum ControlParameterField {
   CONTROL_PARAMETER_NAME,
   CONTROL_PARAMETER_FACE_ID,
+  CONTROL_PARAMETER_PRIORITY,
   CONTROL_PARAMETER_URI,
   CONTROL_PARAMETER_LOCAL_URI,
   CONTROL_PARAMETER_ORIGIN,
@@ -55,6 +57,7 @@ enum ControlParameterField {
 inline constexpr std::string_view CONTROL_PARAMETER_FIELD[CONTROL_PARAMETER_UBOUND] = {
   "Name"sv,
   "FaceId"sv,
+  "Priority"sv,
   "Uri"sv,
   "LocalUri"sv,
   "Origin"sv,
@@ -159,6 +162,36 @@ public: // getters & setters
   {
     m_wire.reset();
     m_hasFields[CONTROL_PARAMETER_FACE_ID] = false;
+    return *this;
+  }
+
+  bool
+  hasPriority() const
+  {
+    return m_hasFields[CONTROL_PARAMETER_PRIORITY];
+  }
+
+  const InterestPriority&
+  getPriority() const
+  {
+    BOOST_ASSERT(this->hasPriority());
+    return m_priority;
+  }
+
+  ControlParameters&
+  setPriority(const InterestPriority& priority)
+  {
+    m_wire.reset();
+    m_priority = priority;
+    m_hasFields[CONTROL_PARAMETER_PRIORITY] = true;
+    return *this;
+  }
+
+  ControlParameters&
+  unsetPriority()
+  {
+    m_wire.reset();
+    m_hasFields[CONTROL_PARAMETER_PRIORITY] = false;
     return *this;
   }
 
@@ -639,6 +672,7 @@ private: // fields
   uint64_t            m_faceId;
   std::string         m_uri;
   std::string         m_localUri;
+  InterestPriority    m_priority;
   RouteOrigin         m_origin;
   uint64_t            m_cost;
   uint64_t            m_capacity;

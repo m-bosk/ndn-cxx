@@ -34,6 +34,7 @@ enum : uint32_t {
   // ControlParameters
   ControlParameters   = 104,
   FaceId              = 105,
+  Priority            = 110,
   Uri                 = 114,
   Origin              = 111,
   Cost                = 106,
