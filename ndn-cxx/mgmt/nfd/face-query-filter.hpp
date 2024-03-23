@@ -22,6 +22,7 @@
 #ifndef NDN_CXX_MGMT_NFD_FACE_QUERY_FILTER_HPP
 #define NDN_CXX_MGMT_NFD_FACE_QUERY_FILTER_HPP
 
+#include "ndn-cxx/interest-priority.hpp"
 #include "ndn-cxx/encoding/block.hpp"
 #include "ndn-cxx/encoding/nfd-constants.hpp"
 
@@ -88,6 +89,25 @@ public: // getters & setters
 
   FaceQueryFilter&
   unsetFaceId();
+
+  bool
+  hasPriority() const
+  {
+    return m_priority.has_value();
+  }
+
+  const InterestPriority&
+  getPriority() const
+  {
+    BOOST_ASSERT(this->hasPriority());
+    return m_priority.value();
+  }
+
+  FaceQueryFilter&
+  setPriority(const InterestPriority& priority);
+
+  FaceQueryFilter&
+  unsetPriority();
 
   bool
   hasUriScheme() const
@@ -205,6 +225,7 @@ public: // getters & setters
 
 private:
   std::optional<uint64_t> m_faceId;
+  std::optional<InterestPriority> m_priority;
   std::string m_uriScheme;
   std::string m_remoteUri;
   std::string m_localUri;

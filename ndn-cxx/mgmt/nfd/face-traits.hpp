@@ -24,6 +24,7 @@
 
 #include "ndn-cxx/encoding/block.hpp"
 #include "ndn-cxx/encoding/nfd-constants.hpp"
+#include "ndn-cxx/interest-priority.hpp"
 
 namespace ndn::nfd {
 
@@ -53,6 +54,27 @@ public:
   {
     m_wire.reset();
     m_faceId = faceId;
+    return static_cast<C&>(*this);
+  }
+
+  bool
+  hasPriority() const noexcept
+  {
+    return m_priority.has_value();
+  }
+
+  const InterestPriority&
+  getPriority() const
+  {
+    BOOST_ASSERT(this->hasPriority());
+    return *m_priority;
+  }
+
+  C&
+  setPriority(const std::optional<InterestPriority>& priority)
+  {
+    m_wire.reset();
+    m_priority = priority;
     return static_cast<C&>(*this);
   }
 
@@ -173,6 +195,7 @@ protected:
 
 protected:
   uint64_t m_faceId = INVALID_FACE_ID;
+  std::optional<InterestPriority> m_priority;
   std::string m_remoteUri;
   std::string m_localUri;
   FaceScope m_faceScope = FACE_SCOPE_NON_LOCAL;

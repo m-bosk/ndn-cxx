@@ -44,6 +44,7 @@ BOOST_AUTO_TEST_CASE(Encode)
 {
   FaceQueryFilter filter1;
   BOOST_CHECK_EQUAL(filter1.hasFaceId(), false);
+  BOOST_CHECK_EQUAL(filter1.hasPriority(), false);
   BOOST_CHECK_EQUAL(filter1.hasUriScheme(), false);
   BOOST_CHECK_EQUAL(filter1.hasRemoteUri(), false);
   BOOST_CHECK_EQUAL(filter1.hasLocalUri(), false);
@@ -52,6 +53,7 @@ BOOST_AUTO_TEST_CASE(Encode)
   BOOST_CHECK_EQUAL(filter1.hasLinkType(), false);
 
   filter1.setFaceId(100)
+         .setPriority(2)
          .setUriScheme("tcp4")
          .setRemoteUri("tcp4://192.0.2.1:6363")
          .setLocalUri("tcp4://192.0.2.2:55555")
@@ -67,13 +69,13 @@ BOOST_AUTO_TEST_CASE(Encode)
   //  printf("0x%02x, ", *it);
   // }
   static const uint8_t expected[] = {
-    0x96, 0x41, 0x69, 0x01, 0x64, 0x83, 0x04, 0x74, 0x63, 0x70,
-    0x34, 0x72, 0x15, 0x74, 0x63, 0x70, 0x34, 0x3a, 0x2f, 0x2f,
-    0x31, 0x39, 0x32, 0x2e, 0x30, 0x2e, 0x32, 0x2e, 0x31, 0x3a,
-    0x36, 0x33, 0x36, 0x33, 0x81, 0x16, 0x74, 0x63, 0x70, 0x34,
+    0x96, 0x44, 0x69, 0x01, 0x64, 0x6e, 0x01, 0x02, 0x83, 0x04,
+    0x74, 0x63, 0x70, 0x34, 0x72, 0x15, 0x74, 0x63, 0x70, 0x34,
     0x3a, 0x2f, 0x2f, 0x31, 0x39, 0x32, 0x2e, 0x30, 0x2e, 0x32,
-    0x2e, 0x32, 0x3a, 0x35, 0x35, 0x35, 0x35, 0x35, 0x84, 0x01,
-    0x01, 0x85, 0x01, 0x01, 0x86, 0x01, 0x01,
+    0x2e, 0x31, 0x3a, 0x36, 0x33, 0x36, 0x33, 0x81, 0x16, 0x74,
+    0x63, 0x70, 0x34, 0x3a, 0x2f, 0x2f, 0x31, 0x39, 0x32, 0x2e,
+    0x30, 0x2e, 0x32, 0x2e, 0x32, 0x3a, 0x35, 0x35, 0x35, 0x35,
+    0x35, 0x84, 0x01, 0x01, 0x85, 0x01, 0x01, 0x86, 0x01, 0x01,
   };
 
   BOOST_CHECK_EQUAL_COLLECTIONS(expected, expected + sizeof(expected),
@@ -81,6 +83,7 @@ BOOST_AUTO_TEST_CASE(Encode)
 
   FaceQueryFilter filter2(wire);
   BOOST_CHECK_EQUAL(filter1.getFaceId(), filter2.getFaceId());
+  BOOST_CHECK_EQUAL(filter1.getPriority(), filter2.getPriority());
   BOOST_CHECK_EQUAL(filter1.getUriScheme(), filter2.getUriScheme());
   BOOST_CHECK_EQUAL(filter1.getRemoteUri(), filter2.getRemoteUri());
   BOOST_CHECK_EQUAL(filter1.getLocalUri(), filter2.getLocalUri());
@@ -96,6 +99,7 @@ BOOST_AUTO_TEST_CASE(Equality)
   BOOST_CHECK_EQUAL(filter1, filter2);
 
   filter1.setFaceId(100)
+         .setPriority(2)
          .setUriScheme("tcp4")
          .setRemoteUri("tcp4://192.0.2.1:6363")
          .setLocalUri("tcp4://192.0.2.2:55555")
@@ -116,6 +120,7 @@ BOOST_AUTO_TEST_CASE(Print)
 {
   FaceQueryFilter filter;
   filter.setFaceId(100)
+        .setPriority(1)
         .setUriScheme("tcp4")
         .setRemoteUri("tcp4://192.0.2.1:6363")
         .setLocalUri("tcp4://192.0.2.2:55555")
@@ -124,6 +129,7 @@ BOOST_AUTO_TEST_CASE(Print)
         .setLinkType(LINK_TYPE_MULTI_ACCESS);
   BOOST_CHECK_EQUAL(boost::lexical_cast<std::string>(filter),
                     "FaceQueryFilter(FaceID: 100,\n"
+                    "Priority: 1,\n"
                     "UriScheme: tcp4,\n"
                     "RemoteUri: tcp4://192.0.2.1:6363,\n"
                     "LocalUri: tcp4://192.0.2.2:55555,\n"
@@ -133,6 +139,7 @@ BOOST_AUTO_TEST_CASE(Print)
                     ")");
 
   filter.unsetFaceId()
+        .unsetPriority()
         .unsetUriScheme()
         .unsetRemoteUri()
         .unsetLocalUri()
