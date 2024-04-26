@@ -907,7 +907,7 @@ BOOST_AUTO_TEST_CASE(SetPriority)
   BOOST_CHECK_EQUAL(i.getPriority(), 0);
   i.setPriority(0x02);
   BOOST_CHECK_EQUAL(i.getPriority(), 0x02);
-  BOOST_CHECK_THROW(i.setPriority(0x06), tlv::Error);
+  BOOST_CHECK_THROW(i.setPriority(0x11), tlv::Error);
 }
 
 BOOST_AUTO_TEST_CASE(SetInterestLifetime)

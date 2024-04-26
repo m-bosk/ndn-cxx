@@ -32,7 +32,7 @@
 namespace ndn {
 
 inline constexpr uint8_t DEFAULT_INTEREST_PRIORITY_VALUE = 0;
-inline constexpr uint8_t MAX_INTEREST_PRIORITY_VALUE = 3;
+inline constexpr uint8_t MAX_INTEREST_PRIORITY_VALUE = 7;
 
 class InterestPriority
 {
