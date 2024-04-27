@@ -46,9 +46,7 @@ FaceEventNotification::wireEncode(EncodingImpl<TAG>& encoder) const
   totalLength += prependNonNegativeIntegerBlock(encoder, tlv::nfd::FaceScope, m_faceScope);
   totalLength += prependStringBlock(encoder, tlv::nfd::LocalUri, m_localUri);
   totalLength += prependStringBlock(encoder, tlv::nfd::Uri, m_remoteUri);
-  if (m_priority) {
-    totalLength += prependNonNegativeIntegerBlock(encoder, tlv::nfd::Priority, *m_priority);
-  }
+  totalLength += prependNonNegativeIntegerBlock(encoder, tlv::nfd::Priority, m_priority);
   totalLength += prependNonNegativeIntegerBlock(encoder, tlv::nfd::FaceId, m_faceId);
   totalLength += prependNonNegativeIntegerBlock(encoder, tlv::nfd::FaceEventKind, m_kind);
 
@@ -107,7 +105,7 @@ FaceEventNotification::wireDecode(const Block& block)
     ++val;
   }
   else {
-    m_priority = std::nullopt;
+    NDN_THROW(Error("missing required Priority field"));
   }
 
   if (val != m_wire.elements_end() && val->type() == tlv::nfd::Uri) {
@@ -171,8 +169,7 @@ bool
 operator==(const FaceEventNotification& a, const FaceEventNotification& b)
 {
   return a.getFaceId() == b.getFaceId() &&
-      a.hasPriority() == b.hasPriority() &&
-      (!a.hasPriority() || a.getPriority() == b.getPriority()) &&
+      a.getPriority() == b.getPriority() &&
       a.getRemoteUri() == b.getRemoteUri() &&
       a.getLocalUri() == b.getLocalUri() &&
       a.getFaceScope() == b.getFaceScope() &&
@@ -186,11 +183,9 @@ std::ostream&
 operator<<(std::ostream& os, const FaceEventNotification& notification)
 {
   os << "FaceEvent(Kind: " << notification.getKind() << ",\n"
-     << "          FaceId: " << notification.getFaceId() << ",\n";
-  if (notification.hasPriority()) {
-    os << "          Priority: " << notification.getPriority() << ",\n";
-  }
-  os << "          RemoteUri: " << notification.getRemoteUri() << ",\n"
+     << "          FaceId: " << notification.getFaceId() << ",\n"
+     << "          Priority: " << notification.getPriority() << ",\n"
+     << "          RemoteUri: " << notification.getRemoteUri() << ",\n"
      << "          LocalUri: " << notification.getLocalUri() << ",\n"
      << "          FaceScope: " << notification.getFaceScope() << ",\n"
      << "          FacePersistency: " << notification.getFacePersistency() << ",\n"

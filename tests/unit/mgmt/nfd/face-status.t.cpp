@@ -110,6 +110,7 @@ BOOST_AUTO_TEST_CASE(Print)
   FaceStatus status;
   BOOST_CHECK_EQUAL(boost::lexical_cast<std::string>(status),
                     "Face(FaceId: 0,\n"
+                    "     Priority: 0,\n"
                     "     RemoteUri: ,\n"
                     "     LocalUri: ,\n"
                     "     ExpirationPeriod: infinite,\n"

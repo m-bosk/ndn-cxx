@@ -69,9 +69,7 @@ FaceStatus::wireEncode(EncodingImpl<TAG>& encoder) const
   }
   totalLength += prependStringBlock(encoder, tlv::nfd::LocalUri, m_localUri);
   totalLength += prependStringBlock(encoder, tlv::nfd::Uri, m_remoteUri);
-  if (m_priority) {
-    totalLength += prependNonNegativeIntegerBlock(encoder, tlv::nfd::Priority, *m_priority);
-  }
+  totalLength += prependNonNegativeIntegerBlock(encoder, tlv::nfd::Priority, m_priority);
   totalLength += prependNonNegativeIntegerBlock(encoder, tlv::nfd::FaceId, m_faceId);
 
   totalLength += encoder.prependVarNumber(totalLength);
@@ -121,7 +119,7 @@ FaceStatus::wireDecode(const Block& block)
     ++val;
   }
   else {
-    m_priority = std::nullopt;
+    NDN_THROW(Error("missing required Priority field"));
   }
 
   if (val != m_wire.elements_end() && val->type() == tlv::nfd::Uri) {
@@ -401,8 +399,7 @@ bool
 operator==(const FaceStatus& a, const FaceStatus& b)
 {
   return a.getFaceId() == b.getFaceId() &&
-      a.hasPriority() == b.hasPriority() &&
-      (!a.hasPriority() || a.getPriority() == b.getPriority()) &&
+      a.getPriority() == b.getPriority() &&
       a.getRemoteUri() == b.getRemoteUri() &&
       a.getLocalUri() == b.getLocalUri() &&
       a.getFaceScope() == b.getFaceScope() &&
@@ -432,13 +429,9 @@ operator==(const FaceStatus& a, const FaceStatus& b)
 std::ostream&
 operator<<(std::ostream& os, const FaceStatus& status)
 {
-  os << "Face(FaceId: " << status.getFaceId() << ",\n";
-
-  if (status.hasPriority()) {
-     os << "     Priority: " << status.getPriority() << ",\n";
-  }
-
-  os << "     RemoteUri: " << status.getRemoteUri() << ",\n"
+  os << "Face(FaceId: " << status.getFaceId() << ",\n"
+     << "     Priority: " << status.getPriority() << ",\n"
+     << "     RemoteUri: " << status.getRemoteUri() << ",\n"
      << "     LocalUri: " << status.getLocalUri() << ",\n";
 
   if (status.hasExpirationPeriod()) {
