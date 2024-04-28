@@ -79,6 +79,7 @@ BOOST_AUTO_TEST_CASE(FaceCreateResponse)
   // good
   ControlParameters p1;
   p1.setFaceId(3208)
+    .setPriority(2)
     .setUri("tcp4://192.0.2.1:6363")
     .setLocalUri("tcp4://192.0.2.2:32114")
     .setFacePersistency(FACE_PERSISTENCY_PERMANENT)
