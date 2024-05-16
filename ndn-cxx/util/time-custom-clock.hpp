@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2021 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -24,12 +24,11 @@
 
 #include "ndn-cxx/util/time.hpp"
 
-#include <memory>
-
-namespace ndn::time {
+namespace ndn {
+namespace time {
 
 /**
- * \brief Class implementing custom system or steady clock behavior.
+ * \brief Class implementing custom system or steady clock behavior
  *
  * Instance of specialization of this class may be passed to setCustomClocks() free function
  * in order to change global behavior of system or steady clock.
@@ -55,15 +54,16 @@ using CustomSystemClock = CustomClock<system_clock>;
 using CustomSteadyClock = CustomClock<steady_clock>;
 
 /**
- * \brief Set custom system and steady clocks.
+ * \brief Set custom system and steady clocks
  *
  * When \p steadyClock or \p systemClock set to nullptr, the default implementation
  * of the corresponding clock will be used
  */
 void
-setCustomClocks(std::shared_ptr<CustomSteadyClock> steadyClock = nullptr,
-                std::shared_ptr<CustomSystemClock> systemClock = nullptr);
+setCustomClocks(shared_ptr<CustomSteadyClock> steadyClock = nullptr,
+                shared_ptr<CustomSystemClock> systemClock = nullptr);
 
-} // namespace ndn::time
+} // namespace time
+} // namespace ndn
 
 #endif // NDN_CXX_UTIL_TIME_CUSTOM_CLOCK_HPP

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -24,7 +24,8 @@
 
 #include "ndn-cxx/encoding/block.hpp"
 
-namespace ndn::encoding {
+namespace ndn {
+namespace encoding {
 
 /**
  * @brief Helper class to estimate size of TLV encoding.
@@ -111,6 +112,7 @@ public: // common interface between Encoder and Estimator
   }
 };
 
-} // namespace ndn::encoding
+} // namespace encoding
+} // namespace ndn
 
 #endif // NDN_CXX_ENCODING_ESTIMATOR_HPP

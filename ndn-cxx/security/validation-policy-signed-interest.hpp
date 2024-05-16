@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -30,7 +30,9 @@
 #include <boost/multi_index/ordered_index.hpp>
 #include <boost/multi_index/sequenced_index.hpp>
 
-namespace ndn::security {
+namespace ndn {
+namespace security {
+inline namespace v2 {
 
 /**
  * @brief Validation policy for signed Interests.
@@ -156,9 +158,9 @@ private:
 
   void
   insertRecord(const Name& keyName,
-               std::optional<time::system_clock::time_point> timestamp,
-               std::optional<uint64_t> seqNum,
-               std::optional<SigNonce> nonce);
+               optional<time::system_clock::TimePoint> timestamp,
+               optional<uint64_t> seqNum,
+               optional<SigNonce> nonce);
 
 private:
   Options m_options;
@@ -179,8 +181,8 @@ private:
   struct LastInterestRecord
   {
     LastInterestRecord(const Name& keyName,
-                       std::optional<time::system_clock::time_point> timestamp,
-                       std::optional<uint64_t> seqNum)
+                       optional<time::system_clock::TimePoint> timestamp,
+                       optional<uint64_t> seqNum)
       : keyName(keyName)
       , timestamp(timestamp)
       , seqNum(seqNum)
@@ -189,10 +191,10 @@ private:
     }
 
     Name keyName;
-    std::optional<time::system_clock::time_point> timestamp;
-    std::optional<uint64_t> seqNum;
+    optional<time::system_clock::TimePoint> timestamp;
+    optional<uint64_t> seqNum;
     NonceContainer observedNonces;
-    time::steady_clock::time_point lastRefreshed;
+    time::steady_clock::TimePoint lastRefreshed;
   };
 
   using Container = boost::multi_index_container<
@@ -202,7 +204,7 @@ private:
         boost::multi_index::member<LastInterestRecord, Name, &LastInterestRecord::keyName>
       >,
       boost::multi_index::ordered_non_unique<
-        boost::multi_index::member<LastInterestRecord, time::steady_clock::time_point,
+        boost::multi_index::member<LastInterestRecord, time::steady_clock::TimePoint,
                                    &LastInterestRecord::lastRefreshed>
       >
     >
@@ -213,6 +215,8 @@ private:
   Container::nth_index<1>::type& m_byLastRefreshed;
 };
 
-} // namespace ndn::security
+} // inline namespace v2
+} // namespace security
+} // namespace ndn
 
 #endif // NDN_CXX_SECURITY_VALIDATION_POLICY_SIGNED_INTEREST_HPP

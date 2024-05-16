@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2018 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -20,7 +20,6 @@
  */
 
 #include "ndn-cxx/net/impl/link-type-helper.hpp"
-#include "ndn-cxx/detail/config.hpp"
 
 #ifndef NDN_CXX_HAVE_OSX_FRAMEWORKS
 #error "This file should not be compiled ..."
@@ -31,7 +30,9 @@
 #import <CoreWLAN/CWInterface.h>
 #import <CoreWLAN/CWWiFiClient.h>
 
-namespace ndn::net::detail {
+namespace ndn {
+namespace net {
+namespace detail {
 
 ndn::nfd::LinkType
 getLinkType(const std::string& ifName)
@@ -59,4 +60,6 @@ getLinkType(const std::string& ifName)
   }
 }
 
-} // namespace ndn::net::detail
+} // namespace detail
+} // namespace net
+} // namespace ndn

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -20,16 +20,12 @@
  */
 
 #include "ndn-cxx/meta-info.hpp"
+#include "ndn-cxx/data.hpp"
 
 #include "tests/boost-test.hpp"
 
-namespace ndn::tests {
-
-BOOST_CONCEPT_ASSERT((WireEncodable<MetaInfo>));
-BOOST_CONCEPT_ASSERT((WireEncodableWithEncodingBuffer<MetaInfo>));
-BOOST_CONCEPT_ASSERT((WireDecodable<MetaInfo>));
-static_assert(std::is_convertible_v<MetaInfo::Error*, tlv::Error*>,
-              "MetaInfo::Error must inherit from tlv::Error");
+namespace ndn {
+namespace tests {
 
 BOOST_AUTO_TEST_SUITE(TestMetaInfo)
 
@@ -39,7 +35,7 @@ BOOST_AUTO_TEST_CASE(EncodeDecode)
   MetaInfo a("1406 type=180100 freshness=190100"_block);
   BOOST_CHECK_EQUAL(a.getType(), tlv::ContentType_Blob);
   BOOST_CHECK_EQUAL(a.getFreshnessPeriod(), 0_ms);
-  BOOST_CHECK(a.getFinalBlock() == std::nullopt);
+  BOOST_CHECK(a.getFinalBlock() == nullopt);
 
   MetaInfo b;
   BOOST_CHECK_NE(a.wireEncode(), b.wireEncode());
@@ -69,30 +65,13 @@ BOOST_AUTO_TEST_CASE(EncodeDecode)
   BOOST_CHECK_EQUAL(a.getType(), tlv::ContentType_Blob);
   BOOST_CHECK_EQUAL(a.getFreshnessPeriod(), 0_ms);
   BOOST_REQUIRE(a.getFinalBlock().has_value());
-  BOOST_CHECK_EQUAL(*a.getFinalBlock(), name::Component::fromUri("221=A"));
+  BOOST_CHECK_EQUAL(*a.getFinalBlock(), name::Component::fromEscapedString("221=A"));
   BOOST_CHECK_NE(a.wireEncode(), b.wireEncode());
 
   b.setType(a.getType());
   b.setFreshnessPeriod(a.getFreshnessPeriod());
   b.setFinalBlock(a.getFinalBlock());
   BOOST_CHECK_EQUAL(b.wireEncode(), wire3);
-}
-
-BOOST_AUTO_TEST_CASE(FreshnessPeriodOverflow,
-  * ut::description("test for bug #4997"))
-{
-  MetaInfo mi0("140A 19087FFFFFFFFFFFFFFF"_block);
-  BOOST_CHECK_EQUAL(mi0.getFreshnessPeriod(), 0x7FFFFFFFFFFFFFFF_ms);
-
-  MetaInfo mi1("140A 19088000000000000000"_block);
-  BOOST_CHECK_EQUAL(mi1.getFreshnessPeriod(), time::milliseconds::max());
-
-  MetaInfo mi2("140A 1908FFFFFFFFFFFFFFFF"_block);
-  BOOST_CHECK_EQUAL(mi2.getFreshnessPeriod(), time::milliseconds::max());
-
-  // force re-encoding
-  mi2.setType(tlv::ContentType_Key);
-  BOOST_CHECK_EQUAL(mi2.wireEncode(), "140D 180102 1908FFFFFFFFFFFFFFFF"_block);
 }
 
 BOOST_AUTO_TEST_CASE(AppMetaInfo)
@@ -177,4 +156,5 @@ BOOST_AUTO_TEST_CASE(AppMetaInfoTypeRange)
 
 BOOST_AUTO_TEST_SUITE_END() // TestMetaInfo
 
-} // namespace ndn::tests
+} // namespace tests
+} // namespace ndn

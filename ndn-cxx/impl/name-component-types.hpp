@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -29,11 +29,11 @@
 #include <array>
 #include <unordered_map>
 
-namespace ndn::name {
+namespace ndn {
+namespace name {
 namespace {
 
-/**
- * \brief Declare rules for a NameComponent type.
+/** \brief Declare rules for a NameComponent type.
  */
 class ComponentType : noncopyable
 {
@@ -43,19 +43,17 @@ public:
   virtual
   ~ComponentType() = default;
 
-  /**
-   * \brief Throw Component::Error if \p comp is invalid.
+  /** \brief Throw Component::Error if \p comp is invalid.
    */
   virtual void
   check(const Component& comp) const
   {
   }
 
-  /**
-   * \brief Calculate the successor of \p comp.
+  /** \brief Calculate the successor of \p comp.
    *
-   * If \p comp is the maximum possible value of this component type, return true to indicate
-   * that the successor should have a greater TLV-TYPE.
+   *  If \p comp is the maximum possible value of this component type, return true to indicate
+   *  that the successor should have a greater TLV-TYPE.
    */
   virtual std::tuple<bool, Component>
   getSuccessor(const Component& comp) const
@@ -63,8 +61,7 @@ public:
     return {false, Component(std::get<Block>(getSuccessorImpl(comp)))};
   }
 
-  /**
-   * \brief Return the minimum allowable TLV-VALUE of this component type.
+  /** \brief Return the minimum allowable TLV-VALUE of this component type.
    */
   virtual span<const uint8_t>
   getMinValue() const
@@ -73,39 +70,36 @@ public:
     return value;
   }
 
-  /**
-   * \brief Return the prefix of the alternate URI representation.
+  /** \brief Return the prefix of the alternate URI representation.
    *
-   * NDN URI specification allows a name component type to declare an alternate URI representation
-   * in the form of `<prefix>=<value>`, in addition to the plain `<type-number>=<escaped-value>`
-   * syntax.
+   *  NDN URI specification allows a name component type to declare an alternate URI representation
+   *  in the form of `<prefix>=<value>`, in addition to the plain `<type-number>=<escaped-value>`
+   *  syntax.
    *
-   * \return The `<prefix>` portion of the alternate URI representation.
-   * \retval empty This component does not have an alternate URI representation.
+   *  \return The `<prefix>` portion of the alternate URI representation.
+   *  \retval nullptr This component does not have an alternate URI representation.
    */
-  virtual std::string_view
+  virtual const char*
   getAltUriPrefix() const
   {
-    return {};
+    return nullptr;
   }
 
-  /**
-   * \brief Parse component from alternate URI representation.
-   * \param input the `<value>` portion of the alternate URI representation.
-   * \throw Component::Error
-   * \pre `getAltUriPrefix().empty() == false`
+  /** \brief Parse component from alternate URI representation.
+   *  \param input the `<value>` portion of the alternate URI representation.
+   *  \throw Component::Error
+   *  \pre getAltUriPrefix() != nullptr
    */
   virtual Component
-  parseAltUriValue(std::string_view input) const
+  parseAltUriValue(const std::string&) const
   {
     NDN_CXX_UNREACHABLE;
   }
 
-  /**
-   * \brief Write URI representation of \p comp to \p os.
+  /** \brief Write URI representation of \p comp to \p os.
    *
-   * This base class implementation encodes the component using the plain
-   * `<type-number>=<escaped-value>` syntax (aka canonical format).
+   *  This base class implementation encodes the component using the plain
+   *  `<type-number>=<escaped-value>` syntax (aka canonical format).
    */
   virtual void
   writeUri(std::ostream& os, const Component& comp) const
@@ -155,15 +149,14 @@ protected:
     if (isAllPeriods) {
       os << "...";
     }
-    escape(os, {reinterpret_cast<const char*>(comp.value()), comp.value_size()});
+    escape(os, reinterpret_cast<const char*>(comp.value()), comp.value_size());
   }
 };
 
-/**
- * \brief Rules for GenericNameComponent.
+/** \brief Rules for GenericNameComponent.
  *
- * GenericNameComponent has an alternate URI representation that omits the `<type-number>` prefix.
- * This must be special-cased in the caller, and is not handled by this class.
+ *  GenericNameComponent has an alternate URI representation that omits the `<type-number>` prefix.
+ *  This must be special-cased in the caller, and is not handled by this class.
  */
 class GenericNameComponentType final : public ComponentType
 {
@@ -175,15 +168,13 @@ public:
   }
 };
 
-/**
- * \brief Rules for a component type holding a SHA256 digest value, written as
- *        a hex string in URI representation.
+/** \brief Rules for a component type holding a SHA256 digest value, written as
+ *         a hex string in URI representation.
  */
 class Sha256ComponentType final : public ComponentType
 {
 public:
-  constexpr
-  Sha256ComponentType(uint32_t type, std::string_view typeName, std::string_view uriPrefix)
+  Sha256ComponentType(uint32_t type, const std::string& typeName, const std::string& uriPrefix)
     : m_type(type)
     , m_typeName(typeName)
     , m_uriPrefix(uriPrefix)
@@ -195,15 +186,16 @@ public:
   {
     BOOST_ASSERT(comp.type() == m_type);
     if (comp.value_size() != util::Sha256::DIGEST_SIZE) {
-      NDN_THROW(Error(std::string(m_typeName) + " TLV-LENGTH must be " +
-                      std::to_string(util::Sha256::DIGEST_SIZE)));
+      NDN_THROW(Error(m_typeName + " TLV-LENGTH must be " + to_string(util::Sha256::DIGEST_SIZE)));
     }
   }
 
   std::tuple<bool, Component>
   getSuccessor(const Component& comp) const final
   {
-    auto [isExtended, successor] = getSuccessorImpl(comp);
+    bool isExtended = false;
+    Block successor;
+    std::tie(isExtended, successor) = getSuccessorImpl(comp);
     return {isExtended, isExtended ? comp : Component(successor)};
   }
 
@@ -214,21 +206,21 @@ public:
     return value;
   }
 
-  std::string_view
+  const char*
   getAltUriPrefix() const final
   {
-    return m_uriPrefix;
+    return m_uriPrefix.data();
   }
 
   Component
-  parseAltUriValue(std::string_view input) const final
+  parseAltUriValue(const std::string& input) const final
   {
     shared_ptr<Buffer> value;
     try {
       value = fromHex(input);
     }
     catch (const StringHelperError&) {
-      NDN_THROW(Error("Cannot convert to " + std::string(m_typeName) + " (invalid hex encoding)"));
+      NDN_THROW(Error("Cannot convert to " + m_typeName + " (invalid hex encoding)"));
     }
     return {m_type, std::move(value)};
   }
@@ -242,19 +234,17 @@ public:
 
 private:
   const uint32_t m_type;
-  const std::string_view m_typeName;
-  const std::string_view m_uriPrefix;
+  const std::string m_typeName;
+  const std::string m_uriPrefix;
 };
 
-/**
- * \brief Rules for a component type holding a NonNegativeInteger value, written as
- *        a decimal number in URI representation.
+/** \brief Rules for a component type holding a NonNegativeInteger value, written as
+ *         a decimal number in URI representation.
  */
 class DecimalComponentType final : public ComponentType
 {
 public:
-  constexpr
-  DecimalComponentType(uint32_t type, std::string_view typeName, std::string_view uriPrefix)
+  DecimalComponentType(uint32_t type, const std::string& typeName, const std::string& uriPrefix)
     : m_type(type)
     , m_typeName(typeName)
     , m_uriPrefix(uriPrefix)
@@ -266,27 +256,27 @@ public:
   // NonNegativeInteger, because the application may be using the same typed component
   // with different syntax and semantics.
 
-  std::string_view
+  const char*
   getAltUriPrefix() const final
   {
-    return m_uriPrefix;
+    return m_uriPrefix.data();
   }
 
   Component
-  parseAltUriValue(std::string_view input) const final
+  parseAltUriValue(const std::string& input) const final
   {
     uint64_t n = 0;
     try {
-      n = std::stoull(std::string(input));
+      n = std::stoull(input);
     }
     catch (const std::invalid_argument&) {
-      NDN_THROW(Error("Cannot convert to " + std::string(m_typeName) + " (invalid format)"));
+      NDN_THROW(Error("Cannot convert to " + m_typeName + " (invalid format)"));
     }
     catch (const std::out_of_range&) {
-      NDN_THROW(Error("Cannot convert to " + std::string(m_typeName) + " (out of range)"));
+      NDN_THROW(Error("Cannot convert to " + m_typeName + " (out of range)"));
     }
-    if (std::to_string(n) != input) {
-      NDN_THROW(Error("Cannot convert to " + std::string(m_typeName) + " (invalid format)"));
+    if (to_string(n) != input) {
+      NDN_THROW(Error("Cannot convert to " + m_typeName + " (invalid format)"));
     }
     return Component::fromNumber(n, m_type);
   }
@@ -304,8 +294,8 @@ public:
 
 private:
   const uint32_t m_type;
-  const std::string_view m_typeName;
-  const std::string_view m_uriPrefix;
+  const std::string m_typeName;
+  const std::string m_uriPrefix;
 };
 
 /**
@@ -332,12 +322,13 @@ public:
    * \brief Retrieve a ComponentType by its alternate URI prefix.
    */
   const ComponentType*
-  findByUriPrefix(std::string_view prefix) const
+  findByUriPrefix(const std::string& prefix) const
   {
-    if (auto it = m_uriPrefixes.find(prefix); it != m_uriPrefixes.end()) {
-      return it->second;
+    auto it = m_uriPrefixes.find(prefix);
+    if (it == m_uriPrefixes.end()) {
+      return nullptr;
     }
-    return nullptr;
+    return it->second;
   }
 
 private:
@@ -345,7 +336,7 @@ private:
   set(uint32_t type, const ComponentType& ct)
   {
     m_table.at(type) = &ct;
-    if (!ct.getAltUriPrefix().empty()) {
+    if (ct.getAltUriPrefix() != nullptr) {
       m_uriPrefixes[ct.getAltUriPrefix()] = &ct;
     }
   }
@@ -353,7 +344,7 @@ private:
 private:
   const ComponentType m_baseType;
   std::array<const ComponentType*, 60> m_table;
-  std::unordered_map<std::string_view, const ComponentType*> m_uriPrefixes;
+  std::unordered_map<std::string, const ComponentType*> m_uriPrefixes;
 };
 
 inline
@@ -362,10 +353,10 @@ ComponentTypeTable::ComponentTypeTable()
   m_table.fill(nullptr);
 
   static const Sha256ComponentType ct1(tlv::ImplicitSha256DigestComponent,
-                                       "ImplicitSha256DigestComponent"sv, "sha256digest"sv);
+                                       "ImplicitSha256DigestComponent", "sha256digest");
   set(tlv::ImplicitSha256DigestComponent, ct1);
   static const Sha256ComponentType ct2(tlv::ParametersSha256DigestComponent,
-                                       "ParametersSha256DigestComponent"sv, "params-sha256"sv);
+                                       "ParametersSha256DigestComponent", "params-sha256");
   set(tlv::ParametersSha256DigestComponent, ct2);
 
   static const GenericNameComponentType ct8;
@@ -374,15 +365,15 @@ ComponentTypeTable::ComponentTypeTable()
   static const ComponentType ct32;
   set(tlv::KeywordNameComponent, ct32);
 
-  static const DecimalComponentType ct50(tlv::SegmentNameComponent, "SegmentNameComponent"sv, "seg"sv);
+  static const DecimalComponentType ct50(tlv::SegmentNameComponent, "SegmentNameComponent", "seg");
   set(tlv::SegmentNameComponent, ct50);
-  static const DecimalComponentType ct52(tlv::ByteOffsetNameComponent, "ByteOffsetNameComponent"sv, "off"sv);
+  static const DecimalComponentType ct52(tlv::ByteOffsetNameComponent, "ByteOffsetNameComponent", "off");
   set(tlv::ByteOffsetNameComponent, ct52);
-  static const DecimalComponentType ct54(tlv::VersionNameComponent, "VersionNameComponent"sv, "v"sv);
+  static const DecimalComponentType ct54(tlv::VersionNameComponent, "VersionNameComponent", "v");
   set(tlv::VersionNameComponent, ct54);
-  static const DecimalComponentType ct56(tlv::TimestampNameComponent, "TimestampNameComponent"sv, "t"sv);
+  static const DecimalComponentType ct56(tlv::TimestampNameComponent, "TimestampNameComponent", "t");
   set(tlv::TimestampNameComponent, ct56);
-  static const DecimalComponentType ct58(tlv::SequenceNumNameComponent, "SequenceNumNameComponent"sv, "seq"sv);
+  static const DecimalComponentType ct58(tlv::SequenceNumNameComponent, "SequenceNumNameComponent", "seq");
   set(tlv::SequenceNumNameComponent, ct58);
 }
 
@@ -397,6 +388,7 @@ getComponentTypeTable()
 }
 
 } // namespace
-} // namespace ndn::name
+} // namespace name
+} // namespace ndn
 
 #endif // NDN_CXX_IMPL_NAME_COMPONENT_TYPES_HPP

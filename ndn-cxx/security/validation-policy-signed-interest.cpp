@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -21,7 +21,9 @@
 
 #include "ndn-cxx/security/validation-policy-signed-interest.hpp"
 
-namespace ndn::security {
+namespace ndn {
+namespace security {
+inline namespace v2 {
 
 ValidationPolicySignedInterest::ValidationPolicySignedInterest(unique_ptr<ValidationPolicy> inner,
                                                                const Options& options)
@@ -129,7 +131,7 @@ ValidationPolicySignedInterest::checkIncomingInterest(const shared_ptr<Validatio
   }
 
   if (m_options.maxRecordCount != 0) {
-    auto interestState = std::dynamic_pointer_cast<InterestValidationState>(state);
+    auto interestState = dynamic_pointer_cast<InterestValidationState>(state);
     BOOST_ASSERT(interestState != nullptr);
     interestState->afterSuccess.connect([=] (const Interest&) {
       insertRecord(keyName, timestamp, seqNum, nonce);
@@ -140,12 +142,14 @@ ValidationPolicySignedInterest::checkIncomingInterest(const shared_ptr<Validatio
 
 void
 ValidationPolicySignedInterest::insertRecord(const Name& keyName,
-                                             std::optional<time::system_clock::time_point> timestamp,
-                                             std::optional<uint64_t> seqNum,
-                                             std::optional<SigNonce> nonce)
+                                             optional<time::system_clock::TimePoint> timestamp,
+                                             optional<uint64_t> seqNum,
+                                             optional<SigNonce> nonce)
 {
   // If key record exists, update last refreshed time. Otherwise, create new record.
-  auto [it, isOk] = m_byKeyName.emplace(keyName, timestamp, seqNum);
+  Container::nth_index<0>::type::iterator it;
+  bool isOk;
+  std::tie(it, isOk) = m_byKeyName.emplace(keyName, timestamp, seqNum);
   if (!isOk) {
     // There was already a record for this key, we just need to update it
     isOk = m_byKeyName.modify(it, [&] (LastInterestRecord& record) {
@@ -183,4 +187,6 @@ ValidationPolicySignedInterest::insertRecord(const Name& keyName,
   }
 }
 
-} // namespace ndn::security
+} // inline namespace v2
+} // namespace security
+} // namespace ndn

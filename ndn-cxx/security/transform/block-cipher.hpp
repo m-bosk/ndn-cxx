@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -25,7 +25,9 @@
 #include "ndn-cxx/security/transform/transform-base.hpp"
 #include "ndn-cxx/security/security-common.hpp"
 
-namespace ndn::security::transform {
+namespace ndn {
+namespace security {
+namespace transform {
 
 /**
  * @brief The module to encrypt data using block cipher.
@@ -95,6 +97,8 @@ unique_ptr<Transform>
 blockCipher(BlockCipherAlgorithm algo, CipherOperator op,
             span<const uint8_t> key, span<const uint8_t> iv);
 
-} // namespace ndn::security::transform
+} // namespace transform
+} // namespace security
+} // namespace ndn
 
 #endif // NDN_CXX_SECURITY_TRANSFORM_BLOCK_CIPHER_HPP

@@ -7,21 +7,18 @@ Supported platforms
 ndn-cxx is built against a continuous integration system and has been tested on the
 following platforms:
 
-- Ubuntu 20.04 (focal)
-- Ubuntu 22.04 (jammy)
-- Debian 11 (bullseye)
-- Debian 12 (bookworm)
+- Ubuntu 18.04 / 20.04 / 22.04
+- Debian 11
 - CentOS Stream 9
-- macOS 11 / 12 / 13 / 14
+- macOS 10.15 / 11 / 12 / 13
 
-ndn-cxx should also work on the following platforms, although they are not officially
+ndn-cxx is known to work on the following platforms, although they are not officially
 supported:
 
-- Any other recent version of Ubuntu not listed above
-- Fedora >= 33
 - Alpine >= 3.12
-- Any version of Raspberry Pi OS based on Debian 11 (bullseye) or later
-- macOS 10.15
+- Fedora >= 29
+- Gentoo Linux
+- Raspberry Pi OS (formerly Raspbian) >= 2019-06-20
 - FreeBSD >= 12.2
 
 Prerequisites
@@ -30,11 +27,11 @@ Prerequisites
 Required
 ~~~~~~~~
 
-- GCC >= 9.3 or clang >= 7.0 (if you are on Linux or FreeBSD)
-- Xcode >= 12.4 or corresponding version of Command Line Tools (if you are on macOS)
-- Python >= 3.8
+- GCC >= 7.4 or clang >= 6.0 (if you are on Linux or FreeBSD)
+- Xcode >= 11.3 or corresponding version of Command Line Tools (if you are on macOS)
+- Python >= 3.6
 - pkg-config
-- Boost >= 1.71.0
+- Boost >= 1.65.1
 - OpenSSL >= 1.1.1
 - SQLite 3.x
 
@@ -45,13 +42,13 @@ development tools and libraries:
 
     In a terminal, enter::
 
-        sudo apt install build-essential libboost-all-dev libssl-dev libsqlite3-dev pkg-config python3
+        sudo apt install build-essential pkg-config python3-minimal libboost-all-dev libssl-dev libsqlite3-dev
 
 - On **CentOS** and **Fedora**
 
     In a terminal, enter::
 
-        sudo dnf install gcc-c++ boost-devel openssl-devel sqlite-devel pkgconf-pkg-config python3
+        sudo dnf install gcc-c++ pkgconf-pkg-config python3 boost-devel openssl-devel sqlite-devel
 
 - On **macOS**
 
@@ -63,6 +60,7 @@ development tools and libraries:
       .. code-block:: sh
 
         brew install boost openssl pkg-config
+        brew install python  # only on macOS 10.14 and earlier
 
       .. warning::
 
@@ -73,7 +71,7 @@ development tools and libraries:
 
     In a terminal, enter::
 
-        sudo pkg install boost-libs openssl sqlite3 pkgconf python3
+        sudo pkg install pkgconf python3 boost-libs openssl sqlite3
 
 Optional
 ~~~~~~~~
@@ -161,37 +159,37 @@ been installed:
     sudo ldconfig
 
 .. note::
-  On Linux, when the library is installed in a non-default location (generally, not in
-  ``/usr/lib`` or ``/usr/local/lib``), the following additional actions may be necessary.
+  When the library is installed in a non-default location (in general: not in ``/usr/lib``
+  or ``/usr/local/lib``; on some Linux distros like Fedora and its derivatives, including
+  CentOS: not in ``/usr/lib``), the following additional actions may be necessary.
 
-  The library installation path should be added to ``/etc/ld.so.conf`` or to
-  ``/etc/ld.so.conf.d/*.conf`` before running ``ldconfig``. For example:
+  The library installation path should be added to ``/etc/ld.so.conf`` or in
+  ``/etc/ld.so.conf.d/*.conf`` **before** running ``ldconfig``. For example:
 
   .. code-block:: sh
 
-      echo /usr/local/lib64 | sudo tee /etc/ld.so.conf.d/ndn-cxx.conf
-      sudo ldconfig
+      echo /usr/local/lib | sudo tee /etc/ld.so.conf.d/ndn-cxx.conf
 
   Alternatively, the ``LD_LIBRARY_PATH`` environment variable can be set to point to
   the installation directory of the shared library:
 
   .. code-block:: sh
 
-      export LD_LIBRARY_PATH=/usr/local/lib64
+      export LD_LIBRARY_PATH=/usr/local/lib
 
 The ``./waf install`` command installs the following files:
 
--  ``<LIBDIR>/libndn-cxx.a``: static NDN C++ library (if enabled).
--  ``<LIBDIR>/libndn-cxx.so``, ``<LIBDIR>/libndn-cxx.so.<VERSION>`` (on Linux),
-   ``<LIBDIR>/libndn-cxx.dylib``, ``<LIBDIR>/libndn-cxx.<VERSION>.dylib`` (on macOS):
+-  ``<LIBPATH>/libndn-cxx.a``: static NDN C++ library (if enabled).
+-  ``<LIBPATH>/libndn-cxx.so``, ``<LIBPATH>/libndn-cxx.so.<VERSION>`` (on Linux),
+   ``<LIBPATH>/libndn-cxx.dylib``, ``<LIBPATH>/libndn-cxx.<VERSION>.dylib`` (on macOS):
    shared NDN C++ library (if enabled).
--  ``<LIBDIR>/pkgconfig/libndn-cxx.pc``: pkgconfig file storing all necessary flags to
+-  ``<LIBPATH>/pkgconfig/libndn-cxx.pc``: pkgconfig file storing all necessary flags to
    build against the library. For example, if the ``pkg-config`` or ``pkgconf-pkg-config``
    package is installed and ``PKG_CONFIG_PATH`` is configured properly (or if
-   ``<LIBDIR>/pkgconfig`` is a default search path), the command ``pkg-config --cflags
+   ``<LIBPATH>/pkgconfig`` is a default search path), the command ``pkg-config --cflags
    --libs libndn-cxx`` will return all necessary compile and link flags for the library.
--  ``<BINDIR>/ndnsec``: command-line tool to manage NDN keys and certificates.
--  ``<BINDIR>/ndnsec-*``: convenience aliases for ``ndnsec`` tools.
+-  ``<BINPATH>/ndnsec``: command-line tool to manage NDN keys and certificates.
+-  ``<BINPATH>/ndnsec-*``: convenience aliases for ``ndnsec`` tools.
 
 If configured with tests (``./waf configure --with-tests``), the above commands
 will also produce:

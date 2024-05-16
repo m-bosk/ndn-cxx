@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -25,9 +25,12 @@
 #include "tests/test-common.hpp"
 #include "tests/unit/security/validator-fixture.hpp"
 
-namespace ndn::tests {
+namespace ndn {
+namespace security {
+inline namespace v2 {
+namespace tests {
 
-using namespace ndn::security;
+using namespace ndn::tests;
 
 BOOST_AUTO_TEST_SUITE(Security)
 BOOST_FIXTURE_TEST_SUITE(TestValidator, HierarchicalValidatorFixture<ValidationPolicySimpleHierarchy>)
@@ -375,4 +378,7 @@ BOOST_AUTO_TEST_CASE(LoopedCertChain)
 BOOST_AUTO_TEST_SUITE_END() // TestValidator
 BOOST_AUTO_TEST_SUITE_END() // Security
 
-} // namespace ndn::tests
+} // namespace tests
+} // inline namespace v2
+} // namespace security
+} // namespace ndn

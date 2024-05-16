@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2021 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -21,7 +21,9 @@
 
 #include "ndn-cxx/security/transform/hex-decode.hpp"
 
-namespace ndn::security::transform {
+namespace ndn {
+namespace security {
+namespace transform {
 
 // hex decoding pad
 static const int8_t C2H[] = {
@@ -43,7 +45,14 @@ static const int8_t C2H[] = {
   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, // 224-239
   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, // 240-255
 };
-static_assert(std::extent_v<decltype(C2H)> == 256);
+static_assert(std::extent<decltype(C2H)>::value == 256, "");
+
+
+HexDecode::HexDecode()
+  : m_hasOddByte(false)
+  , m_oddByte(0)
+{
+}
 
 size_t
 HexDecode::convert(span<const uint8_t> hex)
@@ -108,4 +117,6 @@ hexDecode()
   return make_unique<HexDecode>();
 }
 
-} // namespace ndn::security::transform
+} // namespace transform
+} // namespace security
+} // namespace ndn

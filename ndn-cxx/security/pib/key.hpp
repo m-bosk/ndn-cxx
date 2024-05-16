@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -25,14 +25,20 @@
 #include "ndn-cxx/security/pib/certificate-container.hpp"
 #include "ndn-cxx/security/security-common.hpp"
 
-namespace ndn::security {
+namespace ndn {
+namespace security {
 
+inline namespace v2 {
 class KeyChain;
+} // inline namespace v2
 
 namespace pib {
 
 class KeyContainer;
+
+namespace detail {
 class KeyImpl;
+} // namespace detail
 
 /**
  * @brief Frontend handle for a key in the PIB.
@@ -41,7 +47,7 @@ class KeyImpl;
  * `/<Identity>/KEY/<KeyId>`, and contains one or more certificates, one of which is set as
  * default certificate of that key. Certificates can be directly accessed from a Key object.
  */
-class Key : private boost::equality_comparable<Key>
+class Key
 {
 public:
   /**
@@ -156,7 +162,7 @@ NDN_CXX_PUBLIC_WITH_TESTS_ELSE_PRIVATE: // write operations are accessible only 
 
 NDN_CXX_PUBLIC_WITH_TESTS_ELSE_PRIVATE: // private interface for KeyContainer
   explicit
-  Key(weak_ptr<KeyImpl> impl) noexcept;
+  Key(weak_ptr<detail::KeyImpl> impl) noexcept;
 
 private:
   /**
@@ -164,7 +170,7 @@ private:
    * @return a shared_ptr when the instance is valid
    * @throw std::domain_error the instance is invalid
    */
-  shared_ptr<KeyImpl>
+  shared_ptr<detail::KeyImpl>
   lock() const;
 
   bool
@@ -173,25 +179,27 @@ private:
   // NOTE
   // The following "hidden friend" non-member operators are available
   // via argument-dependent lookup only and must be defined inline.
-  // boost::equality_comparable provides != operator.
 
   friend bool
-  operator==(const Key& lhs, const Key& rhs) noexcept
+  operator==(const Key& lhs, const Key& rhs)
   {
     return lhs.equals(rhs);
+  }
+
+  friend bool
+  operator!=(const Key& lhs, const Key& rhs)
+  {
+    return !lhs.equals(rhs);
   }
 
   friend std::ostream&
   operator<<(std::ostream& os, const Key& key)
   {
-    if (key)
-      return os << key.getName();
-    else
-      return os << "(empty)";
+    return os << (key ? key.getName() : "(empty)");
   }
 
 private:
-  weak_ptr<KeyImpl> m_impl;
+  weak_ptr<detail::KeyImpl> m_impl;
 
   friend KeyChain;
   friend KeyContainer;
@@ -200,6 +208,8 @@ private:
 } // namespace pib
 
 using pib::Key;
+
+inline namespace v2 {
 
 /**
  * @brief Construct key name based on the appropriate naming conventions
@@ -219,6 +229,8 @@ isValidKeyName(const Name& keyName);
 Name
 extractIdentityFromKeyName(const Name& keyName);
 
-} // namespace ndn::security
+} // inline namespace v2
+} // namespace security
+} // namespace ndn
 
 #endif // NDN_CXX_SECURITY_PIB_KEY_HPP

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -27,7 +27,9 @@
 #include <bitset>
 #include <climits>
 
-namespace ndn::security::transform {
+namespace ndn {
+namespace security {
+namespace transform {
 
 /**
  * \brief Strip whitespace characters from a stream.
@@ -58,6 +60,8 @@ private:
 unique_ptr<Transform>
 stripSpace(const char* whitespaces = StripSpace::DEFAULT_WHITESPACES);
 
-} // namespace ndn::security::transform
+} // namespace transform
+} // namespace security
+} // namespace ndn
 
 #endif // NDN_CXX_SECURITY_TRANSFORM_STRIP_SPACE_HPP

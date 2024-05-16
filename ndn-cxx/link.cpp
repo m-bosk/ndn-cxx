@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -21,9 +21,14 @@
 
 #include "ndn-cxx/link.hpp"
 
-#include <algorithm>
-
 namespace ndn {
+
+BOOST_CONCEPT_ASSERT((boost::EqualityComparable<Link>));
+BOOST_CONCEPT_ASSERT((WireEncodable<Link>));
+BOOST_CONCEPT_ASSERT((WireEncodableWithEncodingBuffer<Link>));
+BOOST_CONCEPT_ASSERT((WireDecodable<Link>));
+static_assert(std::is_base_of<Data::Error, Link::Error>::value,
+              "Link::Error should inherit from Data::Error");
 
 Link::Link() = default;
 
@@ -43,7 +48,13 @@ void
 Link::encodeContent()
 {
   setContentType(tlv::ContentType_Link);
-  setContent(makeNestedBlock(tlv::Content, m_delegations.begin(), m_delegations.end()));
+
+  if (m_delegations.empty()) {
+    setContent(span<uint8_t>{});
+  }
+  else {
+    setContent(makeNestedBlock(tlv::Content, m_delegations.begin(), m_delegations.end()));
+  }
 }
 
 void

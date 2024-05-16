@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -28,7 +28,8 @@
 #include "ndn-cxx/detail/packet-base.hpp"
 #include "ndn-cxx/lp/nack-header.hpp"
 
-namespace ndn::lp {
+namespace ndn {
+namespace lp {
 
 /**
  * \brief Represents a %Network %Nack.
@@ -104,6 +105,7 @@ private:
   NackHeader m_header;
 };
 
-} // namespace ndn::lp
+} // namespace lp
+} // namespace ndn
 
 #endif // NDN_CXX_LP_NACK_HPP

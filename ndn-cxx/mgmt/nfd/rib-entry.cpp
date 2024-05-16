@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2019 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -23,14 +23,25 @@
 #include "ndn-cxx/encoding/block-helpers.hpp"
 #include "ndn-cxx/encoding/encoding-buffer.hpp"
 #include "ndn-cxx/encoding/tlv-nfd.hpp"
+#include "ndn-cxx/util/concepts.hpp"
 #include "ndn-cxx/util/ostream-joiner.hpp"
 #include "ndn-cxx/util/string-helper.hpp"
 
 #include <boost/range/adaptor/reversed.hpp>
 
-namespace ndn::nfd {
+namespace ndn {
+namespace nfd {
 
-Route::Route() = default;
+BOOST_CONCEPT_ASSERT((StatusDatasetItem<Route>));
+BOOST_CONCEPT_ASSERT((StatusDatasetItem<RibEntry>));
+
+Route::Route()
+  : m_faceId(INVALID_FACE_ID)
+  , m_origin(ROUTE_ORIGIN_APP)
+  , m_cost(0)
+  , m_flags(ROUTE_FLAG_CHILD_INHERIT)
+{
+}
 
 Route::Route(const Block& block)
 {
@@ -83,7 +94,7 @@ Route::setExpirationPeriod(time::milliseconds expirationPeriod)
 Route&
 Route::unsetExpirationPeriod()
 {
-  m_expirationPeriod = std::nullopt;
+  m_expirationPeriod = nullopt;
   m_wire.reset();
   return *this;
 }
@@ -174,7 +185,7 @@ Route::wireDecode(const Block& block)
     ++val;
   }
   else {
-    m_expirationPeriod = std::nullopt;
+    m_expirationPeriod = nullopt;
   }
 }
 
@@ -340,4 +351,5 @@ operator<<(std::ostream& os, const RibEntry& entry)
   return os << "         )";
 }
 
-} // namespace ndn::nfd
+} // namespace nfd
+} // namespace ndn

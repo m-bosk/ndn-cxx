@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -23,12 +23,11 @@
 #define NDN_CXX_KEY_LOCATOR_HPP
 
 #include "ndn-cxx/name.hpp"
-
-#include <variant>
+#include "ndn-cxx/util/variant.hpp"
 
 namespace ndn {
 
-class KeyLocator : private boost::equality_comparable<KeyLocator>
+class KeyLocator
 {
 public:
   class Error : public tlv::Error
@@ -72,10 +71,10 @@ public: // encode and decode
   wireDecode(const Block& wire);
 
 public: // attributes
-  [[nodiscard]] bool
+  NDN_CXX_NODISCARD bool
   empty() const
   {
-    return std::holds_alternative<std::monostate>(m_locator);
+    return holds_alternative<monostate>(m_locator);
   }
 
   uint32_t
@@ -124,14 +123,9 @@ public: // attributes
   KeyLocator&
   setKeyDigest(const ConstBufferPtr& keyDigest);
 
-private:
-  void
-  print(std::ostream& os) const;
-
 private: // non-member operators
   // NOTE: the following "hidden friend" operators are available via
   //       argument-dependent lookup only and must be defined inline.
-  // boost::equality_comparable provides != operator.
 
   friend bool
   operator==(const KeyLocator& lhs, const KeyLocator& rhs)
@@ -139,11 +133,10 @@ private: // non-member operators
     return lhs.m_locator == rhs.m_locator;
   }
 
-  friend std::ostream&
-  operator<<(std::ostream& os, const KeyLocator& kl)
+  friend bool
+  operator!=(const KeyLocator& lhs, const KeyLocator& rhs)
   {
-    kl.print(os);
-    return os;
+    return lhs.m_locator != rhs.m_locator;
   }
 
 private:
@@ -151,12 +144,17 @@ private:
   // - Name is used when the nested TLV contains a name
   // - Block is used when the nested TLV is a KeyDigest
   // - in all other (unsupported) cases the nested TLV type is stored as uint32_t
-  std::variant<std::monostate, Name, Block, uint32_t> m_locator;
+  variant<monostate, Name, Block, uint32_t> m_locator;
 
   mutable Block m_wire;
+
+  friend std::ostream& operator<<(std::ostream&, const KeyLocator&);
 };
 
 NDN_CXX_DECLARE_WIRE_ENCODE_INSTANTIATIONS(KeyLocator);
+
+std::ostream&
+operator<<(std::ostream& os, const KeyLocator& keyLocator);
 
 } // namespace ndn
 

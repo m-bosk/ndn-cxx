@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -26,13 +26,14 @@
 #include "ndn-cxx/encoding/tlv.hpp"
 #include "ndn-cxx/util/time.hpp"
 
-namespace ndn::security {
+namespace ndn {
+namespace security {
 
 /**
  * @brief Represents a %ValidityPeriod TLV element.
  * @sa https://docs.named-data.net/NDN-packet-spec/0.3/certificate.html
  */
-class ValidityPeriod : private boost::equality_comparable<ValidityPeriod>
+class ValidityPeriod
 {
 public:
   class Error : public tlv::Error
@@ -51,103 +52,89 @@ public:
    */
   static ValidityPeriod
   makeRelative(time::seconds validFrom, time::seconds validUntil,
-               const time::system_clock::time_point& now = time::system_clock::now());
+               const time::system_clock::TimePoint& now = time::system_clock::now());
 
-  /**
-   * @brief Create a validity period that is invalid for any timepoint.
+  /** @brief Set validity period [UNIX epoch + 1 nanosecond, UNIX epoch] that is always invalid
    */
   ValidityPeriod();
 
-  /**
-   * @brief Decode validity period from @p block .
+  /** @brief Create validity period from @p block
    */
   explicit
   ValidityPeriod(const Block& block);
 
-  /**
-   * @brief Create validity period [@p notBefore, @p notAfter].
-   * @param notBefore exclusive beginning of the validity period range,
-   *                  to be rounded up to the next whole second.
-   * @param notAfter exclusive end of the validity period range,
-   *                  to be rounded down to the previous whole second.
+  /** @brief Create validity period [@p notBefore, @p notAfter]
+   *  @param notBefore exclusive beginning of the validity period range
+   *  @param notAfter exclusive end of the validity period range
+   *
+   *  @note The supplied time points will be rounded up to the whole seconds:
+   *        - @p notBefore is rounded up the next whole second
+   *        - @p notAfter is truncated to the previous whole second
    */
-  ValidityPeriod(const time::system_clock::time_point& notBefore,
-                 const time::system_clock::time_point& notAfter);
+  ValidityPeriod(const time::system_clock::TimePoint& notBefore,
+                 const time::system_clock::TimePoint& notAfter);
 
-  /**
-   * @brief Check if @p now falls within the validity period.
-   * @param now Time point to check if it falls within the period
-   * @return notBefore <= @p now and @p now <= notAfter.
+  /** @brief Check if @p now falls within the validity period
+   *  @param now Time point to check if it falls within the period
+   *  @return periodBegin <= @p now and @p now <= periodEnd
    */
   bool
-  isValid(const time::system_clock::time_point& now = time::system_clock::now()) const;
+  isValid(const time::system_clock::TimePoint& now = time::system_clock::now()) const;
 
-  /**
-   * @brief Set validity period [@p notBefore, @p notAfter].
-   * @param notBefore exclusive beginning of the validity period range,
-   *                  to be rounded up to the next whole second.
-   * @param notAfter exclusive end of the validity period range,
-   *                  to be rounded down to the previous whole second.
+  /** @brief Set validity period [@p notBefore, @p notAfter]
+   *  @param notBefore exclusive beginning of the validity period range
+   *  @param notAfter exclusive end of the validity period range
+   *
+   *  @note The supplied time points will be rounded up to the whole seconds:
+   *        - @p notBefore is rounded up the next whole second
+   *        - @p notAfter is truncated to the previous whole second
    */
   ValidityPeriod&
-  setPeriod(const time::system_clock::time_point& notBefore,
-            const time::system_clock::time_point& notAfter);
+  setPeriod(const time::system_clock::TimePoint& notBefore,
+            const time::system_clock::TimePoint& notAfter);
 
-  /**
-   * @brief Get the stored validity period.
+  /** @brief Get the stored validity period
    */
-  std::pair<time::system_clock::time_point, time::system_clock::time_point>
+  std::pair<time::system_clock::TimePoint, time::system_clock::TimePoint>
   getPeriod() const;
 
-  /**
-   * @brief Fast encoding or block size estimation.
+  /** @brief Fast encoding or block size estimation
    */
   template<encoding::Tag TAG>
   size_t
   wireEncode(EncodingImpl<TAG>& encoder) const;
 
-  /**
-   * @brief Encode ValidityPeriod into TLV block.
+  /** @brief Encode ValidityPeriod into TLV block
    */
   const Block&
   wireEncode() const;
 
-  /**
-   * @brief Decode ValidityPeriod from TLV block.
-   * @throw Error when an invalid TLV block supplied.
-   *
-   * @note If either timestamp in @p wire is earlier than 1677-09-21 or later than 2262-04-11,
-   *       it will be adjusted to these dates so that they are representable as
-   *       @c time::system_clock::time_point type returned by getPeriod() method.
+  /** @brief Decode ValidityPeriod from TLV block
+   *  @throw Error when an invalid TLV block supplied
    */
   void
   wireDecode(const Block& wire);
 
-private:
-  using TimePoint = boost::chrono::time_point<time::system_clock, time::seconds>;
-
-  static TimePoint
-  toTimePointFloor(const time::system_clock::time_point& t);
-
-  static TimePoint
-  toTimePointCeil(const time::system_clock::time_point& t);
-
-  static TimePoint
-  decodeTimePoint(const Block& element);
-
-private: // non-member operators
+private: // EqualityComparable concept
   // NOTE: the following "hidden friend" operators are available via
   //       argument-dependent lookup only and must be defined inline.
-  // boost::equality_comparable provides != operator.
 
   friend bool
   operator==(const ValidityPeriod& lhs, const ValidityPeriod& rhs)
   {
-    return lhs.m_notBefore == rhs.m_notBefore &&
-           lhs.m_notAfter == rhs.m_notAfter;
+    return !(lhs != rhs);
+  }
+
+  friend bool
+  operator!=(const ValidityPeriod& lhs, const ValidityPeriod& rhs)
+  {
+    return lhs.m_notBefore != rhs.m_notBefore ||
+           lhs.m_notAfter != rhs.m_notAfter;
   }
 
 private:
+  typedef boost::chrono::time_point<time::system_clock, time::seconds> TimePoint;
+
   TimePoint m_notBefore;
   TimePoint m_notAfter;
 
@@ -159,6 +146,7 @@ NDN_CXX_DECLARE_WIRE_ENCODE_INSTANTIATIONS(ValidityPeriod);
 std::ostream&
 operator<<(std::ostream& os, const ValidityPeriod& period);
 
-} // namespace ndn::security
+} // namespace security
+} // namespace ndn
 
 #endif // NDN_CXX_SECURITY_VALIDITY_PERIOD_HPP

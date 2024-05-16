@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2021 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -35,7 +35,8 @@
 #error "This file should not be included ..."
 #endif
 
-namespace ndn::net {
+namespace ndn {
+namespace net {
 
 class NetlinkMessage;
 
@@ -53,7 +54,7 @@ public:
 
 protected:
   explicit
-  NetlinkSocket(boost::asio::io_context& io);
+  NetlinkSocket(boost::asio::io_service& io);
 
   ~NetlinkSocket();
 
@@ -87,7 +88,7 @@ class RtnlSocket final : public NetlinkSocket
 {
 public:
   explicit
-  RtnlSocket(boost::asio::io_context& io);
+  RtnlSocket(boost::asio::io_service& io);
 
   void
   open();
@@ -109,8 +110,8 @@ class GenlFamilyResolver : noncopyable
 public:
   GenlFamilyResolver(std::string familyName, GenlSocket& socket);
 
-  signal::Signal<GenlFamilyResolver, uint16_t> onResolved;
-  signal::Signal<GenlFamilyResolver> onError;
+  util::Signal<GenlFamilyResolver, uint16_t> onResolved;
+  util::Signal<GenlFamilyResolver> onError;
 
 private:
   void
@@ -128,7 +129,7 @@ class GenlSocket final : public NetlinkSocket
 {
 public:
   explicit
-  GenlSocket(boost::asio::io_context& io);
+  GenlSocket(boost::asio::io_service& io);
 
   void
   open();
@@ -152,6 +153,7 @@ private:
   std::map<std::string, GenlFamilyResolver> m_familyResolvers; ///< family name => resolver instance
 };
 
-} // namespace ndn::net
+} // namespace net
+} // namespace ndn
 
 #endif // NDN_CXX_NET_NETLINK_SOCKET_HPP

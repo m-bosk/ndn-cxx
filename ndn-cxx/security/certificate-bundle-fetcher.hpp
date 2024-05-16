@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2021 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -22,13 +22,16 @@
 #ifndef NDN_CXX_SECURITY_CERTIFICATE_BUNDLE_FETCHER_HPP
 #define NDN_CXX_SECURITY_CERTIFICATE_BUNDLE_FETCHER_HPP
 
-#include "ndn-cxx/face.hpp"
-#include "ndn-cxx/security/certificate-fetcher.hpp"
+#include "ndn-cxx/name.hpp"
+#include "ndn-cxx/tag.hpp"
+#include "ndn-cxx/security/certificate-fetcher-from-network.hpp"
 
-namespace ndn::security {
+namespace ndn {
+namespace security {
+inline namespace v2 {
 
 /**
- * @brief Fetch certificate bundle from the network.
+ * @brief Fetch certificate bundle from the network
  *
  * Currently bundle fetching is attempted only for Data validation. This may change in the
  * future. Bundle fetching always goes to the infrastructure regardless of the inner
@@ -41,36 +44,30 @@ class CertificateBundleFetcher : public CertificateFetcher
 {
 public:
   explicit
-  CertificateBundleFetcher(unique_ptr<CertificateFetcher> inner, Face& face);
+  CertificateBundleFetcher(unique_ptr<CertificateFetcher> inner,
+                           Face& face);
 
   /**
-   * @return The lifetime of certificate bundle Interest.
-   */
-  time::milliseconds
-  getBundleInterestLifetime() const
-  {
-    return m_bundleInterestLifetime;
-  }
-
-  /**
-   * @brief Set the lifetime of certificate bundle Interest.
+   * @brief Set the lifetime of certificate bundle interest
    */
   void
-  setBundleInterestLifetime(time::milliseconds time)
-  {
-    m_bundleInterestLifetime = time;
-  }
+  setBundleInterestLifetime(time::milliseconds time);
 
   /**
-   * @brief Set the storage for this and inner certificate fetcher.
+   * @return The lifetime of certificate bundle interest
+   */
+  time::milliseconds
+  getBundleInterestLifetime() const;
+
+  /**
+   * Set the storage for this and inner certificate fetcher
    */
   void
   setCertificateStorage(CertificateStorage& certStorage) override;
 
 protected:
   void
-  doFetch(const shared_ptr<CertificateRequest>& certRequest,
-          const shared_ptr<ValidationState>& state,
+  doFetch(const shared_ptr<CertificateRequest>& certRequest, const shared_ptr<ValidationState>& state,
           const ValidationContinuation& continueValidation) override;
 
 private:
@@ -142,9 +139,13 @@ private:
 private:
   unique_ptr<CertificateFetcher> m_inner;
   Face& m_face;
-  time::milliseconds m_bundleInterestLifetime = 1_s;
+  using BundleNameTag = SimpleTag<Name, 1000>;
+  using FinalBlockIdTag = SimpleTag<name::Component, 1001>;
+  time::milliseconds m_bundleInterestLifetime;
 };
 
-} // namespace ndn::security
+} // inline namespace v2
+} // namespace security
+} // namespace ndn
 
 #endif // NDN_CXX_SECURITY_CERTIFICATE_BUNDLE_FETCHER_HPP

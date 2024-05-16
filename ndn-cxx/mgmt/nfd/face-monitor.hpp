@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2023 Regents of the University of California,
+ * Copyright (c) 2014-2021 Regents of the University of California,
  *                         Arizona Board of Regents,
  *                         Colorado State University,
  *                         University Pierre & Marie Curie, Sorbonne University,
@@ -31,22 +31,20 @@
 #include "ndn-cxx/mgmt/nfd/face-event-notification.hpp"
 #include "ndn-cxx/util/notification-subscriber.hpp"
 
-namespace ndn::nfd {
+namespace ndn {
+namespace nfd {
 
-/**
- * \brief A subscriber for the %Face status change notification stream.
- * \sa https://redmine.named-data.net/projects/nfd/wiki/FaceMgmt#Face-Status-Change-Notification
+/** \brief A subscriber for Face status change notification stream
+ *  \sa https://redmine.named-data.net/projects/nfd/wiki/FaceMgmt#Face-Status-Change-Notification
  */
 class FaceMonitor : public util::NotificationSubscriber<FaceEventNotification>
 {
 public:
   explicit
-  FaceMonitor(Face& face)
-    : NotificationSubscriber(face, "/localhost/nfd/faces/events")
-  {
-  }
+  FaceMonitor(Face& face);
 };
 
-} // namespace ndn::nfd
+} // namespace nfd
+} // namespace ndn
 
 #endif // NDN_CXX_MGMT_NFD_FACE_MONITOR_HPP

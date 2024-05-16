@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -27,7 +27,9 @@
 
 #include <list>
 
-namespace ndn::signal {
+namespace ndn {
+namespace util {
+namespace signal {
 
 class DummyExtraArg;
 
@@ -46,21 +48,17 @@ class DummyExtraArg;
  *  \tparam TArgs types of signal arguments
  *  \sa signal-emit.hpp allows owner's derived classes to emit signals
  */
-template<typename Owner, typename... TArgs>
+template<typename Owner, typename ...TArgs>
 class Signal : noncopyable
 {
 public: // API for anyone
-#ifndef BOOST_ASSERT_IS_VOID
-  ~Signal() noexcept
-  {
-    BOOST_ASSERT(!m_isExecuting);
-  }
-#endif
-
-  /**
-   * \brief Represents a function that can connect to the signal.
+  /** \brief Represents a function that can connect to the signal.
    */
-  using Handler = std::function<void(const TArgs&...)>;
+  typedef function<void(const TArgs&...)> Handler;
+
+  Signal();
+
+  ~Signal();
 
   /** \brief Connects a handler to the signal.
    *  \note If invoked from a handler, the new handler won't receive the current emitted signal.
@@ -102,7 +100,7 @@ private: // API for owner
   friend Owner;
 
 private: // internal implementation
-  using Self = Signal<Owner, TArgs...>;
+  typedef Signal<Owner, TArgs...> Self;
 
   /** \brief Stores a handler function, and a function to disconnect this handler.
    */
@@ -129,12 +127,12 @@ private: // internal implementation
    *  \note std::list is used because iterators must not be invalidated
    *        when other slots are added or removed
    */
-  using SlotList = std::list<Slot>;
+  typedef std::list<Slot> SlotList;
   SlotList m_slots;
 
   /** \brief Is a signal handler executing?
    */
-  bool m_isExecuting = false;
+  bool m_isExecuting;
 
   /** \brief Iterator to current executing slot.
    *  \note This field is meaningful when isExecuting==true
@@ -147,7 +145,19 @@ private: // internal implementation
   disconnect(typename SlotList::iterator it);
 };
 
-template<typename Owner, typename... TArgs>
+template<typename Owner, typename ...TArgs>
+Signal<Owner, TArgs...>::Signal()
+  : m_isExecuting(false)
+{
+}
+
+template<typename Owner, typename ...TArgs>
+Signal<Owner, TArgs...>::~Signal()
+{
+  BOOST_ASSERT(!m_isExecuting);
+}
+
+template<typename Owner, typename ...TArgs>
 Connection
 Signal<Owner, TArgs...>::connect(Handler handler)
 {
@@ -157,7 +167,7 @@ Signal<Owner, TArgs...>::connect(Handler handler)
   return signal::Connection(it->disconnect);
 }
 
-template<typename Owner, typename... TArgs>
+template<typename Owner, typename ...TArgs>
 Connection
 Signal<Owner, TArgs...>::connectSingleShot(Handler handler)
 {
@@ -173,7 +183,7 @@ Signal<Owner, TArgs...>::connectSingleShot(Handler handler)
   return conn;
 }
 
-template<typename Owner, typename... TArgs>
+template<typename Owner, typename ...TArgs>
 void
 Signal<Owner, TArgs...>::disconnect(typename SlotList::iterator it)
 {
@@ -193,14 +203,14 @@ Signal<Owner, TArgs...>::disconnect(typename SlotList::iterator it)
   }
 }
 
-template<typename Owner, typename... TArgs>
+template<typename Owner, typename ...TArgs>
 bool
 Signal<Owner, TArgs...>::isEmpty() const
 {
   return !m_isExecuting && m_slots.empty();
 }
 
-template<typename Owner, typename... TArgs>
+template<typename Owner, typename ...TArgs>
 void
 Signal<Owner, TArgs...>::operator()(const TArgs&... args)
 {
@@ -229,13 +239,19 @@ Signal<Owner, TArgs...>::operator()(const TArgs&... args)
   }
 }
 
-template<typename Owner, typename... TArgs>
+template<typename Owner, typename ...TArgs>
 void
 Signal<Owner, TArgs...>::operator()(const TArgs&... args, const DummyExtraArg&)
 {
   this->operator()(args...);
 }
 
-} // namespace ndn::signal
+} // namespace signal
+
+// expose as ndn::util::Signal
+using signal::Signal;
+
+} // namespace util
+} // namespace ndn
 
 #endif // NDN_CXX_UTIL_SIGNAL_SIGNAL_HPP

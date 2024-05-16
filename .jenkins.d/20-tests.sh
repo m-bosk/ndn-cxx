@@ -1,15 +1,14 @@
 #!/usr/bin/env bash
 set -eo pipefail
 
-# https://github.com/google/sanitizers/wiki/SanitizerCommonFlags
 # https://github.com/google/sanitizers/wiki/AddressSanitizerFlags
 ASAN_OPTIONS="color=always"
-ASAN_OPTIONS+=":strip_path_prefix=${PWD}/"
 ASAN_OPTIONS+=":check_initialization_order=1"
 ASAN_OPTIONS+=":detect_stack_use_after_return=1"
 ASAN_OPTIONS+=":strict_init_order=1"
 ASAN_OPTIONS+=":strict_string_checks=1"
 ASAN_OPTIONS+=":detect_invalid_pointer_pairs=2"
+ASAN_OPTIONS+=":strip_path_prefix=${PWD}/"
 export ASAN_OPTIONS
 
 # https://www.boost.org/doc/libs/release/libs/test/doc/html/boost_test/runtime_config/summary.html
@@ -22,6 +21,10 @@ set -x
 
 # Prepare environment
 rm -rf ~/.ndn
+
+if [[ $ID == macos && ${VERSION_ID%%.*} -lt 11 ]]; then
+    security unlock-keychain -p named-data
+fi
 
 # Run unit tests
 ./build/unit-tests

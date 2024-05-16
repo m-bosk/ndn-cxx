@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -32,7 +32,8 @@
 
 #include <unordered_map>
 
-namespace ndn::mgmt {
+namespace ndn {
+namespace mgmt {
 
 // ---- AUTHORIZATION ----
 
@@ -41,29 +42,25 @@ namespace ndn::mgmt {
  *                   the Authorization function; this value is intended for logging only,
  *                   and should not affect how the request is processed
  */
-using AcceptContinuation = std::function<void(const std::string& requester)>;
+typedef std::function<void(const std::string& requester)> AcceptContinuation;
 
-/**
- * \brief Indicates how to reply in case authorization is rejected.
+/** \brief Indicate how to reply in case authorization is rejected.
  */
 enum class RejectReply {
-  /**
-   * \brief Do not reply.
+  /** \brief Do not reply.
    */
   SILENT,
-  /**
-   * \brief Reply with a ControlResponse where StatusCode is 403.
+  /** \brief Reply with a ControlResponse where StatusCode is 403.
    */
   STATUS403
 };
 
-/**
- * \brief A function to be called if authorization is rejected.
+/** \brief A function to be called if authorization is rejected.
  */
-using RejectContinuation = std::function<void(RejectReply)>;
+typedef std::function<void(RejectReply reply)> RejectContinuation;
 
 /** \brief A function that performs authorization.
- *  \param prefix top-level prefix, e.g., `/localhost/nfd`;
+ *  \param prefix top-level prefix, e.g., "/localhost/nfd";
  *                This argument can be inspected to allow Interests only under a subset of
  *                top-level prefixes (e.g., allow "/localhost/nfd" only),
  *                or to use different trust model regarding to the prefix.
@@ -72,15 +69,14 @@ using RejectContinuation = std::function<void(RejectReply)>;
  *                This is guaranteed to be not-null and have correct type for the command,
  *                but may not be valid (e.g., can have missing fields).
  *
- *  Either \p accept or \p reject must be called after authorization completes.
+ *  Either accept or reject must be called after authorization completes.
  */
-using Authorization = std::function<void(const Name& prefix, const Interest& interest,
-                                         const ControlParameters* params,
-                                         const AcceptContinuation& accept,
-                                         const RejectContinuation& reject)>;
+typedef std::function<void(const Name& prefix, const Interest& interest,
+                           const ControlParameters* params,
+                           const AcceptContinuation& accept,
+                           const RejectContinuation& reject)> Authorization;
 
-/**
- * \brief Return an Authorization that accepts all Interests, with empty string as requester.
+/** \brief Return an Authorization that accepts all Interests, with empty string as requester.
  */
 Authorization
 makeAcceptAllAuthorization();
@@ -91,12 +87,12 @@ makeAcceptAllAuthorization();
  *  \param params parsed ControlParameters;
  *                This is guaranteed to have correct type for the command.
  */
-using ValidateParameters = std::function<bool(const ControlParameters& params)>;
+typedef std::function<bool(const ControlParameters& params)> ValidateParameters;
 
 /** \brief A function to be called after ControlCommandHandler completes.
  *  \param resp the response to be sent to requester
  */
-using CommandContinuation = std::function<void(const ControlResponse& resp)>;
+typedef std::function<void(const ControlResponse& resp)> CommandContinuation;
 
 /** \brief A function to handle an authorized ControlCommand.
  *  \param prefix top-level prefix, e.g., "/localhost/nfd";
@@ -105,9 +101,9 @@ using CommandContinuation = std::function<void(const ControlResponse& resp)>;
  *                This is guaranteed to have correct type for the command,
  *                and is valid (e.g., has all required fields).
  */
-using ControlCommandHandler = std::function<void(const Name& prefix, const Interest& interest,
-                                                 const ControlParameters& params,
-                                                 const CommandContinuation& done)>;
+typedef std::function<void(const Name& prefix, const Interest& interest,
+                           const ControlParameters& params,
+                           const CommandContinuation& done)> ControlCommandHandler;
 
 // ---- STATUS DATASET ----
 
@@ -118,20 +114,18 @@ using ControlCommandHandler = std::function<void(const Name& prefix, const Inter
  *  This function can generate zero or more blocks and pass them to \p append,
  *  and must call \p end upon completion.
  */
-using StatusDatasetHandler = std::function<void(const Name& prefix, const Interest& interest,
-                                                StatusDatasetContext& context)>;
+typedef std::function<void(const Name& prefix, const Interest& interest,
+                           StatusDatasetContext& context)> StatusDatasetHandler;
 
 //---- NOTIFICATION STREAM ----
 
-/**
- * \brief A function to post a notification.
+/** \brief A function to post a notification.
  */
-using PostNotification = std::function<void(const Block& notification)>;
+typedef std::function<void(const Block& notification)> PostNotification;
 
 // ---- DISPATCHER ----
 
-/**
- * \brief Implements a request dispatcher on server side of NFD Management protocol.
+/** \brief Implements a request dispatcher on server side of NFD Management protocol.
  */
 class Dispatcher : noncopyable
 {
@@ -487,6 +481,7 @@ Dispatcher::addControlCommand(const PartialName& relPrefix,
   };
 }
 
-} // namespace ndn::mgmt
+} // namespace mgmt
+} // namespace ndn
 
 #endif // NDN_CXX_MGMT_DISPATCHER_HPP

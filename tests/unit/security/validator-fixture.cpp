@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -22,13 +22,14 @@
 #include "tests/unit/security/validator-fixture.hpp"
 
 #include "ndn-cxx/security/additional-description.hpp"
-#include "ndn-cxx/util/signal/scoped-connection.hpp"
 
-#include <boost/asio/post.hpp>
+namespace ndn {
+namespace security {
+inline namespace v2 {
+namespace tests {
 
-namespace ndn::tests {
-
-using namespace ndn::security;
+const time::milliseconds ValidatorFixtureBase::s_mockPeriod{250};
+const int ValidatorFixtureBase::s_mockTimes = 200;
 
 ValidatorFixtureBase::ValidatorFixtureBase()
 {
@@ -47,9 +48,9 @@ ValidatorFixtureBase::ValidatorFixtureBase()
 void
 ValidatorFixtureBase::mockNetworkOperations()
 {
-  signal::ScopedConnection conn = face.onSendInterest.connect([this] (const Interest& interest) {
+  util::signal::ScopedConnection conn = face.onSendInterest.connect([this] (const Interest& interest) {
     if (processInterest) {
-      boost::asio::post(m_io, [=] { processInterest(interest); });
+      m_io.post([=] { processInterest(interest); });
     }
   });
   advanceClocks(s_mockPeriod, s_mockTimes);
@@ -71,7 +72,8 @@ ValidatorFixtureBase::addSubCertificate(const Name& subIdentityName, const Ident
                .appendVersion());
 
   SignatureInfo info;
-  info.setValidityPeriod(ValidityPeriod::makeRelative(0_s, 90_days));
+  auto now = time::system_clock::now();
+  info.setValidityPeriod(ValidityPeriod(now, now + 90_days));
 
   AdditionalDescription description;
   description.set("type", "sub-certificate");
@@ -103,4 +105,7 @@ InterestV03Pkt::makeName(Name name, KeyChain& keyChain)
   return interest.getName();
 }
 
-} // namespace ndn::tests
+} // namespace tests
+} // inline namespace v2
+} // namespace security
+} // namespace ndn

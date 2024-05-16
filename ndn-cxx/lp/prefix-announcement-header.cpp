@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2019 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -22,7 +22,8 @@
 #include "ndn-cxx/lp/prefix-announcement-header.hpp"
 #include "ndn-cxx/lp/tlv.hpp"
 
-namespace ndn::lp {
+namespace ndn {
+namespace lp {
 
 PrefixAnnouncementHeader::PrefixAnnouncementHeader() = default;
 
@@ -34,7 +35,7 @@ PrefixAnnouncementHeader::PrefixAnnouncementHeader(const Block& block)
 PrefixAnnouncementHeader::PrefixAnnouncementHeader(PrefixAnnouncement prefixAnn)
   : m_prefixAnn(std::move(prefixAnn))
 {
-  if (!m_prefixAnn->getData()) {
+  if (m_prefixAnn->getData() == nullopt) {
     NDN_THROW(Error("PrefixAnnouncement does not contain Data"));
   }
 }
@@ -43,7 +44,7 @@ template<encoding::Tag TAG>
 size_t
 PrefixAnnouncementHeader::wireEncode(EncodingImpl<TAG>& encoder) const
 {
-  if (!m_prefixAnn) {
+  if (m_prefixAnn == nullopt) {
     NDN_THROW(Error("PrefixAnnouncementHeader does not contain a PrefixAnnouncement"));
   }
 
@@ -66,4 +67,5 @@ PrefixAnnouncementHeader::wireDecode(const Block& wire)
   wire.parse();
   m_prefixAnn.emplace(Data(wire.get(ndn::tlv::Data)));
 }
-} // namespace ndn::lp
+} // namespace lp
+} // namespace ndn

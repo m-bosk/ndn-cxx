@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2021 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -38,16 +38,17 @@
 #include <boost/asio/ip/udp.hpp>
 #include <map>
 
-namespace ndn::net {
+namespace ndn {
+namespace net {
 
 class IfAddrs;
 
-class NetworkMonitorImplOsx final : public NetworkMonitorImpl
+class NetworkMonitorImplOsx : public NetworkMonitorImpl
 {
 public:
-  NetworkMonitorImplOsx(boost::asio::io_context& io);
+  NetworkMonitorImplOsx(boost::asio::io_service& io);
 
-  ~NetworkMonitorImplOsx() final;
+  ~NetworkMonitorImplOsx();
 
   uint32_t
   getCapabilities() const final
@@ -110,6 +111,7 @@ private:
   boost::asio::ip::udp::socket m_ioctlSocket;
 };
 
-} // namespace ndn::net
+} // namespace net
+} // namespace ndn
 
 #endif // NDN_CXX_NET_NETWORK_MONITOR_IMPL_OSX_HPP

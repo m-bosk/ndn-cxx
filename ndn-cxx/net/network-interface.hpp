@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2021 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -26,14 +26,14 @@
 
 #include "ndn-cxx/net/ethernet.hpp"
 #include "ndn-cxx/net/network-address.hpp"
-#include "ndn-cxx/util/signal/signal.hpp"
+#include "ndn-cxx/util/signal.hpp"
 
 #include <set>
 
-namespace ndn::net {
+namespace ndn {
+namespace net {
 
-/**
- * @brief Indicates the hardware type of a network interface.
+/** @brief Indicates the hardware type of a network interface
  */
 enum class InterfaceType {
   UNKNOWN,
@@ -45,8 +45,7 @@ enum class InterfaceType {
 std::ostream&
 operator<<(std::ostream& os, InterfaceType type);
 
-/**
- * @brief Indicates the state of a network interface.
+/** @brief Indicates the state of a network interface
  */
 enum class InterfaceState {
   UNKNOWN,    ///< interface is in an unknown state
@@ -63,28 +62,31 @@ operator<<(std::ostream& os, InterfaceState state);
  * @brief Represents one network interface attached to the host.
  *
  * Each network interface has a unique index, a name, and a set of flags indicating its
- * capabilities and current state. It may contain one link-layer (Ethernet) address, and
+ * capabilities and current state. It may contain one hardware (Ethernet) address, and
  * zero or more network-layer (IP) addresses. Specific signals are emitted when the
  * interface data change.
  */
 class NetworkInterface
 {
-public: // signals, marked 'mutable' so they can be connected on a 'const NetworkInterface'
-  /// Fires when the interface state changes.
-  mutable signal::Signal<NetworkInterface, InterfaceState /*old*/, InterfaceState /*new*/> onStateChanged;
+public: // signals, marked 'mutable' so they can be connected on 'const NetworkInterface'
+  /** @brief Fires when interface state changes
+   */
+  mutable util::Signal<NetworkInterface, InterfaceState /*old*/, InterfaceState /*new*/> onStateChanged;
 
-  /// Fires when the interface MTU changes.
-  mutable signal::Signal<NetworkInterface, uint32_t /*old*/, uint32_t /*new*/> onMtuChanged;
+  /** @brief Fires when interface mtu changes
+   */
+  mutable util::Signal<NetworkInterface, uint32_t /*old*/, uint32_t /*new*/> onMtuChanged;
 
-  /// Fires when a network-layer address is added to the interface.
-  mutable signal::Signal<NetworkInterface, NetworkAddress> onAddressAdded;
+  /** @brief Fires when a network-layer address is added to the interface
+   */
+  mutable util::Signal<NetworkInterface, NetworkAddress> onAddressAdded;
 
-  /// Fires when a network-layer address is removed from the interface.
-  mutable signal::Signal<NetworkInterface, NetworkAddress> onAddressRemoved;
+  /** @brief Fires when a network-layer address is removed from the interface
+   */
+  mutable util::Signal<NetworkInterface, NetworkAddress> onAddressRemoved;
 
 public: // getters
-  /**
-   * @brief Returns an opaque ID that uniquely identifies the interface on the system.
+  /** @brief Returns an opaque ID that uniquely identifies the interface on the system
    */
   int
   getIndex() const
@@ -92,8 +94,7 @@ public: // getters
     return m_index;
   }
 
-  /**
-   * @brief Returns the name of the interface, unique on the system.
+  /** @brief Returns the name of the interface, unique on the system
    */
   std::string
   getName() const
@@ -101,8 +102,7 @@ public: // getters
     return m_name;
   }
 
-  /**
-   * @brief Returns the hardware type of the interface.
+  /** @brief Returns the hardware type of the interface
    */
   InterfaceType
   getType() const
@@ -110,8 +110,7 @@ public: // getters
     return m_type;
   }
 
-  /**
-   * @brief Returns a bitset of platform-specific flags enabled on the interface.
+  /** @brief Returns a bitset of platform-specific flags enabled on the interface
    */
   uint32_t
   getFlags() const
@@ -119,8 +118,7 @@ public: // getters
     return m_flags;
   }
 
-  /**
-   * @brief Returns the current state of the interface.
+  /** @brief Returns the current state of the interface
    */
   InterfaceState
   getState() const
@@ -128,8 +126,7 @@ public: // getters
     return m_state;
   }
 
-  /**
-   * @brief Returns the MTU (maximum transmission unit) of the interface.
+  /** @brief Returns the MTU (maximum transmission unit) of the interface
    */
   uint32_t
   getMtu() const
@@ -137,8 +134,7 @@ public: // getters
     return m_mtu;
   }
 
-  /**
-   * @brief Returns the link-layer (Ethernet) address of the interface.
+  /** @brief Returns the link-layer (Ethernet) address of the interface
    */
   ethernet::Address
   getEthernetAddress() const
@@ -146,8 +142,7 @@ public: // getters
     return m_etherAddress;
   }
 
-  /**
-   * @brief Returns the link-layer (Ethernet) broadcast address of the interface.
+  /** @brief Returns the link-layer (Ethernet) broadcast address of the interface
    */
   ethernet::Address
   getEthernetBroadcastAddress() const
@@ -155,8 +150,7 @@ public: // getters
     return m_etherBrdAddress;
   }
 
-  /**
-   * @brief Returns all network-layer addresses present on the interface.
+  /** @brief Returns a list of all network-layer addresses present on the interface
    */
   const std::set<NetworkAddress>&
   getNetworkAddresses() const
@@ -164,8 +158,7 @@ public: // getters
     return m_netAddresses;
   }
 
-  /**
-   * @brief Returns true if the interface is a loopback interface.
+  /** @brief Returns true if the interface is a loopback interface
    */
   bool
   isLoopback() const
@@ -173,8 +166,7 @@ public: // getters
     return (m_flags & IFF_LOOPBACK) != 0;
   }
 
-  /**
-   * @brief Returns true if the interface is a point-to-point interface.
+  /** @brief Returns true if the interface is a point-to-point interface
    */
   bool
   isPointToPoint() const
@@ -182,8 +174,7 @@ public: // getters
     return (m_flags & IFF_POINTOPOINT) != 0;
   }
 
-  /**
-   * @brief Returns true if the interface supports broadcast communication.
+  /** @brief Returns true if the interface supports broadcast communication
    */
   bool
   canBroadcast() const
@@ -191,8 +182,7 @@ public: // getters
     return (m_flags & IFF_BROADCAST) != 0;
   }
 
-  /**
-   * @brief Returns true if the interface supports multicast communication.
+  /** @brief Returns true if the interface supports multicast communication
    */
   bool
   canMulticast() const
@@ -200,8 +190,7 @@ public: // getters
     return (m_flags & IFF_MULTICAST) != 0;
   }
 
-  /**
-   * @brief Returns true if the interface is administratively "up".
+  /** @brief Returns true if the interface is administratively up
    */
   bool
   isUp() const
@@ -209,7 +198,7 @@ public: // getters
     return (m_flags & IFF_UP) != 0;
   }
 
-public: // modifiers: they update the info on this in-memory object, but do not modify the interface in the OS
+public: // modifiers: they update information on this instance, but do not change netif in the OS
   bool
   addNetworkAddress(const NetworkAddress& address);
 
@@ -244,12 +233,12 @@ private: // constructor
   NetworkInterface(); // accessible through NetworkMonitorImpl::makeNetworkInterface
 
 private:
-  int m_index = 0;
+  int m_index;
   std::string m_name;
-  InterfaceType m_type = InterfaceType::UNKNOWN;
-  uint32_t m_flags = 0; // IFF_* in <net/if.h>
-  InterfaceState m_state = InterfaceState::UNKNOWN;
-  uint32_t m_mtu = 0;
+  InterfaceType m_type;
+  uint32_t m_flags; // IFF_* in <net/if.h>
+  InterfaceState m_state;
+  uint32_t m_mtu;
   ethernet::Address m_etherAddress;
   ethernet::Address m_etherBrdAddress;
   std::set<NetworkAddress> m_netAddresses;
@@ -260,6 +249,7 @@ private:
 std::ostream&
 operator<<(std::ostream& os, const NetworkInterface& interface);
 
-} // namespace ndn::net
+} // namespace net
+} // namespace ndn
 
 #endif // NDN_CXX_NET_NETWORK_INTERFACE_HPP

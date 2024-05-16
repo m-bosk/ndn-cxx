@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -46,9 +46,8 @@
 #include <boost/lexical_cast.hpp>
 #include <cstdlib>  // for std::getenv()
 
-namespace ndn::security {
-
-NDN_LOG_INIT(ndn.security.KeyChain);
+namespace ndn {
+namespace security {
 
 // When static library is used, not everything is compiled into the resulting binary.
 // Therefore, the following standard PIB and TPMs need to be registered here.
@@ -67,7 +66,11 @@ NDN_CXX_KEYCHAIN_REGISTER_TPM_BACKEND(BackEndFile);
 NDN_CXX_KEYCHAIN_REGISTER_TPM_BACKEND(BackEndMem);
 } // namespace tpm
 
-const name::Component SELF{"self"};
+inline namespace v2 {
+
+NDN_LOG_INIT(ndn.security.KeyChain);
+
+const name::Component SELF("self");
 
 KeyChain::PibFactories&
 KeyChain::getPibFactories()
@@ -92,11 +95,11 @@ getDefaultPibScheme()
 static const auto&
 getDefaultTpmScheme()
 {
-#ifdef NDN_CXX_WITH_OSX_KEYCHAIN
+#if defined(NDN_CXX_HAVE_OSX_FRAMEWORKS) && defined(NDN_CXX_WITH_OSX_KEYCHAIN)
   return tpm::BackEndOsx::getScheme();
 #else
   return tpm::BackEndFile::getScheme();
-#endif // NDN_CXX_WITH_OSX_KEYCHAIN
+#endif // defined(NDN_CXX_HAVE_OSX_FRAMEWORKS) && defined(NDN_CXX_WITH_OSX_KEYCHAIN)
 }
 
 const KeyParams&
@@ -111,20 +114,20 @@ KeyChain::getDefaultKeyParams()
 class KeyChain::Locator
 {
 public:
-  [[nodiscard]] bool
-  empty() const noexcept
+  NDN_CXX_NODISCARD bool
+  empty() const
   {
     return scheme.empty();
   }
 
-  [[nodiscard]] std::string
+  NDN_CXX_NODISCARD std::string
   canonical() const
   {
     return scheme + ':' + location;
   }
 
   friend bool
-  operator==(const Locator& lhs, const Locator& rhs) noexcept
+  operator==(const Locator& lhs, const Locator& rhs)
   {
     return lhs.scheme == rhs.scheme && lhs.location == rhs.location;
   }
@@ -399,9 +402,12 @@ KeyChain::importPrivateKey(const Name& keyName, shared_ptr<transform::PrivateKey
 void
 KeyChain::sign(Data& data, const SigningInfo& params)
 {
-  auto [keyName, sigInfo] = prepareSignatureInfo(params);
+  Name keyName;
+  SignatureInfo sigInfo;
+  std::tie(keyName, sigInfo) = prepareSignatureInfo(params);
 
   data.setSignatureInfo(sigInfo);
+
   EncodingBuffer encoder;
   data.wireEncode(encoder, true);
 
@@ -412,7 +418,9 @@ KeyChain::sign(Data& data, const SigningInfo& params)
 void
 KeyChain::sign(Interest& interest, const SigningInfo& params)
 {
-  auto [keyName, sigInfo] = prepareSignatureInfo(params);
+  Name keyName;
+  SignatureInfo sigInfo;
+  std::tie(keyName, sigInfo) = prepareSignatureInfo(params);
 
   if (params.getSignedInterestFormat() == SignedInterestFormat::V03) {
     interest.setSignatureInfo(sigInfo);
@@ -465,7 +473,8 @@ KeyChain::makeCertificate(const Certificate& certRequest, const SigningInfo& par
 static std::tuple<std::string/*scheme*/, std::string/*location*/>
 parseLocatorUri(const std::string& uri)
 {
-  if (auto pos = uri.find(':'); pos != std::string::npos) {
+  auto pos = uri.find(':');
+  if (pos != std::string::npos) {
     return {uri.substr(0, pos), uri.substr(pos + 1)};
   }
   else {
@@ -476,7 +485,9 @@ parseLocatorUri(const std::string& uri)
 KeyChain::Locator
 KeyChain::parseAndCheckPibLocator(const std::string& pibLocator)
 {
-  auto [pibScheme, pibLocation] = parseLocatorUri(pibLocator);
+  std::string pibScheme, pibLocation;
+  std::tie(pibScheme, pibLocation) = parseLocatorUri(pibLocator);
+
   if (pibScheme.empty()) {
     pibScheme = getDefaultPibScheme();
   }
@@ -492,7 +503,9 @@ KeyChain::parseAndCheckPibLocator(const std::string& pibLocator)
 KeyChain::Locator
 KeyChain::parseAndCheckTpmLocator(const std::string& tpmLocator)
 {
-  auto [tpmScheme, tpmLocation] = parseLocatorUri(tpmLocator);
+  std::string tpmScheme, tpmLocation;
+  std::tie(tpmScheme, tpmLocation) = parseLocatorUri(tpmLocator);
+
   if (tpmScheme.empty()) {
     tpmScheme = getDefaultTpmScheme();
   }
@@ -547,7 +560,7 @@ KeyChain::getDefaultTpmLocator()
   return s_defaultTpmLocator;
 }
 
-#ifdef NDN_CXX_WITH_TESTS
+#ifdef NDN_CXX_HAVE_TESTS
 void
 KeyChain::resetDefaultLocators()
 {
@@ -720,7 +733,7 @@ KeyChain::prepareSignatureInfoWithIdentity(const SigningInfo& params, const pib:
 
 std::tuple<Name, SignatureInfo>
 KeyChain::prepareSignatureInfoWithKey(const SigningInfo& params, const pib::Key& key,
-                                      const std::optional<Name>& certName)
+                                      const optional<Name>& certName)
 {
   auto sigInfo = params.getSignatureInfo();
   sigInfo.setSignatureType(getSignatureType(key.getKeyType(), params.getDigestAlgorithm()));
@@ -779,4 +792,6 @@ KeyChain::getSignatureType(KeyType keyType, DigestAlgorithm)
   }
 }
 
-} // namespace ndn::security
+} // inline namespace v2
+} // namespace security
+} // namespace ndn

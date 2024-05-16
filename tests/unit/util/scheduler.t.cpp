@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2021 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -26,11 +26,11 @@
 
 #include <boost/lexical_cast.hpp>
 
-namespace ndn::tests {
+namespace ndn {
+namespace scheduler {
+namespace tests {
 
-using namespace ndn::scheduler;
-
-class SchedulerFixture : public IoFixture
+class SchedulerFixture : public ndn::tests::IoFixture
 {
 protected:
   Scheduler scheduler{m_io};
@@ -51,31 +51,23 @@ BOOST_AUTO_TEST_CASE(Events)
     BOOST_CHECK_EQUAL(count2, 1);
   });
 
-  EventId eid = scheduler.schedule(1_s, [] { BOOST_ERROR("This event should not have been fired"); });
-  eid.cancel();
+  EventId i = scheduler.schedule(1_s, [] { BOOST_ERROR("This event should not have been fired"); });
+  i.cancel();
 
   scheduler.schedule(250_ms, [&] {
     BOOST_CHECK_EQUAL(count1, 0);
     ++count2;
   });
 
-  eid = scheduler.schedule(50_ms, [&] { BOOST_ERROR("This event should not have been fired"); });
-  eid.cancel();
+  i = scheduler.schedule(50_ms, [&] { BOOST_ERROR("This event should not have been fired"); });
+  i.cancel();
 
   advanceClocks(25_ms, 1000_ms);
   BOOST_CHECK_EQUAL(count1, 1);
   BOOST_CHECK_EQUAL(count2, 1);
 }
 
-BOOST_AUTO_TEST_CASE(NegativeDelay)
-{
-  bool wasCallbackInvoked = false;
-  scheduler.schedule(-1_s, [&] { wasCallbackInvoked = true; });
-  advanceClocks(1_ns);
-  BOOST_CHECK(wasCallbackInvoked);
-}
-
-BOOST_AUTO_TEST_CASE(ThrowingCallback)
+BOOST_AUTO_TEST_CASE(CallbackException)
 {
   class MyException : public std::exception
   {
@@ -87,12 +79,12 @@ BOOST_AUTO_TEST_CASE(ThrowingCallback)
     throw MyException{};
   });
 
-  bool wasCallbackInvoked = false;
-  scheduler.schedule(20_ms, [&] { wasCallbackInvoked = true; });
+  bool isCallbackInvoked = false;
+  scheduler.schedule(20_ms, [&isCallbackInvoked] { isCallbackInvoked = true; });
 
   BOOST_CHECK_THROW(this->advanceClocks(6_ms, 2), MyException);
   this->advanceClocks(6_ms, 2);
-  BOOST_CHECK(wasCallbackInvoked);
+  BOOST_CHECK(isCallbackInvoked);
 }
 
 BOOST_AUTO_TEST_CASE(CancelEmptyEvent)
@@ -108,7 +100,7 @@ BOOST_AUTO_TEST_CASE(SelfCancel)
 {
   EventId selfEventId;
   selfEventId = scheduler.schedule(100_ms, [&] { selfEventId.cancel(); });
-  BOOST_CHECK_NO_THROW(advanceClocks(100_ms, 10));
+  BOOST_REQUIRE_NO_THROW(advanceClocks(100_ms, 10));
 }
 
 class SelfRescheduleFixture : public SchedulerFixture
@@ -151,7 +143,7 @@ public:
     scheduler.schedule(100_ms, [&] { ++count; });
   }
 
-protected:
+public:
   EventId selfEventId;
   size_t count = 0;
 };
@@ -159,21 +151,21 @@ protected:
 BOOST_FIXTURE_TEST_CASE(Reschedule, SelfRescheduleFixture)
 {
   selfEventId = scheduler.schedule(0_s, [this] { reschedule(); });
-  advanceClocks(50_ms, 1000_ms);
+  BOOST_REQUIRE_NO_THROW(advanceClocks(50_ms, 1000_ms));
   BOOST_CHECK_EQUAL(count, 5);
 }
 
 BOOST_FIXTURE_TEST_CASE(Reschedule2, SelfRescheduleFixture)
 {
   selfEventId = scheduler.schedule(0_s, [this] { reschedule2(); });
-  advanceClocks(50_ms, 1000_ms);
+  BOOST_REQUIRE_NO_THROW(advanceClocks(50_ms, 1000_ms));
   BOOST_CHECK_EQUAL(count, 5);
 }
 
 BOOST_FIXTURE_TEST_CASE(Reschedule3, SelfRescheduleFixture)
 {
   selfEventId = scheduler.schedule(0_s, [this] { reschedule3(); });
-  advanceClocks(50_ms, 1000_ms);
+  BOOST_REQUIRE_NO_THROW(advanceClocks(50_ms, 1000_ms));
   BOOST_CHECK_EQUAL(count, 6);
 }
 
@@ -201,8 +193,7 @@ BOOST_FIXTURE_TEST_CASE(CancelAll, CancelAllFixture)
   BOOST_CHECK_EQUAL(count, 0);
 }
 
-BOOST_AUTO_TEST_CASE(CancelAllWithScopedEventId,
-  * ut::description("test for bug #3691"))
+BOOST_AUTO_TEST_CASE(CancelAllWithScopedEventId) // Bug 3691
 {
   ScopedEventId eid = scheduler.schedule(10_ms, []{});
   scheduler.cancelAllEvents();
@@ -392,4 +383,6 @@ BOOST_AUTO_TEST_SUITE_END() // ScopedEventId
 BOOST_AUTO_TEST_SUITE_END() // TestScheduler
 BOOST_AUTO_TEST_SUITE_END() // Util
 
-} // namespace ndn::tests
+} // namespace tests
+} // namespace scheduler
+} // namespace ndn

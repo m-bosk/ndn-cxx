@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2023 Regents of the University of California,
+ * Copyright (c) 2014-2022 Regents of the University of California,
  *                         Arizona Board of Regents,
  *                         Colorado State University,
  *                         University Pierre & Marie Curie, Sorbonne University,
@@ -30,7 +30,9 @@
 
 #include "ndn-cxx/encoding/block-helpers.hpp"
 
-namespace ndn::tests {
+namespace ndn {
+namespace util {
+namespace tests {
 
 class SimpleNotification
 {
@@ -80,6 +82,8 @@ private:
   std::string m_message;
 };
 
-} // namespace ndn::tests
+} // namespace tests
+} // namespace util
+} // namespace ndn
 
 #endif // NDN_CXX_TESTS_UNIT_UTIL_SIMPLE_NOTIFICATION_HPP

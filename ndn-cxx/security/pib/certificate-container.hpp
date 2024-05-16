@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -24,12 +24,19 @@
 
 #include "ndn-cxx/security/certificate.hpp"
 
+#include <iterator>
 #include <set>
 #include <unordered_map>
 
-namespace ndn::security::pib {
+namespace ndn {
+namespace security {
+namespace pib {
 
 class PibImpl;
+
+namespace detail {
+class KeyImpl;
+} // namespace detail
 
 /**
  * @brief Container of certificates of a key.
@@ -45,17 +52,19 @@ private:
   using NameSet = std::set<Name>;
 
 public:
-  class const_iterator : public boost::forward_iterator_helper<const_iterator, const Certificate>
+  class const_iterator
   {
   public:
+    using iterator_category = std::forward_iterator_tag;
+    using value_type        = const Certificate;
+    using difference_type   = std::ptrdiff_t;
+    using pointer           = value_type*;
+    using reference         = value_type&;
+
     const_iterator() = default;
 
     Certificate
-    operator*() const
-    {
-      BOOST_ASSERT(m_container != nullptr);
-      return m_container->get(*m_it);
-    }
+    operator*();
 
     const_iterator&
     operator++()
@@ -64,21 +73,25 @@ public:
       return *this;
     }
 
-    friend bool
-    operator==(const const_iterator& lhs, const const_iterator& rhs) noexcept
+    const_iterator
+    operator++(int)
     {
-      return lhs.equals(rhs);
-    }
-
-  private:
-    const_iterator(NameSet::const_iterator it, const CertificateContainer& container) noexcept
-      : m_it(it)
-      , m_container(&container)
-    {
+      const_iterator it(*this);
+      ++m_it;
+      return it;
     }
 
     bool
-    equals(const const_iterator& other) const noexcept;
+    operator==(const const_iterator& other) const;
+
+    bool
+    operator!=(const const_iterator& other) const
+    {
+      return !this->operator==(other);
+    }
+
+  private:
+    const_iterator(NameSet::const_iterator it, const CertificateContainer& container) noexcept;
 
   private:
     NameSet::const_iterator m_it;
@@ -108,7 +121,7 @@ public:
   /**
    * @brief Check whether the container is empty.
    */
-  [[nodiscard]] bool
+  NDN_CXX_NODISCARD bool
   empty() const noexcept
   {
     return m_certNames.empty();
@@ -168,9 +181,11 @@ private:
   const Name m_keyName;
   const shared_ptr<PibImpl> m_pib;
 
-  friend class KeyImpl;
+  friend detail::KeyImpl;
 };
 
-} // namespace ndn::security::pib
+} // namespace pib
+} // namespace security
+} // namespace ndn
 
 #endif // NDN_CXX_SECURITY_PIB_CERTIFICATE_CONTAINER_HPP

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -22,12 +22,21 @@
 #include "ndn-cxx/meta-info.hpp"
 #include "ndn-cxx/encoding/block-helpers.hpp"
 
-#include <algorithm>
 #include <boost/range/adaptor/reversed.hpp>
 
 namespace ndn {
 
-MetaInfo::MetaInfo() = default;
+BOOST_CONCEPT_ASSERT((WireEncodable<MetaInfo>));
+BOOST_CONCEPT_ASSERT((WireEncodableWithEncodingBuffer<MetaInfo>));
+BOOST_CONCEPT_ASSERT((WireDecodable<MetaInfo>));
+static_assert(std::is_base_of<tlv::Error, MetaInfo::Error>::value,
+              "MetaInfo::Error must inherit from tlv::Error");
+
+MetaInfo::MetaInfo()
+  : m_type(tlv::ContentType_Blob)
+  , m_freshnessPeriod(DEFAULT_FRESHNESS_PERIOD)
+{
+}
 
 MetaInfo::MetaInfo(const Block& block)
 {
@@ -42,28 +51,19 @@ MetaInfo::setType(uint32_t type)
   return *this;
 }
 
-time::milliseconds
-MetaInfo::getFreshnessPeriod() const noexcept
-{
-  if (m_freshnessPeriod > static_cast<uint64_t>(time::milliseconds::max().count())) {
-    return time::milliseconds::max();
-  }
-  return time::milliseconds(m_freshnessPeriod);
-}
-
 MetaInfo&
 MetaInfo::setFreshnessPeriod(time::milliseconds freshnessPeriod)
 {
-  if (freshnessPeriod < 0_ms) {
+  if (freshnessPeriod < time::milliseconds::zero()) {
     NDN_THROW(std::invalid_argument("FreshnessPeriod must be >= 0"));
   }
   m_wire.reset();
-  m_freshnessPeriod = static_cast<uint64_t>(freshnessPeriod.count());
+  m_freshnessPeriod = freshnessPeriod;
   return *this;
 }
 
 MetaInfo&
-MetaInfo::setFinalBlock(std::optional<name::Component> finalBlockId)
+MetaInfo::setFinalBlock(optional<name::Component> finalBlockId)
 {
   m_wire.reset();
   m_finalBlockId = std::move(finalBlockId);
@@ -144,8 +144,9 @@ MetaInfo::wireEncode(EncodingImpl<TAG>& encoder) const
   }
 
   // FreshnessPeriod
-  if (m_freshnessPeriod != DEFAULT_FRESHNESS_PERIOD.count()) {
-    totalLength += prependNonNegativeIntegerBlock(encoder, tlv::FreshnessPeriod, m_freshnessPeriod);
+  if (m_freshnessPeriod != DEFAULT_FRESHNESS_PERIOD) {
+    totalLength += prependNonNegativeIntegerBlock(encoder, tlv::FreshnessPeriod,
+                                                  static_cast<uint64_t>(m_freshnessPeriod.count()));
   }
 
   // ContentType
@@ -201,11 +202,11 @@ MetaInfo::wireDecode(const Block& wire)
 
   // FreshnessPeriod
   if (val != m_wire.elements_end() && val->type() == tlv::FreshnessPeriod) {
-    m_freshnessPeriod = readNonNegativeInteger(*val);
+    m_freshnessPeriod = time::milliseconds(readNonNegativeInteger(*val));
     ++val;
   }
   else {
-    m_freshnessPeriod = DEFAULT_FRESHNESS_PERIOD.count();
+    m_freshnessPeriod = DEFAULT_FRESHNESS_PERIOD;
   }
 
   // FinalBlockId
@@ -214,7 +215,7 @@ MetaInfo::wireDecode(const Block& wire)
     ++val;
   }
   else {
-    m_finalBlockId = std::nullopt;
+    m_finalBlockId = nullopt;
   }
 
   // AppMetaInfo (if any)

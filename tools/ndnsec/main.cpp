@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2021 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -31,7 +31,7 @@
 
 NDN_LOG_INIT(ndnsec);
 
-constexpr std::string_view NDNSEC_HELP_TEXT = R"STR(Usage: ndnsec COMMAND [OPTION]...
+const char NDNSEC_HELP_TEXT[] = R"STR(Usage: ndnsec COMMAND [OPTION]...
 
 Available commands:
   help           Print this help text
@@ -49,8 +49,15 @@ Available commands:
   import         Import an identity from a SafeBag
   unlock-tpm     Unlock the TPM
 
-Try 'ndnsec COMMAND --help' for more information on a command.
-)STR";
+Try 'ndnsec COMMAND --help' for more information on each command.)STR";
+
+const std::map<std::string, std::string> deprecatedCommands{
+  {"certgen",           "cert-gen"},
+  {"dump-certificate",  "cert-dump"},
+  {"install-cert",      "cert-install"},
+  {"keygen",            "key-gen"},
+  {"ls-identity",       "list"},
+};
 
 int
 main(int argc, char* argv[])
@@ -60,6 +67,12 @@ main(int argc, char* argv[])
   std::string command;
   if (basename.rfind("ndnsec-", 0) == 0) {
     command = basename.substr(std::strlen("ndnsec-"));
+    auto it = deprecatedCommands.find(command);
+    if (it != deprecatedCommands.end()) {
+      std::cerr << "DEPRECATION NOTICE: ndnsec-" << it->first << " is deprecated. "
+                << "Please use 'ndnsec " << it->second << "' instead.\n";
+      command = it->second;
+    }
   }
   else if (argc >= 2) {
     command = argv[1];
@@ -67,7 +80,7 @@ main(int argc, char* argv[])
     argv++;
   }
   else {
-    std::cerr << NDNSEC_HELP_TEXT;
+    std::cerr << NDNSEC_HELP_TEXT << std::endl;
     return 2;
   }
 
@@ -75,7 +88,7 @@ main(int argc, char* argv[])
 
   try {
     using namespace ndn::ndnsec;
-    if (command == "help")              { std::cout << NDNSEC_HELP_TEXT; }
+    if (command == "help")              { std::cout << NDNSEC_HELP_TEXT << std::endl; }
     else if (command == "version")      { std::cout << NDN_CXX_VERSION_BUILD_STRING << std::endl; }
     else if (command == "list")         { return ndnsec_list(argc, argv); }
     else if (command == "get-default")  { return ndnsec_get_default(argc, argv); }
@@ -90,7 +103,9 @@ main(int argc, char* argv[])
     else if (command == "import")       { return ndnsec_import(argc, argv); }
     else if (command == "unlock-tpm")   { return ndnsec_unlock_tpm(argc, argv); }
     else {
-      std::cerr << "ERROR: Unknown command '" << command << "'\n\n" << NDNSEC_HELP_TEXT;
+      std::cerr << "ERROR: Unknown command '" << command << "'\n"
+                << "\n"
+                << NDNSEC_HELP_TEXT << std::endl;
       return 2;
     }
   }

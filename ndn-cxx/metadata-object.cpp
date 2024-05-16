@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -24,6 +24,9 @@
 #include "ndn-cxx/metadata-object.hpp"
 
 namespace ndn {
+
+static_assert(std::is_base_of<tlv::Error, MetadataObject::Error>::value,
+              "MetadataObject::Error must inherit from tlv::Error");
 
 MetadataObject::MetadataObject() = default;
 
@@ -50,7 +53,7 @@ Data
 MetadataObject::makeData(Name discoveryInterestName,
                          KeyChain& keyChain,
                          const ndn::security::SigningInfo& si,
-                         std::optional<uint64_t> version,
+                         optional<uint64_t> version,
                          time::milliseconds freshnessPeriod) const
 {
   if (discoveryInterestName.empty() || discoveryInterestName[-1] != getKeywordComponent()) {

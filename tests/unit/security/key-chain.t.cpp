@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -28,11 +28,15 @@
 #include "tests/unit/clock-fixture.hpp"
 #include "tests/unit/test-home-env-saver.hpp"
 
-#include <boost/mp11/list.hpp>
+#include <openssl/opensslv.h>
+#include <boost/mpl/vector.hpp>
 
-namespace ndn::tests {
+namespace ndn {
+namespace security {
+inline namespace v2 {
+namespace tests {
 
-using namespace ndn::security;
+using namespace ndn::tests;
 
 BOOST_AUTO_TEST_SUITE(Security)
 BOOST_FIXTURE_TEST_SUITE(TestKeyChain, TestHomeEnvSaver)
@@ -55,7 +59,7 @@ public:
 
 struct PibPathConfigFileHome
 {
-  static constexpr std::string_view PATH = "build/config-file-home/";
+  const std::string PATH = "build/config-file-home/";
 };
 
 BOOST_FIXTURE_TEST_CASE(ConstructorNormalConfig, TestHomeAndPibFixture<PibPathConfigFileHome>)
@@ -70,14 +74,14 @@ BOOST_FIXTURE_TEST_CASE(ConstructorNormalConfig, TestHomeAndPibFixture<PibPathCo
 
 struct PibPathConfigFileEmptyHome
 {
-  static constexpr std::string_view PATH = "build/config-file-empty-home/";
+  const std::string PATH = "build/config-file-empty-home/";
 };
 
 BOOST_FIXTURE_TEST_CASE(ConstructorEmptyConfig, TestHomeAndPibFixture<PibPathConfigFileEmptyHome>)
 {
   createClientConf({"pib=pib-memory:"});
 
-#ifdef NDN_CXX_HAVE_OSX_FRAMEWORKS
+#if defined(NDN_CXX_HAVE_OSX_FRAMEWORKS)
   std::string oldHOME;
   if (std::getenv("OLD_HOME"))
     oldHOME = std::getenv("OLD_HOME");
@@ -95,7 +99,7 @@ BOOST_FIXTURE_TEST_CASE(ConstructorEmptyConfig, TestHomeAndPibFixture<PibPathCon
   KeyChain keyChain;
   BOOST_CHECK_EQUAL(keyChain.getPib().getPibLocator(), "pib-memory:");
 
-#ifdef NDN_CXX_WITH_OSX_KEYCHAIN
+#if defined(NDN_CXX_HAVE_OSX_FRAMEWORKS) && defined(NDN_CXX_WITH_OSX_KEYCHAIN)
   BOOST_CHECK_EQUAL(keyChain.getPib().getTpmLocator(), "tpm-osxkeychain:");
   BOOST_CHECK_EQUAL(keyChain.getTpm().getTpmLocator(), "tpm-osxkeychain:");
 #else
@@ -103,7 +107,7 @@ BOOST_FIXTURE_TEST_CASE(ConstructorEmptyConfig, TestHomeAndPibFixture<PibPathCon
   BOOST_CHECK_EQUAL(keyChain.getTpm().getTpmLocator(), "tpm-file:");
 #endif
 
-#ifdef NDN_CXX_HAVE_OSX_FRAMEWORKS
+#if defined(NDN_CXX_HAVE_OSX_FRAMEWORKS)
   if (!HOME.empty())
     setenv("HOME", HOME.c_str(), 1);
   else
@@ -118,7 +122,7 @@ BOOST_FIXTURE_TEST_CASE(ConstructorEmptyConfig, TestHomeAndPibFixture<PibPathCon
 
 struct PibPathConfigFileEmpty2Home
 {
-  static constexpr std::string_view PATH = "build/config-file-empty2-home/";
+  const std::string PATH = "build/config-file-empty2-home/";
 };
 
 BOOST_FIXTURE_TEST_CASE(ConstructorEmptyConfig2, TestHomeAndPibFixture<PibPathConfigFileEmpty2Home>)
@@ -133,7 +137,7 @@ BOOST_FIXTURE_TEST_CASE(ConstructorEmptyConfig2, TestHomeAndPibFixture<PibPathCo
 
 struct PibPathConfigFileMalformedHome
 {
-  static constexpr std::string_view PATH = "build/config-file-malformed-home/";
+  const std::string PATH = "build/config-file-malformed-home/";
 };
 
 BOOST_FIXTURE_TEST_CASE(ConstructorBadConfig, TestHomeAndPibFixture<PibPathConfigFileMalformedHome>)
@@ -144,7 +148,7 @@ BOOST_FIXTURE_TEST_CASE(ConstructorBadConfig, TestHomeAndPibFixture<PibPathConfi
 
 struct PibPathConfigFileMalformed2Home
 {
-  static constexpr std::string_view PATH = "build/config-file-malformed2-home/";
+  const std::string PATH = "build/config-file-malformed2-home/";
 };
 
 BOOST_FIXTURE_TEST_CASE(ConstructorBadConfig2, TestHomeAndPibFixture<PibPathConfigFileMalformed2Home>)
@@ -155,11 +159,10 @@ BOOST_FIXTURE_TEST_CASE(ConstructorBadConfig2, TestHomeAndPibFixture<PibPathConf
 
 struct PibPathConfigFileNonCanonicalTpm
 {
-  static constexpr std::string_view PATH = "build/config-file-non-canonical-tpm/";
+  const std::string PATH = "build/config-file-non-canonical-tpm/";
 };
 
-BOOST_FIXTURE_TEST_CASE(ConstructorNonCanonicalTpm, TestHomeAndPibFixture<PibPathConfigFileNonCanonicalTpm>,
-  * ut::description("test for bug #4297"))
+BOOST_FIXTURE_TEST_CASE(ConstructorNonCanonicalTpm, TestHomeAndPibFixture<PibPathConfigFileNonCanonicalTpm>) // Bug 4297
 {
   createClientConf({"pib=pib-sqlite3:", "tpm=tpm-file"});
 
@@ -329,7 +332,7 @@ BOOST_FIXTURE_TEST_CASE(Management, KeyChainFixture)
 struct DataPkt
 {
   Data packet{"/data"};
-  static constexpr SignedInterestFormat sigFormat = SignedInterestFormat::V02; // irrelevant for Data
+  SignedInterestFormat sigFormat = SignedInterestFormat::V02; // irrelevant for Data
 
   SignatureInfo
   getSignatureInfo() const
@@ -341,7 +344,7 @@ struct DataPkt
 struct InterestV02Pkt
 {
   Interest packet{"/interest02"};
-  static constexpr SignedInterestFormat sigFormat = SignedInterestFormat::V02;
+  SignedInterestFormat sigFormat = SignedInterestFormat::V02;
 
   SignatureInfo
   getSignatureInfo() const
@@ -353,7 +356,7 @@ struct InterestV02Pkt
 struct InterestV03Pkt
 {
   Interest packet{"/interest03"};
-  static constexpr SignedInterestFormat sigFormat = SignedInterestFormat::V03;
+  SignedInterestFormat sigFormat = SignedInterestFormat::V03;
 
   SignatureInfo
   getSignatureInfo() const
@@ -422,9 +425,9 @@ struct AsymmetricSigningBase : protected KeyChainFixture, protected PacketType
   const Key key = KeyMaker<AsymmetricKeyParams>()(m_keyChain, id);
   const Certificate cert = key.getDefaultCertificate();
 
-  static constexpr uint32_t expectedSigType = SignatureTypeTlvValue;
-  static constexpr bool shouldHaveKeyLocator = true;
-  const std::optional<KeyLocator> expectedKeyLocator = cert.getName();
+  const uint32_t expectedSigType = SignatureTypeTlvValue;
+  const bool shouldHaveKeyLocator = true;
+  const optional<KeyLocator> expectedKeyLocator = cert.getName();
 
   bool
   verify(const SigningInfo&) const
@@ -499,9 +502,9 @@ struct HmacSigning : protected KeyChainFixture, protected PacketType
     SigningInfo("hmac-sha256:QjM3NEEyNkE3MTQ5MDQzN0FBMDI0RTRGQURENUI0OTdGREZGMUE4RUE2RkYxMkY2RkI2NUFGMjcyMEI1OUNDRg=="),
   };
 
-  static constexpr uint32_t expectedSigType = SignatureTypeTlvValue;
-  static constexpr bool shouldHaveKeyLocator = true;
-  const std::optional<KeyLocator> expectedKeyLocator = std::nullopt; // don't check KeyLocator value
+  const uint32_t expectedSigType = SignatureTypeTlvValue;
+  const bool shouldHaveKeyLocator = true;
+  const optional<KeyLocator> expectedKeyLocator = nullopt; // don't check KeyLocator value
 
   bool
   verify(const SigningInfo& si) const
@@ -519,27 +522,29 @@ struct Sha256Signing : protected KeyChainFixture, protected PacketType
     signingWithSha256()
   };
 
-  static constexpr uint32_t expectedSigType = tlv::DigestSha256;
-  static constexpr bool shouldHaveKeyLocator = false;
-  const std::optional<KeyLocator> expectedKeyLocator = std::nullopt;
+  const uint32_t expectedSigType = tlv::DigestSha256;
+  const bool shouldHaveKeyLocator = false;
+  const optional<KeyLocator> expectedKeyLocator = nullopt;
 
   bool
   verify(const SigningInfo&) const
   {
-    return verifySignature(this->packet, std::nullopt);
+    return verifySignature(this->packet, nullopt);
   }
 };
 
-using SigningTests = boost::mp11::mp_list<
+using SigningTests = boost::mpl::vector<
   RsaSigning<DataPkt>,
   RsaSigning<InterestV02Pkt>,
   RsaSigning<InterestV03Pkt>,
   EcdsaSigning<DataPkt>,
   EcdsaSigning<InterestV02Pkt>,
   EcdsaSigning<InterestV03Pkt>,
+#if OPENSSL_VERSION_NUMBER < 0x30000000L // FIXME #5154
   HmacSigning<DataPkt>,
   HmacSigning<InterestV02Pkt>,
   HmacSigning<InterestV03Pkt>,
+#endif
   Sha256Signing<DataPkt>,
   Sha256Signing<InterestV02Pkt>,
   Sha256Signing<InterestV03Pkt>,
@@ -551,21 +556,22 @@ using SigningTests = boost::mp11::mp_list<
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(SigningInterface, T, SigningTests, T)
 {
-  BOOST_TEST_INFO_SCOPE("Packet = " << this->packet.getName());
+  BOOST_TEST_CONTEXT("Packet = " << this->packet.getName()) {
+    for (auto signingInfo : this->signingInfos) {
+      signingInfo.setSignedInterestFormat(this->sigFormat);
 
-  for (auto signingInfo : this->signingInfos) {
-    signingInfo.setSignedInterestFormat(this->sigFormat);
-    BOOST_TEST_INFO_SCOPE("SigningInfo = " << signingInfo);
+      BOOST_TEST_CONTEXT("SigningInfo = " << signingInfo) {
+        this->m_keyChain.sign(this->packet, signingInfo);
 
-    this->m_keyChain.sign(this->packet, signingInfo);
-
-    auto sigInfo = this->getSignatureInfo();
-    BOOST_CHECK_EQUAL(sigInfo.getSignatureType(), this->expectedSigType);
-    BOOST_CHECK_EQUAL(sigInfo.hasKeyLocator(), this->shouldHaveKeyLocator);
-    if (this->expectedKeyLocator) {
-      BOOST_CHECK_EQUAL(sigInfo.getKeyLocator(), *this->expectedKeyLocator);
+        auto sigInfo = this->getSignatureInfo();
+        BOOST_CHECK_EQUAL(sigInfo.getSignatureType(), this->expectedSigType);
+        BOOST_CHECK_EQUAL(sigInfo.hasKeyLocator(), this->shouldHaveKeyLocator);
+        if (this->expectedKeyLocator) {
+          BOOST_CHECK_EQUAL(sigInfo.getKeyLocator(), *this->expectedKeyLocator);
+        }
+        BOOST_CHECK(this->verify(signingInfo));
+      }
     }
-    BOOST_CHECK(this->verify(signingInfo));
   }
 }
 
@@ -585,8 +591,7 @@ public:
   }
 
   void
-  checkKeyLocatorName(const Certificate& cert,
-                      const std::optional<Name>& klName = std::nullopt) const
+  checkKeyLocatorName(const Certificate& cert, const optional<Name>& klName = nullopt) const
   {
     auto kl = cert.getKeyLocator();
     if (!kl.has_value()) {
@@ -647,7 +652,7 @@ BOOST_AUTO_TEST_CASE(DefaultsFromCert)
 BOOST_AUTO_TEST_CASE(Options)
 {
   MakeCertificateOptions opts;
-  opts.issuerId = name::Component::fromUri("ISSUER");
+  opts.issuerId = name::Component::fromEscapedString("ISSUER");
   opts.version = 41218268;
   opts.freshnessPeriod = 321_s;
   opts.validity.emplace(time::fromIsoString("20060702T150405"),
@@ -708,7 +713,7 @@ BOOST_AUTO_TEST_CASE(ErrContent)
   BOOST_CHECK_THROW(signerKeyChain.makeCertificate(request, signerParams), std::invalid_argument);
 
   // empty content
-  request.setContent("");
+  request.setContent(span<uint8_t>{});
   BOOST_CHECK_THROW(signerKeyChain.makeCertificate(request, signerParams), std::invalid_argument);
 }
 
@@ -794,4 +799,7 @@ BOOST_FIXTURE_TEST_CASE(SelfSignedCertValidity, KeyChainFixture)
 BOOST_AUTO_TEST_SUITE_END() // TestKeyChain
 BOOST_AUTO_TEST_SUITE_END() // Security
 
-} // namespace ndn::tests
+} // namespace tests
+} // inline namespace v2
+} // namespace security
+} // namespace ndn

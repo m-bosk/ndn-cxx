@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -35,12 +35,13 @@
 #include "tests/boost-test.hpp"
 
 #include <openssl/opensslv.h>
-#include <boost/mp11/list.hpp>
+#include <boost/mpl/vector.hpp>
 #include <sstream>
 
-namespace ndn::tests {
-
-using namespace ndn::security::transform;
+namespace ndn {
+namespace security {
+namespace transform {
+namespace tests {
 
 BOOST_AUTO_TEST_SUITE(Security)
 BOOST_AUTO_TEST_SUITE(Transform)
@@ -61,6 +62,7 @@ BOOST_AUTO_TEST_CASE(Empty)
   BOOST_CHECK_THROW(sKey.savePkcs8(os, passwd.data(), passwd.size()), PrivateKey::Error);
 }
 
+#if OPENSSL_VERSION_NUMBER < 0x30000000L // FIXME #5154
 BOOST_AUTO_TEST_CASE(KeyDigest)
 {
   const Buffer buf(16);
@@ -75,14 +77,17 @@ BOOST_AUTO_TEST_CASE(KeyDigest)
   BOOST_CHECK_EQUAL_COLLECTIONS(digest->begin(), digest->end(),
                                 expected, expected + sizeof(expected));
 }
+#endif
 
 BOOST_AUTO_TEST_CASE(LoadRaw)
 {
   const Buffer buf(32);
   PrivateKey sKey;
   sKey.loadRaw(KeyType::HMAC, buf);
+#if OPENSSL_VERSION_NUMBER < 0x30000000L // FIXME #5154
   BOOST_CHECK_EQUAL(sKey.getKeyType(), KeyType::HMAC);
   BOOST_CHECK_EQUAL(sKey.getKeySize(), 256);
+#endif
 
   PrivateKey sKey2;
   BOOST_CHECK_THROW(sKey2.loadRaw(KeyType::NONE, buf), std::invalid_argument);
@@ -364,7 +369,7 @@ kAegdE+db4ojchAbcDLRcnzY+TUx5pTBqdBg+STMK7h36ZUn+KcMeizMRA==
 )PEM";
 };
 
-using KeyTestDataSets = boost::mp11::mp_list<
+using KeyTestDataSets = boost::mpl::vector<
 #if OPENSSL_VERSION_NUMBER < 0x30000000L
   // DES-encrypted keys
   // .privateKeyPkcs8 uses either the PBES1 or PBES2 encryption scheme with DES-CBC-Pad (see RFC 8018)
@@ -645,8 +650,10 @@ public:
   }
 };
 
-using KeyGenParams = boost::mp11::mp_list<
+using KeyGenParams = boost::mpl::vector<
+#if OPENSSL_VERSION_NUMBER < 0x30000000L // FIXME #5154
   HmacKeyGenParams,
+#endif
   RsaKeyGenParams,
   EcKeyGenParams
 >;
@@ -709,4 +716,7 @@ BOOST_AUTO_TEST_SUITE_END() // TestPrivateKey
 BOOST_AUTO_TEST_SUITE_END() // Transform
 BOOST_AUTO_TEST_SUITE_END() // Security
 
-} // namespace ndn::tests
+} // namespace tests
+} // namespace transform
+} // namespace security
+} // namespace ndn

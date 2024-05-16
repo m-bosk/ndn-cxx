@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -22,48 +22,73 @@
 #include "ndn-cxx/lp/packet.hpp"
 #include "ndn-cxx/lp/fields.hpp"
 
-#include <boost/mp11/algorithm.hpp>
+#include <boost/bind/bind.hpp>
+#include <boost/mpl/for_each.hpp>
+#include <boost/range/adaptor/reversed.hpp>
 
-namespace ndn::lp {
+namespace ndn {
+namespace lp {
 
 namespace {
 
-template<typename Tag>
-constexpr int8_t
-getLocationSortOrder() noexcept
+template<typename TAG>
+int
+getLocationSortOrder() noexcept;
+
+template<>
+constexpr int
+getLocationSortOrder<field_location_tags::Header>() noexcept
 {
-  if constexpr (std::is_same_v<Tag, field_location_tags::Header>)
-    return 1;
-  if constexpr (std::is_same_v<Tag, field_location_tags::Fragment>)
-    return 2;
+  return 1;
 }
 
-struct FieldInfo
+template<>
+constexpr int
+getLocationSortOrder<field_location_tags::Fragment>() noexcept
 {
+  return 2;
+}
+
+class FieldInfo
+{
+public:
   constexpr
   FieldInfo() noexcept = default;
 
   explicit
-  FieldInfo(uint32_t type) noexcept;
+  FieldInfo(uint64_t tlv) noexcept;
 
-  uint32_t tlvType = 0;       ///< TLV-TYPE of the field; 0 if field does not exist
+public:
+  uint64_t tlvType = 0;       ///< TLV-TYPE of the field; 0 if field does not exist
   bool isRecognized = false;  ///< is this field known
   bool canIgnore = false;     ///< can this unknown field be ignored
   bool isRepeatable = false;  ///< is the field repeatable
-  int8_t locationSortOrder = getLocationSortOrder<field_location_tags::Header>(); ///< sort order of field_location_tag
+  int locationSortOrder = getLocationSortOrder<field_location_tags::Header>(); ///< sort order of field_location_tag
 };
 
-FieldInfo::FieldInfo(uint32_t type) noexcept
-  : tlvType(type)
+class ExtractFieldInfo
 {
-  boost::mp11::mp_for_each<FieldSet>([this] (auto fieldDecl) {
-    if (tlvType == decltype(fieldDecl)::TlvType::value) {
-      isRecognized = true;
-      isRepeatable = decltype(fieldDecl)::IsRepeatable::value;
-      locationSortOrder = getLocationSortOrder<typename decltype(fieldDecl)::FieldLocation>();
-    }
-  });
+public:
+  using result_type = void;
 
+  template<typename T>
+  constexpr void
+  operator()(FieldInfo* info, const T&) const noexcept
+  {
+    if (T::TlvType::value != info->tlvType) {
+      return;
+    }
+    info->isRecognized = true;
+    info->canIgnore = false;
+    info->isRepeatable = T::IsRepeatable::value;
+    info->locationSortOrder = getLocationSortOrder<typename T::FieldLocation>();
+  }
+};
+
+FieldInfo::FieldInfo(uint64_t tlv) noexcept
+  : tlvType(tlv)
+{
+  boost::mpl::for_each<FieldSet>(boost::bind(ExtractFieldInfo(), this, _1));
   if (!isRecognized) {
     canIgnore = tlv::HEADER3_MIN <= tlvType &&
                 tlvType <= tlv::HEADER3_MAX &&
@@ -80,7 +105,10 @@ compareFieldSortOrder(const FieldInfo& first, const FieldInfo& second) noexcept
 
 } // namespace
 
-Packet::Packet() = default;
+Packet::Packet()
+  : m_wire(Block(tlv::LpPacket))
+{
+}
 
 Packet::Packet(const Block& wire)
 {
@@ -91,7 +119,7 @@ Block
 Packet::wireEncode() const
 {
   // If no header or trailer, return bare network packet
-  auto elements = m_wire.elements();
+  Block::element_container elements = m_wire.elements();
   if (elements.size() == 1 && elements.front().type() == FragmentField::TlvType::value) {
     elements.front().parse();
     return elements.front().elements().front();
@@ -143,9 +171,12 @@ Packet::wireDecode(const Block& wire)
 }
 
 bool
-Packet::comparePos(uint32_t first, const Block& second) noexcept
+Packet::comparePos(uint64_t first, const Block& second) noexcept
 {
-  return compareFieldSortOrder(FieldInfo(first), FieldInfo(second.type()));
+  FieldInfo firstInfo(first);
+  FieldInfo secondInfo(second.type());
+  return compareFieldSortOrder(firstInfo, secondInfo);
 }
 
-} // namespace ndn::lp
+} // namespace lp
+} // namespace ndn

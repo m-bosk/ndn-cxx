@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -26,7 +26,9 @@
 
 #include <boost/lexical_cast.hpp>
 
-namespace ndn::security::transform {
+namespace ndn {
+namespace security {
+namespace transform {
 
 class VerifierFilter::Impl
 {
@@ -103,7 +105,7 @@ VerifierFilter::finalize()
   bool ok = false;
   if (m_keyType == KeyType::HMAC) {
     auto hmacBuf = make_unique<OBuffer>(EVP_MAX_MD_SIZE);
-    size_t hmacLen = EVP_MAX_MD_SIZE;
+    size_t hmacLen = 0;
 
     if (EVP_DigestSignFinal(m_impl->ctx, hmacBuf->data(), &hmacLen) != 1)
       NDN_THROW(Error(getIndex(), "Failed to finalize HMAC"));
@@ -133,4 +135,6 @@ verifierFilter(DigestAlgorithm algo, const PrivateKey& key, span<const uint8_t> 
   return make_unique<VerifierFilter>(algo, key, sig);
 }
 
-} // namespace ndn::security::transform
+} // namespace transform
+} // namespace security
+} // namespace ndn

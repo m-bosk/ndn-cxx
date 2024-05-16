@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -24,7 +24,9 @@
 
 #include "ndn-cxx/security/pib/pib-impl.hpp"
 
-namespace ndn::security::pib {
+namespace ndn {
+namespace security {
+namespace pib {
 
 /**
  * @brief An in-memory PIB implementation.
@@ -125,7 +127,7 @@ private:
   std::string m_tpmLocator;
 
   std::set<Name> m_identities;
-  std::optional<Name> m_defaultIdentity;
+  optional<Name> m_defaultIdentity;
 
   /// identity name => default key name
   std::map<Name, Name> m_defaultKeys;
@@ -140,6 +142,8 @@ private:
   std::map<Name, Certificate> m_certs;
 };
 
-} // namespace ndn::security::pib
+} // namespace pib
+} // namespace security
+} // namespace ndn
 
 #endif // NDN_CXX_SECURITY_PIB_IMPL_PIB_MEMORY_HPP

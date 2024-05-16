@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -21,7 +21,9 @@
 
 #include "ndn-cxx/security/validation-policy-simple-hierarchy.hpp"
 
-namespace ndn::security {
+namespace ndn {
+namespace security {
+inline namespace v2 {
 
 void
 ValidationPolicySimpleHierarchy::checkPolicy(const Data& data, const shared_ptr<ValidationState>& state,
@@ -81,4 +83,6 @@ ValidationPolicySimpleHierarchy::checkPolicy(const Interest& interest, const sha
   continueValidation(make_shared<CertificateRequest>(klName), state);
 }
 
-} // namespace ndn::security
+} // inline namespace v2
+} // namespace security
+} // namespace ndn

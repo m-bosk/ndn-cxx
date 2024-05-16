@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -27,7 +27,8 @@
 
 #include <bitset>
 
-namespace ndn::nfd {
+namespace ndn {
+namespace nfd {
 
 /** \ingroup management
  *  \brief Represents the CS Information dataset.
@@ -126,11 +127,11 @@ public:
 private:
   using FlagsBitSet = std::bitset<2>;
 
-  uint64_t m_capacity = 0;
+  uint64_t m_capacity;
   FlagsBitSet m_flags;
-  uint64_t m_nEntries = 0;
-  uint64_t m_nHits = 0;
-  uint64_t m_nMisses = 0;
+  uint64_t m_nEntries;
+  uint64_t m_nHits;
+  uint64_t m_nMisses;
 
   mutable Block m_wire;
 };
@@ -149,6 +150,7 @@ operator!=(const CsInfo& a, const CsInfo& b)
 std::ostream&
 operator<<(std::ostream& os, const CsInfo& csi);
 
-} // namespace ndn::nfd
+} // namespace nfd
+} // namespace ndn
 
 #endif // NDN_CXX_MGMT_NFD_CS_INFO_HPP

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -27,7 +27,8 @@
 #include "ndn-cxx/security/transform/stream-sink.hpp"
 #include "ndn-cxx/security/transform/stream-source.hpp"
 
-namespace ndn::ndnsec {
+namespace ndn {
+namespace ndnsec {
 
 int
 ndnsec_cert_install(int argc, char** argv)
@@ -119,4 +120,5 @@ ndnsec_cert_install(int argc, char** argv)
   return 0;
 }
 
-} // namespace ndn::ndnsec
+} // namespace ndnsec
+} // namespace ndn

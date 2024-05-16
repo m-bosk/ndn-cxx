@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2021 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -22,17 +22,12 @@
 #ifndef NDN_CXX_DETAIL_CANCEL_HANDLE_HPP
 #define NDN_CXX_DETAIL_CANCEL_HANDLE_HPP
 
-#include <functional>
-#include <type_traits>
-#include <utility>
+#include "ndn-cxx/detail/common.hpp"
 
-/**
- * \brief Contains implementation details that are not part of the ndn-cxx public API.
- */
-namespace ndn::detail {
+namespace ndn {
+namespace detail {
 
-/**
- * \brief Handle to cancel an operation.
+/** \brief Handle to cancel an operation.
  */
 class CancelHandle
 {
@@ -57,13 +52,12 @@ private:
 inline
 CancelHandle::CancelHandle() noexcept = default;
 
-/**
- * \brief Cancels an operation automatically upon destruction.
+/** \brief Cancels an operation automatically upon destruction.
  */
 template<typename HandleT>
 class ScopedCancelHandle
 {
-  static_assert(std::is_convertible_v<HandleT*, CancelHandle*>,
+  static_assert(std::is_convertible<HandleT*, CancelHandle*>::value,
                 "HandleT must publicly derive from CancelHandle");
 
 public:
@@ -139,6 +133,7 @@ private:
 template<typename T>
 ScopedCancelHandle<T>::ScopedCancelHandle() noexcept = default;
 
-} // namespace ndn::detail
+} // namespace detail
+} // namespace ndn
 
 #endif // NDN_CXX_DETAIL_CANCEL_HANDLE_HPP

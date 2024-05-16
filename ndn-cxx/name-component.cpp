@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -32,7 +32,15 @@
 
 #include <boost/logic/tribool.hpp>
 
-namespace ndn::name {
+namespace ndn {
+namespace name {
+
+BOOST_CONCEPT_ASSERT((boost::EqualityComparable<Component>));
+BOOST_CONCEPT_ASSERT((WireEncodable<Component>));
+BOOST_CONCEPT_ASSERT((WireEncodableWithEncodingBuffer<Component>));
+BOOST_CONCEPT_ASSERT((WireDecodable<Component>));
+static_assert(std::is_base_of<tlv::Error, Component::Error>::value,
+              "name::Component::Error must inherit from tlv::Error");
 
 static Convention g_conventionEncoding = Convention::TYPED;
 static Convention g_conventionDecoding = Convention::EITHER;
@@ -80,83 +88,6 @@ canDecodeTypedConvention() noexcept
   return (to_underlying(g_conventionDecoding) & to_underlying(Convention::TYPED)) != 0;
 }
 
-////////////////////////////////////////////////////////////////////////////////
-
-Component::Component(uint32_t type)
-  : Block(type)
-{
-  ensureValid();
-}
-
-Component::Component(const Block& wire)
-  : Block(wire)
-{
-  ensureValid();
-}
-
-Component::Component(uint32_t type, ConstBufferPtr buffer)
-  : Block(type, std::move(buffer))
-{
-  ensureValid();
-}
-
-Component::Component(uint32_t type, span<const uint8_t> value)
-  : Block(makeBinaryBlock(type, value))
-{
-  ensureValid();
-}
-
-Component::Component(std::string_view str)
-  : Block(makeStringBlock(tlv::GenericNameComponent, str))
-{
-}
-
-void
-Component::ensureValid() const
-{
-  if (type() < tlv::NameComponentMin || type() > tlv::NameComponentMax) {
-    NDN_THROW(Error("TLV-TYPE " + std::to_string(type()) + " is not a valid NameComponent"));
-  }
-  getComponentTypeTable().get(type()).check(*this);
-}
-
-static Component
-parseUriEscapedValue(uint32_t type, std::string_view input)
-{
-  std::ostringstream oss;
-  unescape(oss, input);
-  std::string value = oss.str();
-  if (value.find_first_not_of('.') == std::string::npos) { // all periods
-    if (value.size() < 3) {
-      NDN_THROW(Component::Error("Illegal URI (name component cannot be . or ..)"));
-    }
-    return Component(type, {reinterpret_cast<const uint8_t*>(value.data()), value.size() - 3});
-  }
-  return Component(type, {reinterpret_cast<const uint8_t*>(value.data()), value.size()});
-}
-
-Component
-Component::fromUri(std::string_view input)
-{
-  size_t equalPos = input.find('=');
-  if (equalPos == std::string_view::npos) {
-    return parseUriEscapedValue(tlv::GenericNameComponent, input);
-  }
-
-  auto typePrefix = input.substr(0, equalPos);
-  auto type = std::strtoul(typePrefix.data(), nullptr, 10);
-  if (type >= tlv::NameComponentMin && type <= tlv::NameComponentMax &&
-      std::to_string(type) == typePrefix) {
-    return parseUriEscapedValue(static_cast<uint32_t>(type), input.substr(equalPos + 1));
-  }
-
-  auto ct = getComponentTypeTable().findByUriPrefix(typePrefix);
-  if (ct == nullptr) {
-    NDN_THROW(Error("Unknown TLV-TYPE '" + std::string(typePrefix) + "' in NameComponent URI"));
-  }
-  return ct->parseAltUriValue(input.substr(equalPos + 1));
-}
-
 static bool
 wantAltUri(UriFormat format)
 {
@@ -183,6 +114,88 @@ wantAltUri(UriFormat format)
   else {
     return format == UriFormat::ALTERNATE;
   }
+}
+
+void
+Component::ensureValid() const
+{
+  if (type() < tlv::NameComponentMin || type() > tlv::NameComponentMax) {
+    NDN_THROW(Error("TLV-TYPE " + to_string(type()) + " is not a valid NameComponent"));
+  }
+  getComponentTypeTable().get(type()).check(*this);
+}
+
+Component::Component(uint32_t type)
+  : Block(type)
+{
+  ensureValid();
+}
+
+Component::Component(const Block& wire)
+  : Block(wire)
+{
+  ensureValid();
+}
+
+Component::Component(uint32_t type, ConstBufferPtr buffer)
+  : Block(type, std::move(buffer))
+{
+  ensureValid();
+}
+
+Component::Component(uint32_t type, span<const uint8_t> value)
+  : Block(makeBinaryBlock(type, value))
+{
+  ensureValid();
+}
+
+Component::Component(const char* str)
+  : Block(makeBinaryBlock(tlv::GenericNameComponent, str, std::char_traits<char>::length(str)))
+{
+}
+
+Component::Component(const std::string& str)
+  : Block(makeStringBlock(tlv::GenericNameComponent, str))
+{
+}
+
+static Component
+parseUriEscapedValue(uint32_t type, const char* input, size_t len)
+{
+  std::ostringstream oss;
+  unescape(oss, input, len);
+  std::string value = oss.str();
+  if (value.find_first_not_of('.') == std::string::npos) { // all periods
+    if (value.size() < 3) {
+      NDN_THROW(Component::Error("Illegal URI (name component cannot be . or ..)"));
+    }
+    return Component(type, {reinterpret_cast<const uint8_t*>(value.data()), value.size() - 3});
+  }
+  return Component(type, {reinterpret_cast<const uint8_t*>(value.data()), value.size()});
+}
+
+Component
+Component::fromEscapedString(const std::string& input)
+{
+  size_t equalPos = input.find('=');
+  if (equalPos == std::string::npos) {
+    return parseUriEscapedValue(tlv::GenericNameComponent, input.data(), input.size());
+  }
+
+  auto typePrefix = input.substr(0, equalPos);
+  auto type = std::strtoul(typePrefix.data(), nullptr, 10);
+  if (type >= tlv::NameComponentMin && type <= tlv::NameComponentMax &&
+      to_string(type) == typePrefix) {
+    size_t valuePos = equalPos + 1;
+    return parseUriEscapedValue(static_cast<uint32_t>(type),
+                                input.data() + valuePos, input.size() - valuePos);
+  }
+
+  auto ct = getComponentTypeTable().findByUriPrefix(typePrefix);
+  if (ct == nullptr) {
+    NDN_THROW(Error("Unknown TLV-TYPE '" + typePrefix + "' in NameComponent URI"));
+  }
+  return ct->parseAltUriValue(input.substr(equalPos + 1));
 }
 
 void
@@ -417,13 +430,45 @@ Component::isImplicitSha256Digest() const noexcept
   return type() == tlv::ImplicitSha256DigestComponent && value_size() == util::Sha256::DIGEST_SIZE;
 }
 
+Component
+Component::fromImplicitSha256Digest(ConstBufferPtr digest)
+{
+  return {tlv::ImplicitSha256DigestComponent, std::move(digest)};
+}
+
+Component
+Component::fromImplicitSha256Digest(span<const uint8_t> digest)
+{
+  return {tlv::ImplicitSha256DigestComponent, digest};
+}
+
 bool
 Component::isParametersSha256Digest() const noexcept
 {
   return type() == tlv::ParametersSha256DigestComponent && value_size() == util::Sha256::DIGEST_SIZE;
 }
 
+Component
+Component::fromParametersSha256Digest(ConstBufferPtr digest)
+{
+  return {tlv::ParametersSha256DigestComponent, std::move(digest)};
+}
+
+Component
+Component::fromParametersSha256Digest(span<const uint8_t> digest)
+{
+  return {tlv::ParametersSha256DigestComponent, digest};
+}
+
 ////////////////////////////////////////////////////////////////////////////////
+
+bool
+Component::equals(const Component& other) const noexcept
+{
+  return type() == other.type() &&
+         value_size() == other.value_size() &&
+         std::equal(value_begin(), value_end(), other.value_begin());
+}
 
 int
 Component::compare(const Component& other) const
@@ -453,7 +498,9 @@ Component::compare(const Component& other) const
 Component
 Component::getSuccessor() const
 {
-  auto [isOverflow, successor] = getComponentTypeTable().get(type()).getSuccessor(*this);
+  bool isOverflow = false;
+  Component successor;
+  std::tie(isOverflow, successor) = getComponentTypeTable().get(type()).getSuccessor(*this);
   if (!isOverflow) {
     return successor;
   }
@@ -501,4 +548,5 @@ Component::wireDecode(const Block& wire)
   // validity check is done within Component(const Block& wire)
 }
 
-} // namespace ndn::name
+} // namespace name
+} // namespace ndn

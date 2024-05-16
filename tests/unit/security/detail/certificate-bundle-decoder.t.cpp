@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -24,9 +24,12 @@
 #include "tests/boost-test.hpp"
 #include "tests/key-chain-fixture.hpp"
 
-namespace ndn::tests {
+namespace ndn {
+namespace security {
+namespace detail {
+namespace tests {
 
-class CertificateBundleDecoderFixture : public KeyChainFixture
+class CertificateBundleDecoderFixture : public ndn::tests::KeyChainFixture
 {
 protected:
   CertificateBundleDecoderFixture()
@@ -48,7 +51,7 @@ protected:
   }
 
 protected:
-  security::detail::CertificateBundleDecoder cbd;
+  CertificateBundleDecoder cbd;
   Block certBlock1;
   Block certBlock2;
   size_t nCertsCompleted = 0;
@@ -210,4 +213,7 @@ BOOST_AUTO_TEST_CASE(UnrecognizedNonCritical)
 BOOST_AUTO_TEST_SUITE_END() // TestCertificateBundleEncoderDecoder
 BOOST_AUTO_TEST_SUITE_END() // Security
 
-} // namespace ndn::tests
+} // namespace tests
+} // namespace detail
+} // namespace security
+} // namespace ndn

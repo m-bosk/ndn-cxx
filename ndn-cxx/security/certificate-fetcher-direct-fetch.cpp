@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -26,7 +26,9 @@
 #include "ndn-cxx/security/certificate-request.hpp"
 #include "ndn-cxx/security/validation-state.hpp"
 
-namespace ndn::security {
+namespace ndn {
+namespace security {
+inline namespace v2 {
 
 CertificateFetcherDirectFetch::CertificateFetcherDirectFetch(Face& face)
   : CertificateFetcherFromNetwork(face)
@@ -45,7 +47,7 @@ CertificateFetcherDirectFetch::doFetch(const shared_ptr<CertificateRequest>& key
                                        const ValidationContinuation& continueValidation)
 {
   uint64_t incomingFaceId = 0;
-  auto interestState = std::dynamic_pointer_cast<InterestValidationState>(state);
+  auto interestState = dynamic_pointer_cast<InterestValidationState>(state);
   if (interestState != nullptr) {
     auto incomingFaceIdTag = interestState->getOriginalInterest().getTag<lp::IncomingFaceIdTag>();
     if (incomingFaceIdTag != nullptr) {
@@ -53,7 +55,7 @@ CertificateFetcherDirectFetch::doFetch(const shared_ptr<CertificateRequest>& key
     }
   }
   else {
-    auto dataState = std::dynamic_pointer_cast<DataValidationState>(state);
+    auto dataState = dynamic_pointer_cast<DataValidationState>(state);
     auto incomingFaceIdTag = dataState->getOriginalData().getTag<lp::IncomingFaceIdTag>();
     if (incomingFaceIdTag != nullptr) {
       incomingFaceId = incomingFaceIdTag->get();
@@ -92,4 +94,6 @@ CertificateFetcherDirectFetch::doFetch(const shared_ptr<CertificateRequest>& key
   }
 }
 
-} // namespace ndn::security
+} // inline namespace v2
+} // namespace security
+} // namespace ndn

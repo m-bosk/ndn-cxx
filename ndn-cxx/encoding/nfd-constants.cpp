@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2020 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -29,7 +29,8 @@
 #include <map>
 #include <ostream>
 
-namespace ndn::nfd {
+namespace ndn {
+namespace nfd {
 
 std::ostream&
 operator<<(std::ostream& os, FaceScope faceScope)
@@ -121,8 +122,8 @@ operator>>(std::istream& is, RouteOrigin& routeOrigin)
     routeOrigin = ROUTE_ORIGIN_STATIC;
   else {
     // To reject negative numbers, we parse as a wider signed type, and compare with the range.
-    using RouteOriginUnderlyingType = std::underlying_type_t<RouteOrigin>;
-    static_assert(std::numeric_limits<RouteOriginUnderlyingType>::max() <= std::numeric_limits<int>::max());
+    static_assert(std::numeric_limits<std::underlying_type_t<RouteOrigin>>::max() <=
+                  std::numeric_limits<int>::max(), "");
 
     int v = -1;
     try {
@@ -131,8 +132,8 @@ operator>>(std::istream& is, RouteOrigin& routeOrigin)
     catch (const boost::bad_lexical_cast&) {
     }
 
-    if (v >= std::numeric_limits<RouteOriginUnderlyingType>::min() &&
-        v <= std::numeric_limits<RouteOriginUnderlyingType>::max()) {
+    if (v >= std::numeric_limits<std::underlying_type_t<RouteOrigin>>::min() &&
+        v <= std::numeric_limits<std::underlying_type_t<RouteOrigin>>::max()) {
       routeOrigin = static_cast<RouteOrigin>(v);
     }
     else {
@@ -175,13 +176,17 @@ operator<<(std::ostream& os, RouteFlags routeFlags)
     return os << "none";
   }
 
-  static const std::map<RouteFlags, std::string_view> knownBits = {
-    {ROUTE_FLAG_CHILD_INHERIT, "child-inherit"sv},
-    {ROUTE_FLAG_CAPTURE, "capture"sv}
+  static const std::map<RouteFlags, std::string> knownBits = {
+    {ROUTE_FLAG_CHILD_INHERIT, "child-inherit"},
+    {ROUTE_FLAG_CAPTURE, "capture"}
   };
 
   auto join = make_ostream_joiner(os, '|');
-  for (auto [bit, token] : knownBits) {
+  for (const auto& pair : knownBits) {
+    RouteFlags bit = ROUTE_FLAGS_NONE;
+    std::string token;
+    std::tie(bit, token) = pair;
+
     if ((routeFlags & bit) != 0) {
       join = token;
       routeFlags = static_cast<RouteFlags>(routeFlags & ~bit);
@@ -195,4 +200,5 @@ operator<<(std::ostream& os, RouteFlags routeFlags)
   return os;
 }
 
-} // namespace ndn::nfd
+} // namespace nfd
+} // namespace ndn

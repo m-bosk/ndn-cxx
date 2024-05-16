@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -20,23 +20,17 @@
  */
 
 #include "ndn-cxx/security/validity-period.hpp"
-#include "ndn-cxx/util/concepts.hpp"
 
 #include "tests/boost-test.hpp"
 #include "tests/unit/clock-fixture.hpp"
 
 #include <boost/lexical_cast.hpp>
 
-namespace ndn::tests {
+namespace ndn {
+namespace security {
+namespace tests {
 
-using ndn::security::ValidityPeriod;
-
-BOOST_CONCEPT_ASSERT((boost::EqualityComparable<ValidityPeriod>));
-BOOST_CONCEPT_ASSERT((WireEncodable<ValidityPeriod>));
-BOOST_CONCEPT_ASSERT((WireEncodableWithEncodingBuffer<ValidityPeriod>));
-BOOST_CONCEPT_ASSERT((WireDecodable<ValidityPeriod>));
-static_assert(std::is_convertible_v<ValidityPeriod::Error*, tlv::Error*>,
-              "ValidityPeriod::Error must inherit from tlv::Error");
+using namespace ndn::tests;
 
 BOOST_AUTO_TEST_SUITE(Security)
 BOOST_AUTO_TEST_SUITE(TestValidityPeriod)
@@ -91,7 +85,7 @@ BOOST_FIXTURE_TEST_CASE(ConstructorSetter, ClockFixture)
   BOOST_CHECK_EQUAL(validity2.isValid(), false);
 
   validity2.setPeriod(notBefore, notAfter);
-  BOOST_CHECK(validity2.getPeriod() != std::pair(time::getUnixEpoch(), time::getUnixEpoch()));
+  BOOST_CHECK(validity2.getPeriod() != std::make_pair(time::getUnixEpoch(), time::getUnixEpoch()));
   BOOST_CHECK_EQUAL(validity2, validity1);
 
   validity1.setPeriod(time::getUnixEpoch(), time::getUnixEpoch() + 10 * 365_days);
@@ -99,24 +93,9 @@ BOOST_FIXTURE_TEST_CASE(ConstructorSetter, ClockFixture)
                     "(19700101T000000, 19791230T000000)");
 
   validity1.setPeriod(time::getUnixEpoch() + 1_ns,
-                      time::getUnixEpoch() + 3650_days + 1_ns);
+                      time::getUnixEpoch() + (10 * 365_days) + 1_ns);
   BOOST_CHECK_EQUAL(boost::lexical_cast<std::string>(validity1),
                     "(19700101T000001, 19791230T000000)");
-
-  validity1.setPeriod(time::getUnixEpoch() + 999999999_ns,
-                      time::getUnixEpoch() + 3650_days + 999999999_ns);
-  BOOST_CHECK_EQUAL(boost::lexical_cast<std::string>(validity1),
-                    "(19700101T000001, 19791230T000000)");
-
-  validity1.setPeriod(time::getUnixEpoch() - 2_days + 1_ns,
-                      time::getUnixEpoch() - 1_day + 1_ns);
-  BOOST_CHECK_EQUAL(boost::lexical_cast<std::string>(validity1),
-                    "(19691230T000001, 19691231T000000)");
-
-  validity1.setPeriod(time::getUnixEpoch() - 2_days + 999999999_ns,
-                      time::getUnixEpoch() - 1_day + 999999999_ns);
-  BOOST_CHECK_EQUAL(boost::lexical_cast<std::string>(validity1),
-                    "(19691230T000001, 19691231T000000)");
 
   BOOST_CHECK_EQUAL(ValidityPeriod(now, now).isValid(), true);
   BOOST_CHECK_EQUAL(ValidityPeriod(now + 1_s, now).isValid(), false);
@@ -134,8 +113,8 @@ const uint8_t VP1[] = {
 
 BOOST_AUTO_TEST_CASE(EncodingDecoding)
 {
-  time::system_clock::time_point notBefore = time::getUnixEpoch();
-  time::system_clock::time_point notAfter = notBefore + 1_day;
+  time::system_clock::TimePoint notBefore = time::getUnixEpoch();
+  time::system_clock::TimePoint notAfter = notBefore + 1_day;
   ValidityPeriod v1(notBefore, notAfter);
   BOOST_CHECK_EQUAL_COLLECTIONS(v1.wireEncode().begin(), v1.wireEncode().end(),
                                 VP1, VP1 + sizeof(VP1));
@@ -144,28 +123,8 @@ BOOST_AUTO_TEST_CASE(EncodingDecoding)
   BOOST_CHECK(v1.getPeriod() == v2.getPeriod());
 }
 
-const uint8_t VP2[] = {
-  0xfd, 0x00, 0xfd, 0x26, // ValidityPeriod
-    0xfd, 0x00, 0xfe, 0x0f, // NotBefore
-      0x30, 0x30, 0x30, 0x31, 0x30, 0x31, 0x30, 0x31, // 00010101T000000
-      0x54, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30,
-    0xfd, 0x00, 0xff, 0x0f, // NotAfter
-      0x39, 0x39, 0x39, 0x39, 0x31, 0x32, 0x33, 0x31, // 99991231T235959
-      0x54, 0x32, 0x33, 0x35, 0x39, 0x35, 0x39
-};
-
-BOOST_AUTO_TEST_CASE(DecodingLarge)
-{
-  ValidityPeriod v(Block{VP2});
-  BOOST_CHECK(v.isValid(time::fromIsoString("16770921T001245")));
-  BOOST_CHECK(v.isValid(time::fromIsoString("19010120T120000")));
-  BOOST_CHECK(v.isValid(time::fromIsoString("20230725T120000")));
-  BOOST_CHECK(v.isValid(time::fromIsoString("22001030T120000")));
-  BOOST_CHECK(v.isValid(time::fromIsoString("22620411T234716")));
-}
-
 const uint8_t VP_E1[] = {
-  0xfd, 0x00, 0xff, 0x26, // ValidityPeriod (wrong TLV-TYPE)
+  0xfd, 0x00, 0xff, 0x26, // ValidityPeriod (error)
     0xfd, 0x00, 0xfe, 0x0f, // NotBefore
       0x31, 0x39, 0x37, 0x30, 0x30, 0x31, 0x30, 0x31, // 19700101T000000
       0x54, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30,
@@ -176,7 +135,7 @@ const uint8_t VP_E1[] = {
 
 const uint8_t VP_E2[] = {
   0xfd, 0x00, 0xfd, 0x26, // ValidityPeriod
-    0xfd, 0x00, 0xff, 0x0f, // NotBefore (wrong TLV-TYPE)
+    0xfd, 0x00, 0xff, 0x0f, // NotBefore (error)
       0x31, 0x39, 0x37, 0x30, 0x30, 0x31, 0x30, 0x31, // 19700101T000000
       0x54, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30,
     0xfd, 0x00, 0xff, 0x0f, // NotAfter
@@ -189,7 +148,7 @@ const uint8_t VP_E3[] = {
     0xfd, 0x00, 0xfe, 0x0f, // NotBefore
       0x31, 0x39, 0x37, 0x30, 0x30, 0x31, 0x30, 0x31, // 19700101T000000
       0x54, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30,
-    0xfd, 0x00, 0xfe, 0x0f, // NotAfter (wrong TLV-TYPE)
+    0xfd, 0x00, 0xfe, 0x0f, // NotAfter (error)
       0x31, 0x39, 0x37, 0x30, 0x30, 0x31, 0x30, 0x32, // 19700102T000000
       0x54, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30
 };
@@ -202,7 +161,7 @@ const uint8_t VP_E4[] = {
     0xfd, 0x00, 0xff, 0x0f, // NotAfter
       0x31, 0x39, 0x37, 0x30, 0x30, 0x31, 0x30, 0x32, // 19700102T000000
       0x54, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30,
-    0xfd, 0x00, 0xff, 0x0f, // NotAfter (duplicate)
+    0xfd, 0x00, 0xff, 0x0f, // NotAfter (error)
       0x31, 0x39, 0x37, 0x30, 0x30, 0x31, 0x30, 0x32, // 19700102T000000
       0x54, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30
 };
@@ -212,7 +171,6 @@ const uint8_t VP_E5[] = {
     0xfd, 0x00, 0xfe, 0x0f, // NotBefore
       0x31, 0x39, 0x37, 0x30, 0x30, 0x31, 0x30, 0x31, // 19700101T000000
       0x54, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30
-      // missing NotAfter
 };
 
 const uint8_t VP_E6[] = {
@@ -240,9 +198,9 @@ BOOST_AUTO_TEST_CASE(DecodingError)
 
 BOOST_AUTO_TEST_CASE(Comparison)
 {
-  auto notBefore = time::getUnixEpoch();
-  auto notAfter = notBefore + 1_day;
-  auto notAfter2 = notBefore + 2_days;
+  time::system_clock::TimePoint notBefore = time::getUnixEpoch();
+  time::system_clock::TimePoint notAfter = notBefore + 1_day;
+  time::system_clock::TimePoint notAfter2 = notBefore + 2_days;
 
   ValidityPeriod validity1(notBefore, notAfter);
   ValidityPeriod validity2(notBefore, notAfter);
@@ -255,4 +213,6 @@ BOOST_AUTO_TEST_CASE(Comparison)
 BOOST_AUTO_TEST_SUITE_END() // TestValidityPeriod
 BOOST_AUTO_TEST_SUITE_END() // Security
 
-} // namespace ndn::tests
+} // namespace tests
+} // namespace security
+} // namespace ndn

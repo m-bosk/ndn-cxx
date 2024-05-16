@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -26,7 +26,8 @@
 #include "ndn-cxx/encoding/block-helpers.hpp"
 #include "ndn-cxx/util/time.hpp"
 
-namespace ndn::name {
+namespace ndn {
+namespace name {
 
 /**
  * @brief Format used for the URI representation of a name.
@@ -109,7 +110,7 @@ setConventionDecoding(Convention convention);
  * or, if it is an `ImplicitSha256DigestComponent` or a `ParametersSha256DigestComponent`,
  * its TLV-LENGTH is not 32.
  */
-class Component : public Block, private boost::less_than_comparable<Component>
+class Component : public Block
 {
 public:
   class Error : public Block::Error
@@ -135,21 +136,19 @@ public: // constructors
 
   /**
    * @brief Construct a NameComponent of TLV-TYPE @p type, using TLV-VALUE from @p buffer.
+   * @throw Error the NameComponent is invalid.
    *
    * This constructor does not copy the underlying buffer, but retains a pointer to it.
    * Therefore, the caller must not change the underlying buffer.
-   *
-   * @throw Error the NameComponent is invalid.
    */
   Component(uint32_t type, ConstBufferPtr buffer);
 
   /**
    * @brief Construct a GenericNameComponent, using TLV-VALUE from @p buffer.
+   * @throw Error the NameComponent is invalid.
    *
    * This constructor does not copy the underlying buffer, but retains a pointer to it.
    * Therefore, the caller must not change the underlying buffer.
-   *
-   * @throw Error the NameComponent is invalid.
    */
   explicit
   Component(ConstBufferPtr buffer)
@@ -163,16 +162,37 @@ public: // constructors
   Component(uint32_t type, span<const uint8_t> value);
 
   /**
-   * @brief Construct a GenericNameComponent, copying the TLV-VALUE from @p value.
+   * @brief Construct a GenericNameComponent, copying the TLV-VALUE from @p buffer.
    */
   explicit
-  Component(span<const uint8_t> value)
-    : Component(tlv::GenericNameComponent, value)
+  Component(span<const uint8_t> buffer)
+    : Component(tlv::GenericNameComponent, buffer)
   {
   }
 
   /**
-   * @brief Construct a NameComponent of TLV-TYPE @p type, copying the TLV-VALUE from a range.
+   * @brief Construct a NameComponent of TLV-TYPE @p type, copying @p count bytes at @p value as
+   *        TLV-VALUE.
+   * @deprecated Use Component(uint32_t, span<const uint8_t>)
+   */
+  [[deprecated("use the constructor that takes a span<>")]]
+  Component(uint32_t type, const uint8_t* value, size_t count)
+    : Component(type, {value, count})
+  {
+  }
+
+  /**
+   * @brief Construct a GenericNameComponent, copying @p count bytes at @p value as TLV-VALUE.
+   * @deprecated Use Component(span<const uint8_t>)
+   */
+  [[deprecated("use the constructor that takes a span<>")]]
+  Component(const uint8_t* value, size_t count)
+    : Component(tlv::GenericNameComponent, {value, count})
+  {
+  }
+
+  /**
+   * @brief Construct a NameComponent of TLV-TYPE @p type, copying TLV-VALUE from a range.
    * @tparam Iterator an @c InputIterator dereferencing to a one-octet value type. More efficient
    *                  implementation is available when it is a @c RandomAccessIterator.
    * @param type      the TLV-TYPE.
@@ -186,7 +206,7 @@ public: // constructors
   }
 
   /**
-   * @brief Construct a GenericNameComponent, copying the TLV-VALUE from a range.
+   * @brief Construct a GenericNameComponent, copying TLV-VALUE from a range.
    */
   template<class Iterator>
   Component(Iterator first, Iterator last)
@@ -195,47 +215,70 @@ public: // constructors
   }
 
   /**
-   * @brief Construct a GenericNameComponent, copying the TLV-VALUE from a string.
+   * @brief Construct a GenericNameComponent, copying TLV-VALUE from a null-terminated string.
    *
    * Bytes from the string are copied as is, and not interpreted as URI component.
    */
   explicit
-  Component(std::string_view str);
+  Component(const char* str);
+
+  /**
+   * @brief Construct a GenericNameComponent, copying TLV-VALUE from a string.
+   *
+   * Bytes from the string are copied as is, and not interpreted as URI component.
+   */
+  explicit
+  Component(const std::string& str);
 
 public: // encoding and URI
   /**
-   * @brief Prepend wire encoding to @p encoder.
+   * @brief Fast encoding or block size estimation
    */
   template<encoding::Tag TAG>
   size_t
   wireEncode(EncodingImpl<TAG>& encoder) const;
 
   /**
-   * @brief Encode to TLV wire format.
+   * @brief Encode to a wire format
    */
   const Block&
   wireEncode() const;
 
   /**
-   * @brief Decode from TLV wire format.
+   * @brief Decode from the wire format
    */
   void
   wireDecode(const Block& wire);
 
   /**
-   * @brief Construct a NameComponent from its string representation in NDN URI format.
-   * @throw Error The input string does not represent a valid NameComponent in NDN URI format.
-   * @sa https://docs.named-data.net/NDN-packet-spec/0.3/name.html#ndn-uri-scheme
+   * @brief Decode NameComponent from a URI component.
+   *
+   * The URI component is read from `[input+beginOffset, input+endOffset)` range.
+   *
+   * @throw Error URI component does not represent a valid NameComponent.
    */
   static Component
-  fromUri(std::string_view input);
-
-  [[deprecated("use fromUri")]]
-  static Component
-  fromEscapedString(std::string_view input)
+  fromEscapedString(const char* input, size_t beginOffset, size_t endOffset)
   {
-    return Component::fromUri(input);
+    return fromEscapedString(std::string(input + beginOffset, input + endOffset));
   }
+
+  /**
+   * @brief Decode NameComponent from a URI component.
+   * @throw Error URI component does not represent a valid NameComponent.
+   */
+  static Component
+  fromEscapedString(const char* input)
+  {
+    return fromEscapedString(std::string(input));
+  }
+
+  /**
+   * @brief Decode NameComponent from a URI component.
+   * @throw Error URI component does not represent a valid NameComponent.
+   */
+  static Component
+  fromEscapedString(const std::string& input);
 
   /**
    * @brief Write `*this` to the output stream, escaping characters according to the NDN URI format.
@@ -245,7 +288,7 @@ public: // encoding and URI
   toUri(std::ostream& os, UriFormat format = UriFormat::DEFAULT) const;
 
   /**
-   * @brief Convert `*this` to a string by escaping characters according to the NDN URI format.
+   * @brief Convert `*this` by escaping characters according to the NDN URI format.
    * @sa https://docs.named-data.net/NDN-packet-spec/0.3/name.html#ndn-uri-scheme
    */
   std::string
@@ -450,12 +493,44 @@ public: // commonly used TLV-TYPEs
   isImplicitSha256Digest() const noexcept;
 
   /**
+   * @brief Create ImplicitSha256DigestComponent component
+   * @deprecated Use Component(uint32_t, ConstBufferPtr)
+   */
+  [[deprecated("use one of the name::Component constructors")]]
+  static Component
+  fromImplicitSha256Digest(ConstBufferPtr digest);
+
+  /**
+   * @brief Create ImplicitSha256DigestComponent component
+   * @deprecated Use Component(uint32_t, span<const uint8_t>)
+   */
+  [[deprecated("use one of the name::Component constructors")]]
+  static Component
+  fromImplicitSha256Digest(span<const uint8_t> digest);
+
+  /**
    * @brief Check if the component is a ParametersSha256DigestComponent
    * @sa https://redmine.named-data.net/projects/ndn-tlv/wiki/NameComponentType
    * @sa https://docs.named-data.net/NDN-packet-spec/0.3/name.html#parameters-digest-component
    */
   bool
   isParametersSha256Digest() const noexcept;
+
+  /**
+   * @brief Create ParametersSha256DigestComponent component
+   * @deprecated Use Component(uint32_t, ConstBufferPtr)
+   */
+  [[deprecated("use one of the name::Component constructors")]]
+  static Component
+  fromParametersSha256Digest(ConstBufferPtr digest);
+
+  /**
+   * @brief Create ParametersSha256DigestComponent component
+   * @deprecated Use Component(uint32_t, span<const uint8_t>)
+   */
+  [[deprecated("use one of the name::Component constructors")]]
+  static Component
+  fromParametersSha256Digest(span<const uint8_t> digest);
 
   /**
    * @brief Check if the component is a KeywordNameComponent
@@ -468,19 +543,28 @@ public: // commonly used TLV-TYPEs
   }
 
 public: // comparison
-  [[nodiscard]] bool
+  NDN_CXX_NODISCARD bool
   empty() const noexcept
   {
     return value_size() == 0;
   }
 
   /**
-   * @brief Compare this component to @p other using NDN canonical ordering.
+   * @brief Check if this is the same component as other
    *
-   * @param other The name component to compare with.
-   * @retval negative This component comes before @p other in canonical ordering
-   * @retval zero This component equals @p other
-   * @retval positive This component comes after @p other in canonical ordering
+   * @param other The other Component to compare with
+   * @return true if the components are equal, otherwise false.
+   */
+  bool
+  equals(const Component& other) const noexcept;
+
+  /**
+   * @brief Compare this to the other Component using NDN canonical ordering
+   *
+   * @param other The other Component to compare with.
+   * @retval negative this comes before other in canonical ordering
+   * @retval zero this equals other
+   * @retval positive this comes after other in canonical ordering
    *
    * @sa https://docs.named-data.net/NDN-packet-spec/0.3/name.html#canonical-order
    */
@@ -525,13 +609,41 @@ private:
 private: // non-member operators
   // NOTE: the following "hidden friend" operators are available via
   //       argument-dependent lookup only and must be defined inline.
-  // Block provides == and != operators.
-  // boost::less_than_comparable provides <=, >=, and > operators.
+
+  friend bool
+  operator==(const Component& lhs, const Component& rhs) noexcept
+  {
+    return lhs.equals(rhs);
+  }
+
+  friend bool
+  operator!=(const Component& lhs, const Component& rhs) noexcept
+  {
+    return !lhs.equals(rhs);
+  }
 
   friend bool
   operator<(const Component& lhs, const Component& rhs)
   {
     return lhs.compare(rhs) < 0;
+  }
+
+  friend bool
+  operator<=(const Component& lhs, const Component& rhs)
+  {
+    return lhs.compare(rhs) <= 0;
+  }
+
+  friend bool
+  operator>(const Component& lhs, const Component& rhs)
+  {
+    return lhs.compare(rhs) > 0;
+  }
+
+  friend bool
+  operator>=(const Component& lhs, const Component& rhs)
+  {
+    return lhs.compare(rhs) >= 0;
   }
 
   friend std::ostream&
@@ -543,12 +655,13 @@ private: // non-member operators
 
   // !!! NOTE TO IMPLEMENTOR !!!
   //
-  // This class MUST NOT contain any non-static data members.
+  // This class MUST NOT contain any data fields.
   // Block can be reinterpret_cast'ed as Component type.
 };
 
 NDN_CXX_DECLARE_WIRE_ENCODE_INSTANTIATIONS(Component);
 
-} // namespace ndn::name
+} // namespace name
+} // namespace ndn
 
 #endif // NDN_CXX_NAME_COMPONENT_HPP

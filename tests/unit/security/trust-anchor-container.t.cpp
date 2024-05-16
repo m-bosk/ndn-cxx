@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -20,6 +20,7 @@
  */
 
 #include "ndn-cxx/security/trust-anchor-container.hpp"
+#include "ndn-cxx/util/io.hpp"
 
 #include "tests/boost-test.hpp"
 #include "tests/key-chain-fixture.hpp"
@@ -27,12 +28,17 @@
 
 #include <boost/filesystem/operations.hpp>
 
-namespace ndn::tests {
+namespace ndn {
+namespace security {
+inline namespace v2 {
+namespace tests {
 
-using namespace ndn::security;
+using namespace ndn::tests;
 
-// This fixture creates a directory and prepares two certificates.
-// cert1 is written to a file under the directory, while cert2 is not.
+/**
+ * This fixture creates a directory and prepares two certificates.
+ * cert1 is written to a file under the directory, while cert2 is not.
+ */
 class TrustAnchorContainerFixture : public ClockFixture, public KeyChainFixture
 {
 public:
@@ -55,20 +61,19 @@ public:
   }
 
   void
-  checkFindByInterest(const Name& name, bool canBePrefix,
-                      const std::optional<Certificate>& expected) const
+  checkFindByInterest(const Name& name, bool canBePrefix, optional<Certificate> expected) const
   {
     Interest interest(name);
     interest.setCanBePrefix(canBePrefix);
-    BOOST_TEST_INFO_SCOPE("Interest = " << interest);
-
-    auto found = anchorContainer.find(interest);
-    if (expected) {
-      BOOST_REQUIRE(found != nullptr);
-      BOOST_CHECK_EQUAL(found->getName(), expected->getName());
-    }
-    else {
-      BOOST_CHECK(found == nullptr);
+    BOOST_TEST_CONTEXT(interest) {
+      auto found = anchorContainer.find(interest);
+      if (expected) {
+        BOOST_REQUIRE(found != nullptr);
+        BOOST_CHECK_EQUAL(found->getName(), expected->getName());
+      }
+      else {
+        BOOST_CHECK(found == nullptr);
+      }
     }
   }
 
@@ -167,12 +172,12 @@ BOOST_AUTO_TEST_CASE(FindByInterest)
   checkFindByInterest(identity1.getName().getPrefix(-1), true, cert1);
   checkFindByInterest(cert1.getKeyName(), true, cert1);
   checkFindByInterest(cert1.getName(), false, cert1);
-  checkFindByInterest(Name(identity1.getName()).appendVersion(), true, std::nullopt);
+  checkFindByInterest(Name(identity1.getName()).appendVersion(), true, nullopt);
 
   auto makeIdentity1Cert = [=] (const std::string& issuerId) {
     auto key = identity1.getDefaultKey();
     MakeCertificateOptions opts;
-    opts.issuerId = name::Component::fromUri(issuerId);
+    opts.issuerId = name::Component::fromEscapedString(issuerId);
     return m_keyChain.makeCertificate(key, signingByKey(key), opts);
   };
 
@@ -192,4 +197,7 @@ BOOST_AUTO_TEST_CASE(FindByInterest)
 BOOST_AUTO_TEST_SUITE_END() // TestTrustAnchorContainer
 BOOST_AUTO_TEST_SUITE_END() // Security
 
-} // namespace ndn::tests
+} // namespace tests
+} // inline namespace v2
+} // namespace security
+} // namespace ndn

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2020 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -21,11 +21,12 @@
 
 #include "tests/unit/clock-fixture.hpp"
 
-namespace ndn::tests {
+namespace ndn {
+namespace tests {
 
 ClockFixture::ClockFixture()
-  : m_steadyClock(std::make_shared<time::UnitTestSteadyClock>())
-  , m_systemClock(std::make_shared<time::UnitTestSystemClock>())
+  : m_steadyClock(make_shared<time::UnitTestSteadyClock>())
+  , m_systemClock(make_shared<time::UnitTestSystemClock>())
 {
   time::setCustomClocks(m_steadyClock, m_systemClock);
 }
@@ -51,4 +52,5 @@ ClockFixture::advanceClocks(time::nanoseconds tick, time::nanoseconds total)
   }
 }
 
-} // namespace ndn::tests
+} // namespace tests
+} // namespace ndn

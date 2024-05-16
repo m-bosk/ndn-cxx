@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2021 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -27,7 +27,8 @@
 #include <boost/asio/basic_waitable_timer.hpp>
 #include <boost/asio/wait_traits.hpp>
 
-namespace boost::asio {
+namespace boost {
+namespace asio {
 
 template<>
 struct wait_traits<ndn::time::steady_clock>
@@ -39,9 +40,12 @@ struct wait_traits<ndn::time::steady_clock>
   }
 };
 
-} // namespace boost::asio
+} // namespace asio
+} // namespace boost
 
-namespace ndn::detail {
+namespace ndn {
+namespace util {
+namespace detail {
 
 class SteadyTimer : public boost::asio::basic_waitable_timer<time::steady_clock>
 {
@@ -49,6 +53,8 @@ public:
   using boost::asio::basic_waitable_timer<time::steady_clock>::basic_waitable_timer;
 };
 
-} // namespace ndn::detail
+} // namespace detail
+} // namespace util
+} // namespace ndn
 
 #endif // NDN_CXX_UTIL_IMPL_STEADY_TIMER_HPP

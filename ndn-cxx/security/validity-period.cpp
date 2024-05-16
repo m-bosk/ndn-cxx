@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -21,32 +21,42 @@
 
 #include "ndn-cxx/security/validity-period.hpp"
 #include "ndn-cxx/encoding/block-helpers.hpp"
+#include "ndn-cxx/util/concepts.hpp"
 
-namespace ndn::security {
+namespace ndn {
+namespace security {
+
+BOOST_CONCEPT_ASSERT((boost::EqualityComparable<ValidityPeriod>));
+BOOST_CONCEPT_ASSERT((WireEncodable<ValidityPeriod>));
+BOOST_CONCEPT_ASSERT((WireEncodableWithEncodingBuffer<ValidityPeriod>));
+BOOST_CONCEPT_ASSERT((WireDecodable<ValidityPeriod>));
+static_assert(std::is_base_of<tlv::Error, ValidityPeriod::Error>::value,
+              "ValidityPeriod::Error must inherit from tlv::Error");
+
+static const size_t ISO_DATETIME_SIZE = 15;
+static const size_t NOT_BEFORE_OFFSET = 0;
+static const size_t NOT_AFTER_OFFSET = 1;
 
 using boost::chrono::time_point_cast;
 
-constexpr size_t ISO_DATETIME_SIZE = 15;
-constexpr size_t NOT_BEFORE_OFFSET = 0;
-constexpr size_t NOT_AFTER_OFFSET = 1;
-
 ValidityPeriod
 ValidityPeriod::makeRelative(time::seconds validFrom, time::seconds validUntil,
-                             const time::system_clock::time_point& now)
+                             const time::system_clock::TimePoint& now)
 {
   return ValidityPeriod(now + validFrom, now + validUntil);
 }
 
 ValidityPeriod::ValidityPeriod()
-  : ValidityPeriod(time::system_clock::time_point() + 1_ns,
-                   time::system_clock::time_point())
+  : ValidityPeriod(time::system_clock::TimePoint() + 1_ns,
+                   time::system_clock::TimePoint())
 {
 }
 
-ValidityPeriod::ValidityPeriod(const time::system_clock::time_point& notBefore,
-                               const time::system_clock::time_point& notAfter)
-  : m_notBefore(toTimePointCeil(notBefore))
-  , m_notAfter(toTimePointFloor(notAfter))
+ValidityPeriod::ValidityPeriod(const time::system_clock::TimePoint& notBefore,
+                               const time::system_clock::TimePoint& notAfter)
+  : m_notBefore(time_point_cast<TimePoint::duration>(notBefore + TimePoint::duration(1) -
+                                                     time::system_clock::TimePoint::duration(1)))
+  , m_notAfter(time_point_cast<TimePoint::duration>(notAfter))
 {
 }
 
@@ -113,67 +123,35 @@ ValidityPeriod::wireDecode(const Block& wire)
   }
 
   try {
-    m_notBefore = decodeTimePoint(m_wire.elements()[NOT_BEFORE_OFFSET]);
-    m_notAfter = decodeTimePoint(m_wire.elements()[NOT_AFTER_OFFSET]);
+    m_notBefore = time_point_cast<TimePoint::duration>(
+                    time::fromIsoString(readString(m_wire.elements()[NOT_BEFORE_OFFSET])));
+    m_notAfter = time_point_cast<TimePoint::duration>(
+                   time::fromIsoString(readString(m_wire.elements()[NOT_AFTER_OFFSET])));
   }
   catch (const std::bad_cast&) {
     NDN_THROW(Error("Invalid date format in NOT-BEFORE or NOT-AFTER field"));
   }
 }
 
-ValidityPeriod::TimePoint
-ValidityPeriod::toTimePointFloor(const time::system_clock::time_point& t)
-{
-  return TimePoint(boost::chrono::floor<TimePoint::duration>(t.time_since_epoch()));
-}
-
-ValidityPeriod::TimePoint
-ValidityPeriod::toTimePointCeil(const time::system_clock::time_point& t)
-{
-  return TimePoint(boost::chrono::ceil<TimePoint::duration>(t.time_since_epoch()));
-}
-
-ValidityPeriod::TimePoint
-ValidityPeriod::decodeTimePoint(const Block& element)
-{
-  // Bug #5176, prevent time::system_clock::time_point under/overflow
-  static const auto minTime = toTimePointCeil(time::system_clock::time_point::min());
-  static const auto maxTime = toTimePointFloor(time::system_clock::time_point::max());
-  static const auto minValue = time::toIsoString(minTime);
-  static const auto maxValue = time::toIsoString(maxTime);
-  BOOST_ASSERT(minValue.size() == ISO_DATETIME_SIZE);
-  BOOST_ASSERT(maxValue.size() == ISO_DATETIME_SIZE);
-
-  auto value = readString(element);
-  BOOST_ASSERT(value.size() == ISO_DATETIME_SIZE);
-
-  if (value < minValue) {
-    return minTime;
-  }
-  if (value > maxValue) {
-    return maxTime;
-  }
-  return time_point_cast<TimePoint::duration>(time::fromIsoString(value));
-}
-
 ValidityPeriod&
-ValidityPeriod::setPeriod(const time::system_clock::time_point& notBefore,
-                          const time::system_clock::time_point& notAfter)
+ValidityPeriod::setPeriod(const time::system_clock::TimePoint& notBefore,
+                          const time::system_clock::TimePoint& notAfter)
 {
   m_wire.reset();
-  m_notBefore = toTimePointCeil(notBefore);
-  m_notAfter = toTimePointFloor(notAfter);
+  m_notBefore = time_point_cast<TimePoint::duration>(notBefore + TimePoint::duration(1) -
+                                                     time::system_clock::TimePoint::duration(1));
+  m_notAfter = time_point_cast<TimePoint::duration>(notAfter);
   return *this;
 }
 
-std::pair<time::system_clock::time_point, time::system_clock::time_point>
+std::pair<time::system_clock::TimePoint, time::system_clock::TimePoint>
 ValidityPeriod::getPeriod() const
 {
   return {m_notBefore, m_notAfter};
 }
 
 bool
-ValidityPeriod::isValid(const time::system_clock::time_point& now) const
+ValidityPeriod::isValid(const time::system_clock::TimePoint& now) const
 {
   return m_notBefore <= now && now <= m_notAfter;
 }
@@ -186,4 +164,5 @@ operator<<(std::ostream& os, const ValidityPeriod& period)
   return os;
 }
 
-} // namespace ndn::security
+} // namespace security
+} // namespace ndn

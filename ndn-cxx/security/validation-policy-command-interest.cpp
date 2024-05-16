@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -21,7 +21,9 @@
 
 #include "ndn-cxx/security/validation-policy-command-interest.hpp"
 
-namespace ndn::security {
+namespace ndn {
+namespace security {
+inline namespace v2 {
 
 ValidationPolicyCommandInterest::ValidationPolicyCommandInterest(unique_ptr<ValidationPolicy> inner,
                                                                  const Options& options)
@@ -48,7 +50,10 @@ void
 ValidationPolicyCommandInterest::checkPolicy(const Interest& interest, const shared_ptr<ValidationState>& state,
                                              const ValidationContinuation& continueValidation)
 {
-  auto [isOk, keyName, timestamp] = parseCommandInterest(interest, state);
+  bool isOk;
+  Name keyName;
+  time::system_clock::TimePoint timestamp;
+  std::tie(isOk, keyName, timestamp) = parseCommandInterest(interest, state);
   if (!isOk) {
     return;
   }
@@ -60,16 +65,16 @@ ValidationPolicyCommandInterest::checkPolicy(const Interest& interest, const sha
   getInnerPolicy().checkPolicy(interest, state, continueValidation);
 }
 
-std::tuple<bool, Name, time::system_clock::time_point>
+std::tuple<bool, Name, time::system_clock::TimePoint>
 ValidationPolicyCommandInterest::parseCommandInterest(const Interest& interest,
                                                       const shared_ptr<ValidationState>& state)
 {
   auto sigInfo = getSignatureInfo(interest, *state);
   if (!state->getOutcome()) { // already failed
-    return {false, {}, {}};
+    return std::make_tuple(false, Name(), time::system_clock::TimePoint{});
   }
 
-  time::system_clock::time_point timestamp;
+  time::system_clock::TimePoint timestamp;
 
   auto fmt = state->getTag<SignedInterestFormatTag>();
   BOOST_ASSERT(fmt);
@@ -80,7 +85,7 @@ ValidationPolicyCommandInterest::parseCommandInterest(const Interest& interest,
     if (!optionalTimestamp) {
       state->fail({ValidationError::POLICY_ERROR, "Signed Interest `" +
                    interest.getName().toUri() + "` lacks required SignatureTime element"});
-      return {false, {}, {}};
+      return std::make_tuple(false, Name(), time::system_clock::TimePoint{});
     }
 
     timestamp = *optionalTimestamp;
@@ -90,14 +95,14 @@ ValidationPolicyCommandInterest::parseCommandInterest(const Interest& interest,
     if (name.size() < command_interest::MIN_SIZE) {
       state->fail({ValidationError::POLICY_ERROR,
                    "Command Interest name too short `" + interest.getName().toUri() + "`"});
-      return {false, {}, {}};
+      return std::make_tuple(false, Name(), time::system_clock::TimePoint{});
     }
 
     const auto& timestampComp = name.at(command_interest::POS_TIMESTAMP);
     if (!timestampComp.isNumber()) {
       state->fail({ValidationError::POLICY_ERROR, "Command Interest `" +
                    interest.getName().toUri() + "` lacks required timestamp component"});
-      return {false, {}, {}};
+      return std::make_tuple(false, Name(), time::system_clock::TimePoint{});
     }
 
     timestamp = time::fromUnixTimestamp(time::milliseconds(timestampComp.toNumber()));
@@ -105,10 +110,10 @@ ValidationPolicyCommandInterest::parseCommandInterest(const Interest& interest,
 
   Name klName = getKeyLocatorName(sigInfo, *state);
   if (!state->getOutcome()) { // already failed
-    return {false, {}, {}};
+    return std::make_tuple(false, Name(), time::system_clock::TimePoint{});
   }
 
-  return {true, klName, timestamp};
+  return std::make_tuple(true, klName, timestamp);
 }
 
 void
@@ -125,7 +130,7 @@ ValidationPolicyCommandInterest::cleanup()
 
 bool
 ValidationPolicyCommandInterest::checkTimestamp(const shared_ptr<ValidationState>& state,
-                                                const Name& keyName, time::system_clock::time_point timestamp)
+                                                const Name& keyName, time::system_clock::TimePoint timestamp)
 {
   this->cleanup();
 
@@ -146,18 +151,21 @@ ValidationPolicyCommandInterest::checkTimestamp(const shared_ptr<ValidationState
     }
   }
 
-  auto interestState = std::dynamic_pointer_cast<InterestValidationState>(state);
+  auto interestState = dynamic_pointer_cast<InterestValidationState>(state);
   BOOST_ASSERT(interestState != nullptr);
   interestState->afterSuccess.connect([=] (const Interest&) { insertNewRecord(keyName, timestamp); });
   return true;
 }
 
 void
-ValidationPolicyCommandInterest::insertNewRecord(const Name& keyName, time::system_clock::time_point timestamp)
+ValidationPolicyCommandInterest::insertNewRecord(const Name& keyName, time::system_clock::TimePoint timestamp)
 {
   // try to insert new record
-  LastTimestampRecord newRecord{keyName, timestamp, time::steady_clock::now()};
-  auto [i, isNew] = m_queue.push_back(newRecord);
+  auto now = time::steady_clock::now();
+  auto i = m_queue.end();
+  bool isNew = false;
+  LastTimestampRecord newRecord{keyName, timestamp, now};
+  std::tie(i, isNew) = m_queue.push_back(newRecord);
 
   if (!isNew) {
     BOOST_ASSERT(i->keyName == keyName);
@@ -169,4 +177,6 @@ ValidationPolicyCommandInterest::insertNewRecord(const Name& keyName, time::syst
   }
 }
 
-} // namespace ndn::security
+} // inline namespace v2
+} // namespace security
+} // namespace ndn

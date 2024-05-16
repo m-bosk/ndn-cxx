@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2020 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -27,15 +27,16 @@
 #include "ndn-cxx/lp/nack.hpp"
 #include "tests/boost-test.hpp"
 
-namespace ndn::tests {
+namespace ndn {
+namespace tests {
 
 /**
  * \brief Create an Interest
  */
 shared_ptr<Interest>
 makeInterest(const Name& name, bool canBePrefix = false,
-             std::optional<time::milliseconds> lifetime = std::nullopt,
-             std::optional<Interest::Nonce> nonce = std::nullopt);
+             optional<time::milliseconds> lifetime = nullopt,
+             optional<Interest::Nonce> nonce = nullopt);
 
 /**
  * \brief Create a Data with a null (i.e., empty) signature
@@ -69,19 +70,20 @@ makeNack(Interest interest, lp::NackReason reason);
 
 /**
  * \brief Replace a name component in a packet
- * \param[in,out] pkt the packet
+ * \param[inout] pkt the packet
  * \param index the index of the name component to replace
  * \param args arguments to name::Component constructor
  */
-template<typename Packet, typename... Args>
+template<typename Packet, typename ...Args>
 void
-setNameComponent(Packet& pkt, ssize_t index, Args&&... args)
+setNameComponent(Packet& pkt, ssize_t index, Args&& ...args)
 {
   Name name = pkt.getName();
   name.set(index, name::Component(std::forward<Args>(args)...));
   pkt.setName(name);
 }
 
-} // namespace ndn::tests
+} // namespace tests
+} // namespace ndn
 
 #endif // NDN_CXX_TESTS_TEST_COMMON_HPP

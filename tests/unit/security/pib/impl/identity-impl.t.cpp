@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -24,13 +24,18 @@
 #include "tests/boost-test.hpp"
 #include "tests/unit/security/pib/pib-data-fixture.hpp"
 
-namespace ndn::tests {
-
-using namespace ndn::security::pib;
+namespace ndn {
+namespace security {
+namespace pib {
+namespace detail {
+namespace tests {
 
 BOOST_AUTO_TEST_SUITE(Security)
+BOOST_AUTO_TEST_SUITE(Pib)
 
-class IdentityImplFixture : public PibDataFixture
+using pib::Pib;
+
+class IdentityImplFixture : public pib::tests::PibDataFixture
 {
 protected:
   const shared_ptr<PibImpl> pibImpl = makePibWithIdentity(id1);
@@ -131,6 +136,11 @@ BOOST_AUTO_TEST_CASE(Errors)
 }
 
 BOOST_AUTO_TEST_SUITE_END() // TestIdentityImpl
+BOOST_AUTO_TEST_SUITE_END() // Pib
 BOOST_AUTO_TEST_SUITE_END() // Security
 
-} // namespace ndn::tests
+} // namespace tests
+} // namespace detail
+} // namespace pib
+} // namespace security
+} // namespace ndn

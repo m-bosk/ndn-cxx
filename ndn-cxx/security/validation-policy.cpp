@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -22,7 +22,9 @@
 #include "ndn-cxx/security/validation-policy.hpp"
 #include "ndn-cxx/security/signing-info.hpp"
 
-namespace ndn::security {
+namespace ndn {
+namespace security {
+inline namespace v2 {
 
 void
 ValidationPolicy::setInnerPolicy(unique_ptr<ValidationPolicy> innerPolicy)
@@ -130,4 +132,6 @@ extractIdentityNameFromKeyLocator(const Name& keyLocator)
                               "` does not respect the naming conventions"));
 }
 
-} // namespace ndn::security
+} // inline namespace v2
+} // namespace security
+} // namespace ndn

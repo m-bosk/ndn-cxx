@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -25,14 +25,8 @@
 
 #include <boost/lexical_cast.hpp>
 
-namespace ndn::tests {
-
-BOOST_CONCEPT_ASSERT((boost::EqualityComparable<SignatureInfo>));
-BOOST_CONCEPT_ASSERT((WireEncodable<SignatureInfo>));
-BOOST_CONCEPT_ASSERT((WireEncodableWithEncodingBuffer<SignatureInfo>));
-BOOST_CONCEPT_ASSERT((WireDecodable<SignatureInfo>));
-static_assert(std::is_convertible_v<SignatureInfo::Error*, tlv::Error*>,
-              "SignatureInfo::Error must inherit from tlv::Error");
+namespace ndn {
+namespace tests {
 
 BOOST_AUTO_TEST_SUITE(TestSignatureInfo)
 
@@ -106,7 +100,7 @@ BOOST_AUTO_TEST_CASE(KeyLocatorField)
 
   info.wireEncode();
   BOOST_CHECK_EQUAL(info.hasWire(), true);
-  info.setKeyLocator(std::nullopt);
+  info.setKeyLocator(nullopt);
   BOOST_CHECK_EQUAL(info.hasKeyLocator(), false);
   BOOST_CHECK_THROW(info.getKeyLocator(), SignatureInfo::Error);
   BOOST_CHECK_EQUAL(info.hasWire(), false);
@@ -133,7 +127,7 @@ BOOST_AUTO_TEST_CASE(SignatureNonce)
 
   info.wireEncode();
   BOOST_CHECK_EQUAL(info.hasWire(), true);
-  info.setNonce(std::nullopt);
+  info.setNonce(nullopt);
   BOOST_CHECK_EQUAL(info.hasWire(), false);
   BOOST_CHECK(!info.getNonce());
 }
@@ -158,7 +152,7 @@ BOOST_AUTO_TEST_CASE(SignatureTime)
 
   info.wireEncode();
   BOOST_CHECK_EQUAL(info.hasWire(), true);
-  info.setTime(std::nullopt);
+  info.setTime(nullopt);
   BOOST_CHECK_EQUAL(info.hasWire(), false);
   BOOST_CHECK(!info.getTime());
 }
@@ -182,7 +176,7 @@ BOOST_AUTO_TEST_CASE(SignatureSeqNum)
 
   info.wireEncode();
   BOOST_CHECK_EQUAL(info.hasWire(), true);
-  info.setSeqNum(std::nullopt);
+  info.setSeqNum(nullopt);
   BOOST_CHECK_EQUAL(info.hasWire(), false);
   BOOST_CHECK(!info.getSeqNum());
 }
@@ -453,12 +447,12 @@ BOOST_AUTO_TEST_CASE(ValidityPeriod)
 
   info2.setValidityPeriod(security::ValidityPeriod(notBefore, notBefore + 42_days));
   BOOST_CHECK_NE(info2.getValidityPeriod(), vp1);
-  BOOST_CHECK(info2.getValidityPeriod().getPeriod() == std::pair(notBefore, notBefore + 42_days));
+  BOOST_CHECK(info2.getValidityPeriod().getPeriod() == std::make_pair(notBefore, notBefore + 42_days));
   BOOST_CHECK_EQUAL(info2.hasWire(), false);
 
   info2.wireEncode();
   BOOST_CHECK_EQUAL(info2.hasWire(), true);
-  info2.setValidityPeriod(std::nullopt);
+  info2.setValidityPeriod(nullopt);
   BOOST_CHECK_THROW(info2.getValidityPeriod(), SignatureInfo::Error);
   BOOST_CHECK_EQUAL(info2.hasWire(), false);
 }
@@ -483,8 +477,7 @@ BOOST_AUTO_TEST_CASE(CustomTlvs)
   BOOST_CHECK(!info.getCustomTlv(0x81));
 }
 
-BOOST_AUTO_TEST_CASE(CustomTlvsEncoding,
-  * ut::description("test for bug #3914"))
+BOOST_AUTO_TEST_CASE(CustomTlvsEncoding) // Bug #3914
 {
   SignatureInfo info1(tlv::SignatureSha256WithRsa);
   info1.addCustomTlv(makeStringBlock(102, "First"));
@@ -550,4 +543,5 @@ BOOST_AUTO_TEST_CASE(OutputStream)
 
 BOOST_AUTO_TEST_SUITE_END() // TestSignatureInfo
 
-} // namespace ndn::tests
+} // namespace tests
+} // namespace ndn

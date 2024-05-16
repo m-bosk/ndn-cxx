@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2021 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -22,7 +22,7 @@
 #ifndef NDN_CXX_DETAIL_CF_STRING_OSX_HPP
 #define NDN_CXX_DETAIL_CF_STRING_OSX_HPP
 
-#include "ndn-cxx/detail/config.hpp"
+#include "ndn-cxx/detail/common.hpp"
 
 #ifndef NDN_CXX_HAVE_OSX_FRAMEWORKS
 #error "This file should not be included ..."
@@ -30,16 +30,15 @@
 
 #include "ndn-cxx/detail/cf-releaser-osx.hpp"
 
-#include <cstdint>
-#include <string>
-
 /**
  * @file
  *
  * This file contains utilities to deal with Apple Core Foundation's CFString and related types.
  */
 
-namespace ndn::detail::cfstring {
+namespace ndn {
+namespace detail {
+namespace cfstring {
 
 /**
  * @brief Create a CFString by copying bytes from a raw buffer
@@ -62,6 +61,8 @@ fromStdString(const std::string& str);
 std::string
 toStdString(CFStringRef cfStr);
 
-} // namespace ndn::detail::cfstring
+} // namespace cfstring
+} // namespace detail
+} // namespace ndn
 
 #endif // NDN_CXX_DETAIL_CF_STRING_OSX_HPP

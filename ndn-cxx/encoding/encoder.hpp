@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -24,9 +24,8 @@
 
 #include "ndn-cxx/encoding/block.hpp"
 
-#include <algorithm>
-
-namespace ndn::encoding {
+namespace ndn {
+namespace encoding {
 
 /**
  * @brief Helper class to perform TLV encoding.
@@ -252,7 +251,7 @@ size_t
 Encoder::prependRange(Iterator first, Iterator last)
 {
   using ValueType = typename std::iterator_traits<Iterator>::value_type;
-  static_assert(sizeof(ValueType) == 1 && !std::is_same_v<ValueType, bool>);
+  static_assert(sizeof(ValueType) == 1 && !std::is_same<ValueType, bool>::value, "");
 
   size_t length = std::distance(first, last);
   reserveFront(length);
@@ -267,7 +266,7 @@ size_t
 Encoder::appendRange(Iterator first, Iterator last)
 {
   using ValueType = typename std::iterator_traits<Iterator>::value_type;
-  static_assert(sizeof(ValueType) == 1 && !std::is_same_v<ValueType, bool>);
+  static_assert(sizeof(ValueType) == 1 && !std::is_same<ValueType, bool>::value, "");
 
   size_t length = std::distance(first, last);
   reserveBack(length);
@@ -277,6 +276,7 @@ Encoder::appendRange(Iterator first, Iterator last)
   return length;
 }
 
-} // namespace ndn::encoding
+} // namespace encoding
+} // namespace ndn
 
 #endif // NDN_CXX_ENCODING_ENCODER_HPP

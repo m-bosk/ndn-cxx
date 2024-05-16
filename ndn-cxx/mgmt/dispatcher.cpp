@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2021 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -23,11 +23,10 @@
 #include "ndn-cxx/lp/tags.hpp"
 #include "ndn-cxx/util/logger.hpp"
 
-#include <algorithm>
-
-namespace ndn::mgmt {
-
 NDN_LOG_INIT(ndn.mgmt.Dispatcher);
+
+namespace ndn {
+namespace mgmt {
 
 Authorization
 makeAcceptAllAuthorization()
@@ -47,7 +46,7 @@ Dispatcher::Dispatcher(Face& face, KeyChain& keyChain,
   : m_face(face)
   , m_keyChain(keyChain)
   , m_signingInfo(signingInfo)
-  , m_storage(m_face.getIoContext(), imsCapacity)
+  , m_storage(m_face.getIoService(), imsCapacity)
 {
 }
 
@@ -201,7 +200,7 @@ Dispatcher::processAuthorizedControlCommandInterest(const std::string& requester
 {
   if (validateParams(*parameters)) {
     handler(prefix, interest, *parameters,
-            [=] (const auto& resp) { sendControlResponse(resp, interest); });
+            [=] (const auto& resp) { this->sendControlResponse(resp, interest); });
   }
   else {
     sendControlResponse(ControlResponse(400, "failed in validating parameters"), interest);
@@ -222,8 +221,8 @@ Dispatcher::sendControlResponse(const ControlResponse& resp, const Interest& int
 
 void
 Dispatcher::addStatusDataset(const PartialName& relPrefix,
-                             Authorization auth,
-                             StatusDatasetHandler handler)
+                             Authorization authorize,
+                             StatusDatasetHandler handle)
 {
   if (!m_topLevelPrefixes.empty()) {
     NDN_THROW(std::domain_error("one or more top-level prefix has been added"));
@@ -233,22 +232,18 @@ Dispatcher::addStatusDataset(const PartialName& relPrefix,
     NDN_THROW(std::out_of_range("status dataset name overlaps"));
   }
 
-  AuthorizationAcceptedCallback accept =
-    [this, handler = std::move(handler)] (auto&&, const auto& prefix, const auto& interest, auto&&) {
-      processAuthorizedStatusDatasetInterest(prefix, interest, handler);
-    };
-  AuthorizationRejectedCallback reject =
-    [this] (auto&&... args) {
-      afterAuthorizationRejected(std::forward<decltype(args)>(args)...);
-    };
+  AuthorizationAcceptedCallback accepted =
+    std::bind(&Dispatcher::processAuthorizedStatusDatasetInterest, this, _2, _3, std::move(handle));
+  AuthorizationRejectedCallback rejected = [this] (auto&&... args) {
+    afterAuthorizationRejected(std::forward<decltype(args)>(args)...);
+  };
+
   // follow the general path if storage is a miss
-  InterestHandler missContinuation =
-    [this, auth = std::move(auth), accept = std::move(accept), reject = std::move(reject)] (auto&&... args) {
-      processStatusDatasetInterest(std::forward<decltype(args)>(args)..., auth, accept, reject);
-    };
+  InterestHandler missContinuation = std::bind(&Dispatcher::processStatusDatasetInterest, this, _1, _2,
+                                               std::move(authorize), std::move(accepted), std::move(rejected));
 
   m_handlers[relPrefix] = [this, miss = std::move(missContinuation)] (auto&&... args) {
-    queryStorage(std::forward<decltype(args)>(args)..., miss);
+    this->queryStorage(std::forward<decltype(args)>(args)..., miss);
   };
 }
 
@@ -318,7 +313,7 @@ Dispatcher::addNotificationStream(const PartialName& relPrefix)
   // register a handler for the subscriber of this notification stream
   // keep silent if Interest does not match a stored notification
   m_handlers[relPrefix] = [this] (auto&&... args) {
-    queryStorage(std::forward<decltype(args)>(args)..., nullptr);
+    this->queryStorage(std::forward<decltype(args)>(args)..., nullptr);
   };
   m_streams[relPrefix] = 0;
 
@@ -342,4 +337,5 @@ Dispatcher::postNotification(const Block& notification, const PartialName& relPr
   sendData(streamName, notification, {}, SendDestination::FACE_AND_IMS);
 }
 
-} // namespace ndn::mgmt
+} // namespace mgmt
+} // namespace ndn

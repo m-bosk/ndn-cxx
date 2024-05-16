@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -28,12 +28,9 @@
 #include "ndn-cxx/detail/common.hpp"
 
 // STL headers to precompile
-#include <algorithm>
 #include <atomic>
 #include <iterator>
-#include <limits>
 #include <list>
-#include <optional>
 #include <ostream>
 #include <unordered_map>
 #include <unordered_set>
@@ -45,7 +42,6 @@
 #include <boost/asio/basic_socket.hpp>
 #include <boost/bind/bind.hpp>
 #include <boost/chrono.hpp>
-#include <boost/concept_check.hpp>
 #include <boost/endian/conversion.hpp>
 #include <boost/iostreams/stream.hpp>
 #include <boost/lexical_cast.hpp>
@@ -55,7 +51,6 @@
 #include <boost/multi_index/hashed_index.hpp>
 #include <boost/multi_index/ordered_index.hpp>
 #include <boost/multi_index/sequenced_index.hpp>
-#include <boost/operators.hpp>
 #include <boost/system/error_code.hpp>
 
 #endif // NDN_CXX_IMPL_COMMON_PCH_HPP

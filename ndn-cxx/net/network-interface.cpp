@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2021 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -28,11 +28,19 @@
 
 #include <net/if.h>
 
-namespace ndn::net {
-
 NDN_LOG_INIT(ndn.NetworkMonitor);
 
-NetworkInterface::NetworkInterface() = default;
+namespace ndn {
+namespace net {
+
+NetworkInterface::NetworkInterface()
+  : m_index(0)
+  , m_type(InterfaceType::UNKNOWN)
+  , m_flags(0)
+  , m_state(InterfaceState::UNKNOWN)
+  , m_mtu(0)
+{
+}
 
 bool
 NetworkInterface::addNetworkAddress(const NetworkAddress& address)
@@ -233,4 +241,5 @@ operator<<(std::ostream& os, const NetworkInterface& netif)
   return os;
 }
 
-} // namespace ndn::net
+} // namespace net
+} // namespace ndn

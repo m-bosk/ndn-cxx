@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -27,9 +27,11 @@
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
 
-namespace ndn::security::pib {
+namespace ndn {
+namespace security {
+namespace pib {
 
-using ndn::util::Sqlite3Statement;
+using util::Sqlite3Statement;
 
 static const char DB_INIT[] = R"SQL(
 CREATE TABLE IF NOT EXISTS
@@ -193,11 +195,11 @@ PibSqlite3::PibSqlite3(const std::string& location)
   if (!location.empty()) {
     dbDir = boost::filesystem::path(location);
   }
-#ifdef NDN_CXX_WITH_TESTS
+#ifdef NDN_CXX_HAVE_TESTS
   else if (getenv("TEST_HOME") != nullptr) {
     dbDir = boost::filesystem::path(getenv("TEST_HOME")) / ".ndn";
   }
-#endif
+#endif // NDN_CXX_HAVE_TESTS
   else if (getenv("HOME") != nullptr) {
     dbDir = boost::filesystem::path(getenv("HOME")) / ".ndn";
   }
@@ -573,4 +575,6 @@ PibSqlite3::hasDefaultCertificateOfKey(const Name& keyName) const
   return statement.step() == SQLITE_ROW;
 }
 
-} // namespace ndn::security::pib
+} // namespace pib
+} // namespace security
+} // namespace ndn

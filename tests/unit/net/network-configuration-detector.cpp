@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2018 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -21,48 +21,67 @@
 
 #include "tests/unit/net/network-configuration-detector.hpp"
 
-#include <boost/asio/io_context.hpp>
+#include <boost/asio/io_service.hpp>
 #include <boost/asio/ip/address.hpp>
+#include <boost/asio/ip/basic_resolver.hpp>
 #include <boost/asio/ip/udp.hpp>
+#include <boost/range/iterator_range_core.hpp>
 
-namespace ndn::tests {
+namespace ndn {
+namespace tests {
+
+bool NetworkConfigurationDetector::m_isInitialized = false;
+bool NetworkConfigurationDetector::m_hasIpv4 = false;
+bool NetworkConfigurationDetector::m_hasIpv6 = false;
+
+bool
+NetworkConfigurationDetector::hasIpv4()
+{
+  if (!m_isInitialized) {
+    detect();
+  }
+  return m_hasIpv4;
+}
+
+bool
+NetworkConfigurationDetector::hasIpv6()
+{
+  if (!m_isInitialized) {
+    detect();
+  }
+  return m_hasIpv6;
+}
 
 void
 NetworkConfigurationDetector::detect()
 {
-  static bool isInitialized = false;
-  if (isInitialized) {
+  typedef boost::asio::ip::basic_resolver<boost::asio::ip::udp> BoostResolver;
+
+  boost::asio::io_service ioService;
+  BoostResolver resolver(ioService);
+
+  // The specified hostname must contain both A and AAAA records
+  BoostResolver::query query("a.root-servers.net", "");
+
+  boost::system::error_code errorCode;
+  BoostResolver::iterator begin = resolver.resolve(query, errorCode);
+  if (errorCode) {
+    m_isInitialized = true;
     return;
   }
+  BoostResolver::iterator end;
 
-  boost::asio::io_context io;
-  boost::asio::ip::udp::resolver resolver(io);
-
-  boost::system::error_code ec;
-  // Use a hostname known to have both A and AAAA records
-  auto results = resolver.resolve("a.root-servers.net", "", ec);
-  if (!ec) {
-    for (const auto& i : results) {
-      s_hasIp = true;
-      if (i.endpoint().address().is_v4()) {
-        s_hasIpv4 = true;
-      }
-      else if (i.endpoint().address().is_v6()) {
-        s_hasIpv6 = true;
-      }
+  for (const auto& i : boost::make_iterator_range(begin, end)) {
+    if (i.endpoint().address().is_v4()) {
+      m_hasIpv4 = true;
+    }
+    else if (i.endpoint().address().is_v6()) {
+      m_hasIpv6 = true;
     }
   }
 
-  if (!s_hasIp) {
-    s_hasIp.message() << "IP connectivity is unavailable";
-  }
-  if (!s_hasIpv4) {
-    s_hasIpv4.message() << "IPv4 connectivity is unavailable";
-  }
-  if (!s_hasIpv6) {
-    s_hasIpv6.message() << "IPv6 connectivity is unavailable";
-  }
-  isInitialized = true;
+  m_isInitialized = true;
 }
 
-} // namespace ndn::tests
+} // namespace tests
+} // namespace ndn

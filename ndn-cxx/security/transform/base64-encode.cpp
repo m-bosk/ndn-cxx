@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -24,7 +24,9 @@
 #include <openssl/bio.h>
 #include <openssl/evp.h>
 
-namespace ndn::security::transform {
+namespace ndn {
+namespace security {
+namespace transform {
 
 class Base64Encode::Impl : boost::noncopyable
 {
@@ -129,4 +131,6 @@ base64Encode(bool needBreak)
   return make_unique<Base64Encode>(needBreak);
 }
 
-} // namespace ndn::security::transform
+} // namespace transform
+} // namespace security
+} // namespace ndn

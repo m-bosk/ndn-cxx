@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2020 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -21,7 +21,9 @@
 
 #include "ndn-cxx/security/certificate-storage.hpp"
 
-namespace ndn::security {
+namespace ndn {
+namespace security {
+inline namespace v2 {
 
 CertificateStorage::CertificateStorage()
   : m_verifiedCertCache(1_h)
@@ -32,18 +34,21 @@ CertificateStorage::CertificateStorage()
 const Certificate*
 CertificateStorage::findTrustedCert(const Interest& interestForCert) const
 {
-  if (auto cert = m_trustAnchors.find(interestForCert); cert != nullptr) {
+  auto cert = m_trustAnchors.find(interestForCert);
+  if (cert != nullptr) {
     return cert;
   }
-  return m_verifiedCertCache.find(interestForCert);
+
+  cert = m_verifiedCertCache.find(interestForCert);
+  return cert;
 }
 
 bool
 CertificateStorage::isCertKnown(const Name& certName) const
 {
-  return m_trustAnchors.find(certName) != nullptr ||
-         m_verifiedCertCache.find(certName) != nullptr ||
-         m_unverifiedCertCache.find(certName) != nullptr;
+  return (m_trustAnchors.find(certName) != nullptr ||
+          m_verifiedCertCache.find(certName) != nullptr ||
+          m_unverifiedCertCache.find(certName) != nullptr);
 }
 
 void
@@ -101,4 +106,6 @@ CertificateStorage::getUnverifiedCertCache() const
   return m_unverifiedCertCache;
 }
 
-} // namespace ndn::security
+} // inline namespace v2
+} // namespace security
+} // namespace ndn

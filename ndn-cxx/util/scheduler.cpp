@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2020 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -23,22 +23,30 @@
 #include "ndn-cxx/util/impl/steady-timer.hpp"
 #include "ndn-cxx/util/scope.hpp"
 
-namespace ndn::scheduler {
+namespace ndn {
+namespace scheduler {
 
-/**
- * \brief Stores internal information about a scheduled event.
+/** \brief Stores internal information about a scheduled event
  */
-struct EventInfo : noncopyable
+class EventInfo : noncopyable
 {
+public:
   EventInfo(time::nanoseconds after, EventCallback&& cb)
-    : expiry(time::steady_clock::now() + after)
-    , callback(std::move(cb))
+    : callback(std::move(cb))
+    , expireTime(time::steady_clock::now() + after)
   {
   }
 
-  time::steady_clock::time_point expiry;
+  NDN_CXX_NODISCARD time::nanoseconds
+  expiresFromNow() const
+  {
+    return std::max(expireTime - time::steady_clock::now(), 0_ns);
+  }
+
+public:
   EventCallback callback;
   Scheduler::EventQueue::const_iterator queueIt;
+  time::steady_clock::TimePoint expireTime;
   bool isExpired = false;
 };
 
@@ -60,15 +68,21 @@ EventId::reset() noexcept
   *this = {};
 }
 
+std::ostream&
+operator<<(std::ostream& os, const EventId& eventId)
+{
+  return os << eventId.m_info.lock();
+}
+
 bool
 Scheduler::EventQueueCompare::operator()(const shared_ptr<EventInfo>& a,
                                          const shared_ptr<EventInfo>& b) const noexcept
 {
-  return a->expiry < b->expiry;
+  return a->expireTime < b->expireTime;
 }
 
-Scheduler::Scheduler(boost::asio::io_context& ioCtx)
-  : m_timer(make_unique<detail::SteadyTimer>(ioCtx))
+Scheduler::Scheduler(boost::asio::io_service& ioService)
+  : m_timer(make_unique<util::detail::SteadyTimer>(ioService))
 {
 }
 
@@ -118,8 +132,8 @@ void
 Scheduler::scheduleNext()
 {
   if (!m_queue.empty()) {
-    m_timer->expires_at((*m_queue.begin())->expiry);
-    m_timer->async_wait([this] (const auto& error) { executeEvent(error); });
+    m_timer->expires_from_now((*m_queue.begin())->expiresFromNow());
+    m_timer->async_wait([this] (const auto& error) { this->executeEvent(error); });
   }
 }
 
@@ -141,7 +155,7 @@ Scheduler::executeEvent(const boost::system::error_code& error)
   while (!m_queue.empty()) {
     auto head = m_queue.begin();
     shared_ptr<EventInfo> info = *head;
-    if (info->expiry > now) {
+    if (info->expireTime > now) {
       break;
     }
 
@@ -151,4 +165,5 @@ Scheduler::executeEvent(const boost::system::error_code& error)
   }
 }
 
-} // namespace ndn::scheduler
+} // namespace scheduler
+} // namespace ndn

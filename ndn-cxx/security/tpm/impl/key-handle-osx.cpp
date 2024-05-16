@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2021 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -22,7 +22,9 @@
 #include "ndn-cxx/security/tpm/impl/key-handle-osx.hpp"
 #include "ndn-cxx/security/tpm/impl/back-end-osx.hpp"
 
-namespace ndn::security::tpm {
+namespace ndn {
+namespace security {
+namespace tpm {
 
 KeyHandleOsx::KeyHandleOsx(const KeyRefOsx& key)
   : m_key(key)
@@ -55,4 +57,6 @@ KeyHandleOsx::doDerivePublicKey() const
   return BackEndOsx::derivePublicKey(m_key);
 }
 
-} // namespace ndn::security::tpm
+} // namespace tpm
+} // namespace security
+} // namespace ndn

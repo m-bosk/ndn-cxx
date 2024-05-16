@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -24,7 +24,9 @@
 
 #include <boost/lexical_cast.hpp>
 
-namespace ndn::security {
+namespace ndn {
+namespace security {
+inline namespace v2 {
 
 NDN_LOG_INIT(ndn.security.Validator);
 
@@ -127,7 +129,7 @@ Validator::requestCertificate(const shared_ptr<CertificateRequest>& certRequest,
   }
 
   if (certRequest->interest.getName() == SigningInfo::getDigestSha256Identity()) {
-    state->verifyOriginalPacket(std::nullopt);
+    state->verifyOriginalPacket(nullopt);
     return;
   }
 
@@ -196,4 +198,6 @@ Validator::resetVerifiedCertificates()
   CertificateStorage::resetVerifiedCerts();
 }
 
-} // namespace ndn::security
+} // inline namespace v2
+} // namespace security
+} // namespace ndn

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -24,10 +24,8 @@
 #include "tests/boost-test.hpp"
 #include "tests/key-chain-fixture.hpp"
 
-namespace ndn::tests {
-
-static_assert(std::is_convertible_v<MetadataObject::Error*, tlv::Error*>,
-              "MetadataObject::Error must inherit from tlv::Error");
+namespace ndn {
+namespace tests {
 
 class MetadataObjectFixture : public KeyChainFixture
 {
@@ -169,4 +167,5 @@ BOOST_AUTO_TEST_CASE(MakeDiscoveryInterest)
 
 BOOST_AUTO_TEST_SUITE_END() // TestMetadataObject
 
-} // namespace ndn::tests
+} // namespace tests
+} // namespace ndn

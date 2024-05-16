@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -25,17 +25,17 @@
 #include "ndn-cxx/name-component.hpp"
 #include "ndn-cxx/encoding/block.hpp"
 #include "ndn-cxx/encoding/encoding-buffer.hpp"
+#include "ndn-cxx/util/optional.hpp"
 #include "ndn-cxx/util/time.hpp"
 
 #include <list>
-#include <optional>
 
 namespace ndn {
 
 /**
  * @brief Default value of `FreshnessPeriod`.
  */
-inline constexpr time::milliseconds DEFAULT_FRESHNESS_PERIOD = 0_ms;
+const time::milliseconds DEFAULT_FRESHNESS_PERIOD{0};
 
 /**
  * @brief A MetaInfo holds the meta info which is signed inside the Data packet.
@@ -86,55 +86,50 @@ public:
   wireDecode(const Block& wire);
 
 public: // getter/setter
-  /**
-   * @brief Return the value of `ContentType`.
+  /** @brief Return the value of `ContentType`.
    *
-   * If the `ContentType` element is not present, returns tlv::ContentType_Blob.
+   *  If the `ContentType` element is not present, returns tlv::ContentType_Blob.
    */
   uint32_t
-  getType() const noexcept
+  getType() const
   {
     return m_type;
   }
 
-  /**
-   * @brief Set the `ContentType`.
-   * @param type A number defined in tlv::ContentTypeValue
+  /** @brief Set `ContentType`.
+   *  @param type a number defined in tlv::ContentTypeValue
    */
   MetaInfo&
   setType(uint32_t type);
 
-  /**
-   * @brief Return the value of `FreshnessPeriod`.
+  /** @brief Return the value of `FreshnessPeriod`.
    *
-   * If the `FreshnessPeriod` element is not present, returns #DEFAULT_FRESHNESS_PERIOD.
-   * If the `FreshnessPeriod` value is not representable in the return type, it's clamped to
-   * the nearest representable value.
+   *  If the `FreshnessPeriod` element is not present, returns #DEFAULT_FRESHNESS_PERIOD.
    */
   time::milliseconds
-  getFreshnessPeriod() const noexcept;
+  getFreshnessPeriod() const
+  {
+    return m_freshnessPeriod;
+  }
 
-  /**
-   * @brief Set the `FreshnessPeriod`.
-   * @throw std::invalid_argument specified FreshnessPeriod is negative.
+  /** @brief Set `FreshnessPeriod`.
+   *  @throw std::invalid_argument specified FreshnessPeriod is negative
    */
   MetaInfo&
   setFreshnessPeriod(time::milliseconds freshnessPeriod);
 
-  /**
-   * @brief Return the value of `FinalBlockId`.
+  /** @brief Return the value of `FinalBlockId`.
    */
-  const std::optional<name::Component>&
-  getFinalBlock() const noexcept
+  const optional<name::Component>&
+  getFinalBlock() const
   {
     return m_finalBlockId;
   }
 
-  /**
-   * @brief Set the `FinalBlockId`.
+  /** @brief Set `FinalBlockId`.
    */
   MetaInfo&
-  setFinalBlock(std::optional<name::Component> finalBlockId);
+  setFinalBlock(optional<name::Component> finalBlockId);
 
 public: // app-defined MetaInfo items
   /**
@@ -198,9 +193,9 @@ public: // app-defined MetaInfo items
   findAppMetaInfo(uint32_t tlvType) const;
 
 private:
-  uint32_t m_type = tlv::ContentType_Blob;
-  uint64_t m_freshnessPeriod = DEFAULT_FRESHNESS_PERIOD.count();
-  std::optional<name::Component> m_finalBlockId;
+  uint32_t m_type;
+  time::milliseconds m_freshnessPeriod;
+  optional<name::Component> m_finalBlockId;
   std::list<Block> m_appMetaInfo;
 
   mutable Block m_wire;

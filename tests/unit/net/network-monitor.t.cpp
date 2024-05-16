@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2018 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -23,12 +23,11 @@
 
 #include "tests/boost-test.hpp"
 
-#include <boost/asio/io_context.hpp>
-#include <boost/asio/post.hpp>
+#include <boost/asio/io_service.hpp>
 
-namespace ndn::tests {
-
-using namespace ndn::net;
+namespace ndn {
+namespace net {
+namespace tests {
 
 BOOST_AUTO_TEST_SUITE(Net)
 BOOST_AUTO_TEST_SUITE(TestNetworkMonitor)
@@ -43,7 +42,7 @@ BOOST_AUTO_TEST_SUITE(TestNetworkMonitor)
 
 BOOST_AUTO_TEST_CASE(DestructWithoutRun)
 {
-  boost::asio::io_context io;
+  boost::asio::io_service io;
   auto nm = make_unique<NetworkMonitor>(io);
   nm.reset();
   BOOST_CHECK(true); // if we got this far, the test passed
@@ -51,16 +50,16 @@ BOOST_AUTO_TEST_CASE(DestructWithoutRun)
 
 BOOST_AUTO_TEST_CASE(DestructWhileEnumerating)
 {
-  boost::asio::io_context io;
+  boost::asio::io_service io;
   auto nm = make_unique<NetworkMonitor>(io);
   NM_REQUIRE_CAP(ENUM);
 
   nm->onInterfaceAdded.connect([&] (const shared_ptr<const NetworkInterface>&) {
-    boost::asio::post(io, [&] { nm.reset(); });
+    io.post([&] { nm.reset(); });
   });
   nm->onEnumerationCompleted.connect([&] {
     // make sure the test case terminates even if we have zero interfaces
-    boost::asio::post(io, [&] { nm.reset(); });
+    io.post([&] { nm.reset(); });
   });
 
   io.run();
@@ -70,4 +69,6 @@ BOOST_AUTO_TEST_CASE(DestructWhileEnumerating)
 BOOST_AUTO_TEST_SUITE_END() // TestNetworkMonitor
 BOOST_AUTO_TEST_SUITE_END() // Net
 
-} // namespace ndn::tests
+} // namespace tests
+} // namespace net
+} // namespace ndn

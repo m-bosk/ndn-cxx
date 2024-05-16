@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -22,17 +22,20 @@
 #ifndef NDN_CXX_LP_FIELD_DECL_HPP
 #define NDN_CXX_LP_FIELD_DECL_HPP
 
-#include "ndn-cxx/encoding/block-helpers.hpp"
 #include "ndn-cxx/lp/empty-value.hpp"
+#include "ndn-cxx/lp/field.hpp"
+#include "ndn-cxx/lp/sequence.hpp"
+#include "ndn-cxx/lp/tlv.hpp"
+#include "ndn-cxx/encoding/block-helpers.hpp"
 #include "ndn-cxx/util/concepts.hpp"
 
 #include <boost/concept/requires.hpp>
 #include <boost/endian/conversion.hpp>
 
-namespace ndn::lp {
+namespace ndn {
+namespace lp {
 
-/**
- * \brief Indicates that a `uint64_t` field shall be decoded and encoded as a non-negative integer.
+/** \brief Indicate a uint64_t field shall be decoded and encoded as a non-negative integer.
  */
 struct NonNegativeIntegerTag;
 
@@ -168,15 +171,15 @@ struct EncodeHelper<TAG, TlvType, std::pair<Buffer::const_iterator, Buffer::cons
  *  \tparam DECODER_TAG selects a specialization of DecodeHelper.
  *  \tparam ENCODER_TAG selects a specialization of EncodeHelper.
  */
-template<typename LOCATION, typename VALUE, uint32_t TYPE, bool REPEATABLE = false,
+template<typename LOCATION, typename VALUE, uint64_t TYPE, bool REPEATABLE = false,
          typename DECODER_TAG = VALUE, typename ENCODER_TAG = VALUE>
 class FieldDecl
 {
 public:
-  using FieldLocation = LOCATION;
-  using ValueType = VALUE;
-  using TlvType = std::integral_constant<uint32_t, TYPE>;
-  using IsRepeatable = std::bool_constant<REPEATABLE>;
+  typedef LOCATION FieldLocation;
+  typedef VALUE ValueType;
+  typedef std::integral_constant<uint64_t, TYPE> TlvType;
+  typedef std::integral_constant<bool, REPEATABLE> IsRepeatable;
 
   /** \brief Decode a field.
    *  \param wire an element with top-level TLV-TYPE \c TlvType::value.
@@ -205,6 +208,7 @@ public:
   }
 };
 
-} // namespace ndn::lp
+} // namespace lp
+} // namespace ndn
 
 #endif // NDN_CXX_LP_FIELD_DECL_HPP

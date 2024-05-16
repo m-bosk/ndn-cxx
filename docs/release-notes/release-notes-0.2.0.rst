@@ -66,7 +66,7 @@ New features
   + Introduce ``util::EventEmitter``, :ndn-cxx:`util::NotificationSubscriber`,
     :ndn-cxx:`util::NotificationStream`, and :ndn-cxx:`nfd::FaceMonitor` utility classes
 
-  + Introduce :ndn-cxx:`SegmentFetcher` helper class to fetch multi-segmented data
+  + Introduce :ndn-cxx:`util::SegmentFetcher` helper class to fetch multi-segmented data
     (:issue:`1879`)
 
 - **Build**
@@ -145,7 +145,7 @@ Deprecated
 
   Use versions that accept reference to ``io_service`` object.
 
-- ``Face::ioService`` method, use ``Face::getIoService`` instead.
+- ``Face::ioService`` method, use :ndn-cxx:`Face::getIoService` instead.
 
 - :ndn-cxx:`Interest` constructor that accepts name, individual selectors, and individual
   guiders as constructor parameters.

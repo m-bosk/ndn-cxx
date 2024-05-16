@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2018 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -24,7 +24,9 @@
 
 #include "ndn-cxx/security/transform/transform-base.hpp"
 
-namespace ndn::security::transform {
+namespace ndn {
+namespace security {
+namespace transform {
 
 /**
  * @brief A source taking an std::istream as input
@@ -50,15 +52,17 @@ private:
   doPump() final;
 
 public:
-  static constexpr std::size_t DEFAULT_BUFFER_LEN = 1024;
+  static const std::size_t DEFAULT_BUFFER_LEN;
 
 private:
   std::istream& m_is;
   size_t m_bufferSize;
 };
 
-using streamSource = StreamSource;
+typedef StreamSource streamSource;
 
-} // namespace ndn::security::transform
+} // namespace transform
+} // namespace security
+} // namespace ndn
 
 #endif // NDN_CXX_SECURITY_TRANSFORM_STREAM_SOURCE_HPP

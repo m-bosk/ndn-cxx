@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2021 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -26,9 +26,9 @@
 #include <boost/lexical_cast.hpp>
 #include <thread>
 
-namespace ndn::tests {
-
-using namespace ndn::time;
+namespace ndn {
+namespace time {
+namespace tests {
 
 BOOST_AUTO_TEST_SUITE(Util)
 BOOST_AUTO_TEST_SUITE(TestTime)
@@ -88,18 +88,15 @@ BOOST_AUTO_TEST_CASE(SystemClock)
 
   BOOST_TEST(value > referenceTime);
 
-  BOOST_TEST(toUnixTimestamp(referenceTime) == 1390966967032_ms);
-  BOOST_TEST(toUnixTimestamp<nanoseconds>(referenceTime) == 1390966967032000000_ns);
-  BOOST_TEST(toUnixTimestamp<seconds>(referenceTime) == 1390966967_s);
-
-  BOOST_TEST(toIsoString(referenceTime) == "20140129T034247.032000");
-  BOOST_TEST(toIsoExtendedString(referenceTime) == "2014-01-29T03:42:47.032000");
-  BOOST_TEST(toString(referenceTime) == "2014-01-29 03:42:47");
+  BOOST_CHECK_EQUAL(toIsoString(referenceTime), "20140129T034247.032000");
+  BOOST_CHECK_EQUAL(toIsoExtendedString(referenceTime), "2014-01-29T03:42:47.032000");
+  BOOST_CHECK_EQUAL(toString(referenceTime), "2014-01-29 03:42:47");
 
   // Unfortunately, not all systems has lv_LV locale installed :(
-  // BOOST_TEST(toString(referenceTime, "%Y. gada %d. %B", std::locale("lv_LV.UTF-8")) ==
-  //            "2014. gada 29. Janvāris");
-  BOOST_TEST(toString(referenceTime, "%Y -- %d -- %B", std::locale("C")) == "2014 -- 29 -- January");
+  // BOOST_CHECK_EQUAL(toString(referenceTime, "%Y. gada %d. %B", std::locale("lv_LV.UTF-8")),
+  //                   "2014. gada 29. Janvāris");
+  BOOST_CHECK_EQUAL(toString(referenceTime, "%Y -- %d -- %B", std::locale("C")),
+                    "2014 -- 29 -- January");
 
   BOOST_TEST(fromIsoString("20140129T034247.032000") == referenceTime);
   BOOST_TEST(fromIsoString("20140129T034247.032000Z") == referenceTime);
@@ -113,10 +110,10 @@ BOOST_AUTO_TEST_CASE(SystemClock)
   BOOST_TEST(fromString("2014-01-29 03:42:47") == fromUnixTimestamp(1390966967_s));
 
   // Unfortunately, not all systems has lv_LV locale installed :(
-  // BOOST_TEST(fromString("2014. gada 29. Janvāris", "%Y. gada %d. %B", std::locale("lv_LV.UTF-8")) ==
-  //            fromUnixTimestamp(1390953600_s));
-  BOOST_TEST(fromString("2014 -- 29 -- January", "%Y -- %d -- %B", std::locale("C")) ==
-             fromUnixTimestamp(1390953600_s));
+  // BOOST_CHECK_EQUAL(fromString("2014. gada 29. Janvāris", "%Y. gada %d. %B", std::locale("lv_LV.UTF-8")),
+  //                   fromUnixTimestamp(1390953600_s));
+  BOOST_CHECK_EQUAL(fromString("2014 -- 29 -- January", "%Y -- %d -- %B", std::locale("C")),
+                    fromUnixTimestamp(1390953600_s));
 }
 
 BOOST_AUTO_TEST_CASE(SteadyClock)
@@ -173,4 +170,6 @@ BOOST_AUTO_TEST_CASE(Year2038)
 BOOST_AUTO_TEST_SUITE_END() // TestTime
 BOOST_AUTO_TEST_SUITE_END() // Util
 
-} // namespace ndn::tests
+} // namespace tests
+} // namespace time
+} // namespace ndn

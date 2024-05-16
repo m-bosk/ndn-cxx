@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2021 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -25,15 +25,16 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <sstream>
 
-namespace ndn::time {
+namespace ndn {
+namespace time {
 
-static std::shared_ptr<CustomSystemClock> g_systemClock;
-static std::shared_ptr<CustomSteadyClock> g_steadyClock;
+static shared_ptr<CustomSystemClock> g_systemClock;
+static shared_ptr<CustomSteadyClock> g_steadyClock;
 
 // this function is declared in time-custom-clock.hpp
 void
-setCustomClocks(std::shared_ptr<CustomSteadyClock> steadyClock,
-                std::shared_ptr<CustomSystemClock> systemClock)
+setCustomClocks(shared_ptr<CustomSteadyClock> steadyClock,
+                shared_ptr<CustomSystemClock> systemClock)
 {
   g_systemClock = std::move(systemClock);
   g_steadyClock = std::move(steadyClock);
@@ -70,9 +71,9 @@ system_clock::from_time_t(std::time_t t) noexcept
 #ifdef __APPLE__
 // Note that on macOS platform boost::steady_clock is not truly monotonic, so we use
 // system_clock instead.  Refer to https://svn.boost.org/trac/boost/ticket/7719)
-using base_steady_clock = boost::chrono::system_clock;
+typedef boost::chrono::system_clock base_steady_clock;
 #else
-using base_steady_clock = boost::chrono::steady_clock;
+typedef boost::chrono::steady_clock base_steady_clock;
 #endif
 
 steady_clock::time_point
@@ -104,8 +105,20 @@ steady_clock::to_wait_duration(steady_clock::duration d)
 const system_clock::time_point&
 getUnixEpoch()
 {
-  static constexpr system_clock::time_point epoch;
+  static constexpr system_clock::time_point epoch(seconds::zero());
   return epoch;
+}
+
+milliseconds
+toUnixTimestamp(const system_clock::time_point& point)
+{
+  return duration_cast<milliseconds>(point - getUnixEpoch());
+}
+
+system_clock::time_point
+fromUnixTimestamp(milliseconds duration)
+{
+  return getUnixEpoch() + duration;
 }
 
 static boost::posix_time::ptime
@@ -194,9 +207,11 @@ fromString(const std::string& timePointStr,
   return convertToTimePoint(ptime);
 }
 
-} // namespace ndn::time
+} // namespace time
+} // namespace ndn
 
-namespace boost::chrono {
+namespace boost {
+namespace chrono {
 
 template<class CharT>
 std::basic_string<CharT>
@@ -227,4 +242,5 @@ clock_string<ndn::time::steady_clock, CharT>::since()
 template struct clock_string<ndn::time::system_clock, char>;
 template struct clock_string<ndn::time::steady_clock, char>;
 
-} // namespace boost::chrono
+} // namespace chrono
+} // namespace boost

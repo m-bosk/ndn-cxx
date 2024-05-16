@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -32,7 +32,8 @@
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
 
-namespace ndn::tests {
+namespace ndn {
+namespace tests {
 
 /**
  * @brief Fixture to adjust/restore NDN_CLIENT_PIB and NDN_CLIENT_TPM paths
@@ -45,6 +46,7 @@ class PibDirFixture
 {
 public:
   PibDirFixture()
+    : m_pibDir(Path().PATH)
   {
     if (std::getenv("NDN_CLIENT_PIB") != nullptr) {
       m_oldPib = std::getenv("NDN_CLIENT_PIB");
@@ -79,7 +81,7 @@ public:
   }
 
 protected:
-  const std::string m_pibDir{Path::PATH};
+  const std::string m_pibDir;
 
 private:
   std::string m_oldPib;
@@ -117,9 +119,10 @@ public:
 
 struct DefaultPibDir
 {
-  static constexpr std::string_view PATH{"build/keys"};
+  const std::string PATH = "build/keys";
 };
 
-} // namespace ndn::tests
+} // namespace tests
+} // namespace ndn
 
 #endif // NDN_CXX_TESTS_TEST_HOME_FIXTURE_HPP

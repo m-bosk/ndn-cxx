@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2018 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -21,7 +21,9 @@
 
 #include "ndn-cxx/util/signal/scoped-connection.hpp"
 
-namespace ndn::signal {
+namespace ndn {
+namespace util {
+namespace signal {
 
 ScopedConnection::ScopedConnection(Connection connection) noexcept
   : m_connection(std::move(connection))
@@ -61,4 +63,6 @@ ScopedConnection::release() noexcept
   m_connection = {};
 }
 
-} // namespace ndn::signal
+} // namespace signal
+} // namespace util
+} // namespace ndn

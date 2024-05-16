@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -29,13 +29,16 @@
 #include <unordered_map>
 #include <boost/logic/tribool.hpp>
 
-namespace ndn::security {
+namespace ndn {
+namespace security {
 
 namespace transform {
 class PrivateKey;
 } // namespace transform
 
+inline namespace v2 {
 class KeyChain;
+} // inline namespace v2
 
 namespace tpm {
 
@@ -114,7 +117,7 @@ public:
    * @retval false the signature is not valid
    * @retval indeterminate the key does not exist
    */
-  [[nodiscard]] boost::logic::tribool
+  NDN_CXX_NODISCARD boost::logic::tribool
   verify(const InputBuffers& bufs, span<const uint8_t> sig, const Name& keyName,
          DigestAlgorithm digestAlgorithm) const;
 
@@ -153,7 +156,7 @@ public: // Management
    * @param password The password to unlock the TPM.
    * @param passwordLength The password size.
    */
-  [[nodiscard]] bool
+  NDN_CXX_NODISCARD bool
   unlockTpm(const char* password, size_t passwordLength) const;
 
 NDN_CXX_PUBLIC_WITH_TESTS_ELSE_PRIVATE: // operations accessible only by KeyChain
@@ -253,6 +256,7 @@ private:
 
 using tpm::Tpm;
 
-} // namespace ndn::security
+} // namespace security
+} // namespace ndn
 
 #endif // NDN_CXX_SECURITY_TPM_TPM_HPP

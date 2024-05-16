@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2020 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -26,11 +26,12 @@
 #include "tests/test-common.hpp"
 #include "tests/unit/security/validator-fixture.hpp"
 
-#include <boost/mp11/list.hpp>
+namespace ndn {
+namespace security {
+inline namespace v2 {
+namespace tests {
 
-namespace ndn::tests {
-
-using namespace ndn::security;
+using namespace ndn::tests;
 
 BOOST_AUTO_TEST_SUITE(Security)
 BOOST_AUTO_TEST_SUITE(TestCertificateBundleFetcher)
@@ -44,10 +45,21 @@ public:
   }
 };
 
-struct BundleWithFinalBlockId {};
-struct BundleWithoutFinalBlockId {};
-struct Timeout {};
-struct Nack {};
+class BundleWithFinalBlockId
+{
+};
+
+class BundleWithoutFinalBlockId
+{
+};
+
+class Timeout
+{
+};
+
+class Nack
+{
+};
 
 template<class Response>
 class CertificateBundleFetcherFixture : public HierarchicalValidatorFixture<ValidationPolicySimpleHierarchy,
@@ -149,7 +161,7 @@ CertificateBundleFetcherFixture<Nack>::makeResponse(const Interest& interest)
   face.receive(makeNack(interest, lp::NackReason::NO_ROUTE));
 }
 
-using SuccessWithBundle = boost::mp11::mp_list<BundleWithFinalBlockId, BundleWithoutFinalBlockId>;
+using SuccessWithBundle = boost::mpl::vector<BundleWithFinalBlockId, BundleWithoutFinalBlockId>;
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(ValidateSuccessWithBundle, T, SuccessWithBundle,
                                  CertificateBundleFetcherFixture<T>)
@@ -162,7 +174,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(ValidateSuccessWithBundle, T, SuccessWithBundle
   }
 }
 
-using SuccessWithoutBundle = boost::mp11::mp_list<Nack, Timeout>;
+using SuccessWithoutBundle = boost::mpl::vector<Nack, Timeout>;
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(ValidateSuccessWithoutBundle, T, SuccessWithoutBundle,
                                  CertificateBundleFetcherFixture<T>)
@@ -186,4 +198,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(ValidateSuccessWithoutBundle, T, SuccessWithout
 BOOST_AUTO_TEST_SUITE_END() // TestCertificateBundleFetcher
 BOOST_AUTO_TEST_SUITE_END() // Security
 
-} // namespace ndn::tests
+} // namespace tests
+} // inline namespace v2
+} // namespace security
+} // namespace ndn

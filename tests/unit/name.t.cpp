@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -24,24 +24,12 @@
 #include "tests/boost-test.hpp"
 
 #include <unordered_map>
-#include <boost/range/concepts.hpp>
 
-namespace ndn::tests {
+namespace ndn {
+namespace tests {
 
-using ndn::name::Component;
-
-BOOST_CONCEPT_ASSERT((boost::EqualityComparable<Name>));
-BOOST_CONCEPT_ASSERT((boost::Comparable<Name>));
-BOOST_CONCEPT_ASSERT((WireEncodable<Name>));
-BOOST_CONCEPT_ASSERT((WireEncodableWithEncodingBuffer<Name>));
-BOOST_CONCEPT_ASSERT((WireDecodable<Name>));
-BOOST_CONCEPT_ASSERT((boost::RandomAccessIterator<Name::iterator>));
-BOOST_CONCEPT_ASSERT((boost::RandomAccessIterator<Name::const_iterator>));
-BOOST_CONCEPT_ASSERT((boost::RandomAccessIterator<Name::reverse_iterator>));
-BOOST_CONCEPT_ASSERT((boost::RandomAccessIterator<Name::const_reverse_iterator>));
-BOOST_CONCEPT_ASSERT((boost::RandomAccessRangeConcept<Name>));
-static_assert(std::is_convertible_v<Name::Error*, tlv::Error*>,
-              "Name::Error must inherit from tlv::Error");
+using Component = name::Component;
+using UriFormat = name::UriFormat;
 
 BOOST_AUTO_TEST_SUITE(TestName)
 
@@ -49,10 +37,8 @@ BOOST_AUTO_TEST_SUITE(TestName)
 
 BOOST_AUTO_TEST_CASE(EncodeDecode)
 {
-  constexpr auto uri = "/Emid/25042=P3/.../..../%1C%9F/"
-                       "sha256digest=0415e3624a151850ac686c84f155f29808c0dd73819aa4a4c20be73a4d8a874c"sv;
-
-  // construct from std::string_view
+  std::string uri = "/Emid/25042=P3/.../..../%1C%9F/"
+                    "sha256digest=0415e3624a151850ac686c84f155f29808c0dd73819aa4a4c20be73a4d8a874c";
   Name name(uri);
   BOOST_CHECK_EQUAL(name.size(), 6);
   BOOST_CHECK_EQUAL(name[0], Component("Emid"));
@@ -62,28 +48,17 @@ BOOST_AUTO_TEST_CASE(EncodeDecode)
   BOOST_CHECK_EQUAL(name[4], Component("\x1C\x9F"));
   BOOST_CHECK(name[5].isImplicitSha256Digest());
 
-  BOOST_CHECK_EQUAL(name.toUri(name::UriFormat::CANONICAL),
+  BOOST_CHECK_EQUAL(name.toUri(UriFormat::CANONICAL),
                     "/8=Emid/25042=P3/8=.../8=..../8=%1C%9F/"
                     "1=%04%15%E3bJ%15%18P%AChl%84%F1U%F2%98%08%C0%DDs%81%9A%A4%A4%C2%0B%E7%3AM%8A%87L");
 
   Block wire = name.wireEncode();
   BOOST_CHECK_EQUAL(wire,
-                    "0737 0804456D6964 FD61D2025033 0800 08012E 08021C9F "
-                    "01200415E3624A151850AC686C84F155F29808C0DD73819AA4A4C20BE73A4D8A874C"_block);
+    "0737 0804456D6964 FD61D2025033 0800 08012E 08021C9F "
+    "01200415E3624A151850AC686C84F155F29808C0DD73819AA4A4C20BE73A4D8A874C"_block);
 
-  // construct from Block
   Name decoded(wire);
-  BOOST_TEST(decoded == name);
-  BOOST_CHECK_EXCEPTION(Name("0802CAFE"_block), tlv::Error,
-                        [] (const auto& e) { return e.what() == "Expecting Name element, but TLV has type 8"sv; });
-
-  // implicit conversion from char*
-  name = "/hello";
-  BOOST_TEST(name.toUri(name::UriFormat::CANONICAL) == "/8=hello");
-
-  // implicit conversion from std::string
-  name = "/world"s;
-  BOOST_TEST(name.toUri(name::UriFormat::CANONICAL) == "/8=world");
+  BOOST_CHECK_EQUAL(decoded, name);
 }
 
 BOOST_AUTO_TEST_CASE(ParseUri)
@@ -93,19 +68,13 @@ BOOST_AUTO_TEST_CASE(ParseUri)
 
   // URI with correct scheme
   BOOST_CHECK_EQUAL(Name("ndn:/hello/world").toUri(), "/hello/world");
-  BOOST_CHECK_EQUAL(Name("ndn:/").toUri(), "/");
-  BOOST_CHECK_EQUAL(Name("ndn:").toUri(), "/");
 
   // URI with incorrect scheme: auto-corrected
   BOOST_CHECK_EQUAL(Name("ncc:/hello/world").toUri(), "/hello/world");
-  BOOST_CHECK_EQUAL(Name(":/").toUri(), "/");
-  BOOST_CHECK_EQUAL(Name(":").toUri(), "/");
 
   // URI with authority: authority ignored
   BOOST_CHECK_EQUAL(Name("//authority/hello/world").toUri(), "/hello/world");
   BOOST_CHECK_EQUAL(Name("ndn://authority/hello/world").toUri(), "/hello/world");
-  BOOST_CHECK_EQUAL(Name("//authority").toUri(), "/");
-  BOOST_CHECK_EQUAL(Name("ndn://").toUri(), "/");
 
   // URI containing unescaped characters: auto-corrected
   BOOST_CHECK_EQUAL(Name("/ hello\t/\tworld \r\n").toUri(), "/%20hello%09/%09world%20%0D%0A");
@@ -115,12 +84,8 @@ BOOST_AUTO_TEST_CASE(ParseUri)
   // URI not starting with '/': accepted as PartialName
   BOOST_CHECK_EQUAL(Name("").toUri(), "/");
   BOOST_CHECK_EQUAL(Name(" ").toUri(), "/%20");
-  BOOST_CHECK_EQUAL(Name("ndn: ").toUri(), "/%20");
-  BOOST_CHECK_EQUAL(Name("ndn: /").toUri(), "/%20");
   BOOST_CHECK_EQUAL(Name("  /hello/world").toUri(), "/%20%20/hello/world");
   BOOST_CHECK_EQUAL(Name("hello/world").toUri(), "/hello/world");
-  BOOST_CHECK_EQUAL(Name("hello").toUri(), "/hello");
-  BOOST_CHECK_EQUAL(Name("ndn:hello").toUri(), "/hello");
 
   // URI ending with '/': auto-corrected
   BOOST_CHECK_EQUAL(Name("/hello/world/").toUri(), "/hello/world");
@@ -345,34 +310,34 @@ BOOST_AUTO_TEST_CASE(AppendTypedComponent)
   Name name;
   uint64_t number;
 
-  number = name.appendSegment(30923).at(-1).toSegment();
+  BOOST_CHECK_NO_THROW(number = name.appendSegment(30923).at(-1).toSegment());
   BOOST_TEST(number == 30923);
 
-  number = name.appendByteOffset(41880).at(-1).toByteOffset();
+  BOOST_CHECK_NO_THROW(number = name.appendByteOffset(41880).at(-1).toByteOffset());
   BOOST_TEST(number == 41880);
 
   auto before = time::toUnixTimestamp(time::system_clock::now());
-  number = name.appendVersion().at(-1).toVersion();
+  BOOST_CHECK_NO_THROW(number = name.appendVersion().at(-1).toVersion());
   auto after = time::toUnixTimestamp(time::system_clock::now());
   BOOST_TEST(number >= before.count());
   BOOST_TEST(number <= after.count());
 
-  number = name.appendVersion(25912).at(-1).toVersion();
+  BOOST_CHECK_NO_THROW(number = name.appendVersion(25912).at(-1).toVersion());
   BOOST_TEST(number == 25912);
 
   const auto tp = time::system_clock::now();
-  time::system_clock::time_point tp2;
-  tp2 = name.appendTimestamp(tp).at(-1).toTimestamp();
+  time::system_clock::TimePoint tp2;
+  BOOST_CHECK_NO_THROW(tp2 = name.appendTimestamp(tp).at(-1).toTimestamp());
   BOOST_TEST(time::abs(tp2 - tp) <= 1_us);
 
-  number = name.appendSequenceNumber(11676).at(-1).toSequenceNumber();
+  BOOST_CHECK_NO_THROW(number = name.appendSequenceNumber(11676).at(-1).toSequenceNumber());
   BOOST_TEST(number == 11676);
 
   name.appendKeyword({0xab, 0xcd, 0xef});
-  BOOST_TEST(name.at(-1) == Component::fromUri("32=%AB%CD%EF"sv));
+  BOOST_TEST(name.at(-1) == Component::fromEscapedString("32=%AB%CD%EF"));
 
   name.appendKeyword("test-keyword");
-  BOOST_TEST(name.at(-1) == Component::fromUri("32=test-keyword"sv));
+  BOOST_TEST(name.at(-1) == Component::fromEscapedString("32=test-keyword"));
 }
 
 BOOST_AUTO_TEST_CASE(EraseComponent)
@@ -459,7 +424,7 @@ BOOST_AUTO_TEST_CASE(IsPrefixOf)
 
 BOOST_AUTO_TEST_CASE(CompareOp)
 {
-  const std::vector<Name> names = {
+  std::vector<Name> names = {
     Name("/"),
     Name("/sha256digest=0000000000000000000000000000000000000000000000000000000000000000"),
     Name("/sha256digest=0000000000000000000000000000000000000000000000000000000000000001"),
@@ -501,10 +466,8 @@ BOOST_AUTO_TEST_CASE(CompareOp)
 
   for (size_t i = 0; i < names.size(); ++i) {
     for (size_t j = 0; j < names.size(); ++j) {
-      const auto& lhs = names[i];
-      const auto& rhs = names[j];
-      BOOST_TEST_INFO_SCOPE("lhs = " << lhs);
-      BOOST_TEST_INFO_SCOPE("rhs = " << rhs);
+      Name lhs = names[i];
+      Name rhs = names[j];
       BOOST_CHECK_EQUAL(lhs == rhs, i == j);
       BOOST_CHECK_EQUAL(lhs != rhs, i != j);
       BOOST_CHECK_EQUAL(lhs <  rhs, i <  j);
@@ -558,7 +521,7 @@ BOOST_AUTO_TEST_CASE(CompareFunc)
   BOOST_CHECK_GT   (Name("/Z/A/C/Y").compare(1, 2, Name("/X/A"),   1), 0);
 }
 
-BOOST_AUTO_TEST_CASE(UnorderedMapKey)
+BOOST_AUTO_TEST_CASE(UnorderedMap)
 {
   std::unordered_map<Name, int> map;
   Name name1("/1");
@@ -575,4 +538,5 @@ BOOST_AUTO_TEST_CASE(UnorderedMapKey)
 
 BOOST_AUTO_TEST_SUITE_END() // TestName
 
-} // namespace ndn::tests
+} // namespace tests
+} // namespace ndn

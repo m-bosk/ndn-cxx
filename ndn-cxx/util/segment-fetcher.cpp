@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California,
+ * Copyright (c) 2013-2021 Regents of the University of California,
  *                         Colorado State University,
  *                         University Pierre & Marie Curie, Sorbonne University.
  *
@@ -27,15 +27,16 @@
 #include "ndn-cxx/lp/nack.hpp"
 #include "ndn-cxx/lp/nack-header.hpp"
 
-#include <boost/asio/io_context.hpp>
-#include <boost/asio/post.hpp>
+#include <boost/asio/io_service.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/range/adaptor/map.hpp>
 
-#include <algorithm>
 #include <cmath>
 
 namespace ndn {
+namespace util {
+
+constexpr double SegmentFetcher::MIN_SSTHRESH;
 
 void
 SegmentFetcher::Options::validate()
@@ -62,9 +63,9 @@ SegmentFetcher::SegmentFetcher(Face& face,
                                const SegmentFetcher::Options& options)
   : m_options(options)
   , m_face(face)
-  , m_scheduler(m_face.getIoContext())
+  , m_scheduler(m_face.getIoService())
   , m_validator(validator)
-  , m_rttEstimator(make_shared<util::RttEstimator::Options>(options.rttOptions))
+  , m_rttEstimator(make_shared<RttEstimator::Options>(options.rttOptions))
   , m_timeLastSegmentReceived(time::steady_clock::now())
   , m_cwnd(options.initCwnd)
   , m_ssthresh(options.initSsthresh)
@@ -92,7 +93,7 @@ SegmentFetcher::stop()
   }
 
   m_pendingSegments.clear(); // cancels pending Interests and timeout events
-  boost::asio::post(m_face.getIoContext(), [self = std::move(m_this)] {});
+  m_face.getIoService().post([self = std::move(m_this)] {});
 }
 
 bool
@@ -107,12 +108,7 @@ SegmentFetcher::fetchFirstSegment(const Interest& baseInterest, bool isRetransmi
 {
   Interest interest(baseInterest);
   interest.setCanBePrefix(true);
-  if (!interest.getName().empty() && interest.getName()[-1].isVersion()) {
-    interest.setMustBeFresh(false);
-  }
-  else {
-    interest.setMustBeFresh(m_options.probeLatestVersion);
-  }
+  interest.setMustBeFresh(true);
   interest.setInterestLifetime(m_options.interestLifetime);
   if (isRetransmission) {
     interest.refreshNonce();
@@ -203,7 +199,7 @@ SegmentFetcher::sendInterest(uint64_t segNum, const Interest& interest, bool isR
 
   PendingSegment pendingSegment{SegmentState::FirstInterest, time::steady_clock::now(),
                                 pendingInterest, timeoutEvent};
-  bool isNew = m_pendingSegments.try_emplace(segNum, std::move(pendingSegment)).second;
+  bool isNew = m_pendingSegments.emplace(segNum, std::move(pendingSegment)).second;
   BOOST_VERIFY(isNew);
   m_highInterest = segNum;
 }
@@ -276,10 +272,11 @@ SegmentFetcher::afterValidationSuccess(const Data& data, const Interest& origInt
   m_pendingSegments.erase(pendingSegmentIt);
 
   // Copy data in segment to temporary buffer
-  auto receivedSegmentIt = m_segmentBuffer.try_emplace(currentSegment, data.getContent().value_size())
-                           .first;
+  auto receivedSegmentIt = m_segmentBuffer.emplace(std::piecewise_construct,
+                                                   std::forward_as_tuple(currentSegment),
+                                                   std::forward_as_tuple(data.getContent().value_size()));
   std::copy(data.getContent().value_begin(), data.getContent().value_end(),
-            receivedSegmentIt->second.begin());
+            receivedSegmentIt.first->second.begin());
   m_nBytesReceived += data.getContent().value_size();
   afterSegmentValidated(data);
 
@@ -380,15 +377,15 @@ SegmentFetcher::afterNackOrTimeout(const Interest& origInterest)
     return signalError(INTEREST_TIMEOUT, "Timeout exceeded");
   }
 
-  BOOST_ASSERT(!m_pendingSegments.empty());
-
-  const auto& origName = origInterest.getName();
+  name::Component lastNameComponent = origInterest.getName().get(-1);
   std::map<uint64_t, PendingSegment>::iterator pendingSegmentIt;
-  if (!origName.empty() && origName[-1].isSegment()) {
-    pendingSegmentIt = m_pendingSegments.find(origName[-1].toSegment());
-    BOOST_ASSERT(pendingSegmentIt != m_pendingSegments.end());
+  BOOST_ASSERT(m_pendingSegments.size() > 0);
+  if (lastNameComponent.isSegment()) {
+    BOOST_ASSERT(m_pendingSegments.count(lastNameComponent.toSegment()) > 0);
+    pendingSegmentIt = m_pendingSegments.find(lastNameComponent.toSegment());
   }
   else { // First Interest
+    BOOST_ASSERT(m_pendingSegments.size() > 0);
     pendingSegmentIt = m_pendingSegments.begin();
   }
 
@@ -398,7 +395,7 @@ SegmentFetcher::afterNackOrTimeout(const Interest& origInterest)
 
   m_rttEstimator.backoffRto();
 
-  if (m_receivedSegments.empty()) {
+  if (m_receivedSegments.size() == 0) {
     // Resend first Interest (until maximum receive timeout exceeded)
     fetchFirstSegment(origInterest, true);
   }
@@ -525,4 +522,5 @@ SegmentFetcher::getEstimatedRto()
                   time::duration_cast<time::milliseconds>(m_rttEstimator.getEstimatedRto()));
 }
 
+} // namespace util
 } // namespace ndn

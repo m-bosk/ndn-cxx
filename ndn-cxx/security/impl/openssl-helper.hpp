@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -22,18 +22,19 @@
 #ifndef NDN_CXX_SECURITY_IMPL_OPENSSL_HELPER_HPP
 #define NDN_CXX_SECURITY_IMPL_OPENSSL_HELPER_HPP
 
-#include "ndn-cxx/detail/common.hpp"
 #include "ndn-cxx/security/security-common.hpp"
 
 #include <openssl/bio.h>
 #include <openssl/evp.h>
 
-namespace ndn::security::detail {
+namespace ndn {
+namespace security {
+namespace detail {
 
-[[nodiscard]] const EVP_MD*
+NDN_CXX_NODISCARD const EVP_MD*
 digestAlgorithmToEvpMd(DigestAlgorithm algo);
 
-[[nodiscard]] int
+NDN_CXX_NODISCARD int
 getEvpPkeyType(const EVP_PKEY* key);
 
 class EvpMdCtx : noncopyable
@@ -85,16 +86,18 @@ public:
     return m_bio;
   }
 
-  [[nodiscard]] bool
+  NDN_CXX_NODISCARD bool
   read(span<uint8_t> buf) const noexcept;
 
-  [[nodiscard]] bool
+  NDN_CXX_NODISCARD bool
   write(span<const uint8_t> buf) noexcept;
 
 private:
   BIO* m_bio;
 };
 
-} // namespace ndn::security::detail
+} // namespace detail
+} // namespace security
+} // namespace ndn
 
 #endif // NDN_CXX_SECURITY_IMPL_OPENSSL_HELPER_HPP

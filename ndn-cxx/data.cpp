@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -23,6 +23,13 @@
 #include "ndn-cxx/util/sha256.hpp"
 
 namespace ndn {
+
+BOOST_CONCEPT_ASSERT((boost::EqualityComparable<Data>));
+BOOST_CONCEPT_ASSERT((WireEncodable<Data>));
+BOOST_CONCEPT_ASSERT((WireEncodableWithEncodingBuffer<Data>));
+BOOST_CONCEPT_ASSERT((WireDecodable<Data>));
+static_assert(std::is_base_of<tlv::Error, Data::Error>::value,
+              "Data::Error must inherit from tlv::Error");
 
 Data::Data(const Name& name)
   : m_name(name)
@@ -262,18 +269,10 @@ Data::setContent(span<const uint8_t> value)
 }
 
 Data&
-Data::setContent(std::string_view value)
-{
-  m_content = makeStringBlock(tlv::Content, value);
-  resetWire();
-  return *this;
-}
-
-Data&
 Data::setContent(ConstBufferPtr value)
 {
-  if (!value) {
-    NDN_THROW(std::invalid_argument("Content buffer cannot be null"));
+  if (value == nullptr) {
+    NDN_THROW(std::invalid_argument("Content buffer cannot be nullptr"));
   }
 
   m_content = Block(tlv::Content, std::move(value));
@@ -284,10 +283,8 @@ Data::setContent(ConstBufferPtr value)
 Data&
 Data::unsetContent()
 {
-  if (m_content.isValid()) {
-    m_content = {};
-    resetWire();
-  }
+  m_content = {};
+  resetWire();
   return *this;
 }
 
@@ -310,8 +307,8 @@ Data::setSignatureValue(span<const uint8_t> value)
 Data&
 Data::setSignatureValue(ConstBufferPtr value)
 {
-  if (!value) {
-    NDN_THROW(std::invalid_argument("SignatureValue buffer cannot be null"));
+  if (value == nullptr) {
+    NDN_THROW(std::invalid_argument("SignatureValue buffer cannot be nullptr"));
   }
 
   m_signatureValue = Block(tlv::SignatureValue, std::move(value));
@@ -354,7 +351,7 @@ Data::setFreshnessPeriod(time::milliseconds freshnessPeriod)
 }
 
 Data&
-Data::setFinalBlock(std::optional<name::Component> finalBlockId)
+Data::setFinalBlock(optional<name::Component> finalBlockId)
 {
   if (finalBlockId != m_metaInfo.getFinalBlock()) {
     m_metaInfo.setFinalBlock(std::move(finalBlockId));

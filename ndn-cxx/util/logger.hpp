@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2021 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -22,7 +22,7 @@
 #ifndef NDN_CXX_UTIL_LOGGER_HPP
 #define NDN_CXX_UTIL_LOGGER_HPP
 
-#include "ndn-cxx/detail/config.hpp"
+#include "ndn-cxx/detail/common.hpp"
 
 #ifdef HAVE_NDN_CXX_CUSTOM_LOGGER
 #include "ndn-cxx/util/custom-logger.hpp"
@@ -33,14 +33,11 @@
 #include <boost/log/sources/severity_logger.hpp>
 
 #include <atomic>
-#include <iosfwd>
-#include <string>
-#include <string_view>
 
-namespace ndn::util {
+namespace ndn {
+namespace util {
 
-/**
- * \brief Indicates the severity level of a log message.
+/** \brief Indicates the severity level of a log message.
  */
 enum class LogLevel {
   FATAL   = -1,   ///< fatal (will be logged unconditionally)
@@ -53,19 +50,17 @@ enum class LogLevel {
   ALL     = 255   ///< all messages
 };
 
-/**
- * \brief Output LogLevel as a string.
- * \throw std::invalid_argument Unknown \p level
+/** \brief Output LogLevel as a string.
+ *  \throw std::invalid_argument unknown \p level
  */
 std::ostream&
 operator<<(std::ostream& os, LogLevel level);
 
-/**
- * \brief Parse LogLevel from a string.
- * \throw std::invalid_argument Unknown level name
+/** \brief Parse LogLevel from a string.
+ *  \throw std::invalid_argument unknown level name
  */
 LogLevel
-parseLogLevel(std::string_view s);
+parseLogLevel(const std::string& s);
 
 namespace log {
 
@@ -74,11 +69,10 @@ BOOST_LOG_ATTRIBUTE_KEYWORD(severity, "Severity", LogLevel)
 
 } // namespace log
 
-/**
- * \brief Represents a log module in the logging facility.
+/** \brief Represents a log module in the logging facility.
  *
- * \note Normally, loggers should be defined using #NDN_LOG_INIT, #NDN_LOG_MEMBER_INIT,
- *       or #NDN_LOG_MEMBER_INIT_SPECIALIZED.
+ *  \note Normally, loggers should be defined using #NDN_LOG_INIT, #NDN_LOG_MEMBER_INIT,
+ *        or #NDN_LOG_MEMBER_INIT_SPECIALIZED.
  */
 class Logger : public boost::log::sources::severity_logger_mt<LogLevel>
 {
@@ -279,7 +273,8 @@ using ArgumentType = typename ExtractArgument<T>::type;
  */
 #define NDN_LOG_FATAL(expression) NDN_LOG_INTERNAL(FATAL, expression)
 
-} // namespace ndn::util
+} // namespace util
+} // namespace ndn
 
 #endif // HAVE_NDN_CXX_CUSTOM_LOGGER
 

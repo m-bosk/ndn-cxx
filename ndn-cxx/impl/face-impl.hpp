@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -27,21 +27,17 @@
 #include "ndn-cxx/impl/lp-field-tag.hpp"
 #include "ndn-cxx/impl/pending-interest.hpp"
 #include "ndn-cxx/impl/registered-prefix.hpp"
-#include "ndn-cxx/lp/fields.hpp"
 #include "ndn-cxx/lp/packet.hpp"
 #include "ndn-cxx/lp/tags.hpp"
 #include "ndn-cxx/mgmt/nfd/command-options.hpp"
 #include "ndn-cxx/mgmt/nfd/controller.hpp"
-#include "ndn-cxx/transport/transport.hpp"
+#include "ndn-cxx/transport/tcp-transport.hpp"
+#include "ndn-cxx/transport/unix-transport.hpp"
 #include "ndn-cxx/util/logger.hpp"
 #include "ndn-cxx/util/scheduler.hpp"
+#include "ndn-cxx/util/signal.hpp"
 
-#include <boost/asio/io_context.hpp>
-#include <boost/asio/post.hpp>
-
-namespace ndn {
-
-//
+NDN_LOG_INIT(ndn.Face);
 // INFO level: prefix registration, etc.
 //
 // DEBUG level: packet logging.
@@ -54,18 +50,17 @@ namespace ndn {
 // DEBUG level.
 //
 // TRACE level: more detailed unstructured messages.
-//
-NDN_LOG_INIT(ndn.Face);
 
-/**
- * @brief Implementation detail of Face.
+namespace ndn {
+
+/** @brief Implementation detail of Face.
  */
 class Face::Impl : public std::enable_shared_from_this<Face::Impl>
 {
 public:
   Impl(Face& face, KeyChain& keyChain)
     : m_face(face)
-    , m_scheduler(m_face.getIoContext())
+    , m_scheduler(m_face.getIoService())
     , m_nfdController(m_face, keyChain)
   {
     auto onEmptyPitOrNoRegisteredPrefixes = [this] {
@@ -73,10 +68,10 @@ public:
       // (+async_read) from within onInterest/onData callback.  After onInterest/onData
       // finishes, there is another +async_read with the same memory block.  A few of such
       // async_read duplications can cause various effects and result in segfault.
-      boost::asio::post(m_face.getIoContext(), [this] {
+      m_face.getIoService().post([this] {
         if (m_pendingInterestTable.empty() && m_registeredPrefixTable.empty()) {
           m_face.m_transport->pause();
-          if (!m_workGuard) {
+          if (!m_ioServiceWork) {
             m_processEventsTimeoutEvent.cancel();
           }
         }
@@ -114,8 +109,9 @@ public: // consumer
   void
   asyncRemovePendingInterest(detail::RecordId id)
   {
-    boost::asio::post(m_face.getIoContext(), [id, w = weak_from_this()] {
-      if (auto impl = w.lock(); impl != nullptr) {
+    m_face.getIoService().post([id, w = weak_ptr<Impl>{shared_from_this()}] { // use weak_from_this() in C++17
+      auto impl = w.lock();
+      if (impl != nullptr) {
         impl->m_pendingInterestTable.erase(id);
       }
     });
@@ -148,6 +144,13 @@ public: // consumer
         hasForwarderMatch = true;
       }
 
+      // For SoftState interest, we should return here false?
+      // WE NEED TO TAKE CARE OF THE INTEREST LIFETIME SOMEHOW!!!
+      NDN_LOG_DEBUG("   " << *entry.getInterest() << "; soft status: " << entry.getInterest()->getIsSoftState() << "; lifetime " <<  entry.getInterest()->getInterestLifetime() );
+      if (entry.getInterest()->getIsSoftState()) {
+        return false;
+      }
+
       return true;
     });
 
@@ -158,17 +161,17 @@ public: // consumer
   /**
    * @return A Nack to be sent to the forwarder, or nullopt if no Nack should be sent.
    */
-  std::optional<lp::Nack>
+  optional<lp::Nack>
   nackPendingInterests(const lp::Nack& nack)
   {
-    std::optional<lp::Nack> outNack;
+    optional<lp::Nack> outNack;
     m_pendingInterestTable.removeIf([&] (PendingInterest& entry) {
       if (!nack.getInterest().matchesInterest(*entry.getInterest())) {
         return false;
       }
       NDN_LOG_DEBUG("   nacking " << *entry.getInterest() << " from " << entry.getOrigin());
 
-      auto outNack1 = entry.recordNack(nack);
+      optional<lp::Nack> outNack1 = entry.recordNack(nack);
       if (!outNack1) {
         return false;
       }
@@ -199,8 +202,9 @@ public: // producer
   void
   asyncUnsetInterestFilter(detail::RecordId id)
   {
-    boost::asio::post(m_face.getIoContext(), [id, w = weak_from_this()] {
-      if (auto impl = w.lock(); impl != nullptr) {
+    m_face.getIoService().post([id, w = weak_ptr<Impl>{shared_from_this()}] { // use weak_from_this() in C++17
+      auto impl = w.lock();
+      if (impl != nullptr) {
         impl->unsetInterestFilter(id);
       }
     });
@@ -237,7 +241,7 @@ public: // producer
   putNack(const lp::Nack& nack)
   {
     NDN_LOG_DEBUG("<N " << nack.getInterest() << '~' << nack.getHeader().getReason());
-    auto outNack = nackPendingInterests(nack);
+    optional<lp::Nack> outNack = nackPendingInterests(nack);
     if (!outNack) {
       return;
     }
@@ -258,10 +262,8 @@ public: // prefix registration
   registerPrefix(const Name& prefix,
                  const RegisterPrefixSuccessCallback& onSuccess,
                  const RegisterPrefixFailureCallback& onFailure,
-                 uint64_t flags,
-                 const nfd::CommandOptions& options,
-                 const std::optional<InterestFilter>& filter,
-                 const InterestCallback& onInterest)
+                 uint64_t flags, const nfd::CommandOptions& options,
+                 const optional<InterestFilter>& filter, const InterestCallback& onInterest)
   {
     NDN_LOG_INFO("registering prefix: " << prefix);
     auto id = m_registeredPrefixTable.allocateId();
@@ -297,8 +299,9 @@ public: // prefix registration
                         const UnregisterPrefixSuccessCallback& onSuccess,
                         const UnregisterPrefixFailureCallback& onFailure)
   {
-    boost::asio::post(m_face.getIoContext(), [=, w = weak_from_this()] {
-      if (auto impl = w.lock(); impl != nullptr) {
+    m_face.getIoService().post([=, w = weak_ptr<Impl>{shared_from_this()}] { // use weak_from_this() in C++17
+      auto impl = w.lock();
+      if (impl != nullptr) {
         impl->unregisterPrefix(id, onSuccess, onFailure);
       }
     });
@@ -309,7 +312,7 @@ public: // IO routine
   ensureConnected(bool wantResume)
   {
     if (m_face.m_transport->getState() == Transport::State::CLOSED) {
-      m_face.m_transport->connect(m_face.getIoContext(),
+      m_face.m_transport->connect(m_face.getIoService(),
                                   [this] (const Block& wire) { m_face.onReceiveElement(wire); });
     }
 
@@ -321,7 +324,7 @@ public: // IO routine
   void
   shutdown()
   {
-    m_workGuard.reset();
+    m_ioServiceWork.reset();
     m_pendingInterestTable.clear();
     m_registeredPrefixTable.clear();
   }
@@ -420,8 +423,7 @@ private:
   detail::RecordContainer<InterestFilterRecord> m_interestFilterTable;
   detail::RecordContainer<RegisteredPrefix> m_registeredPrefixTable;
 
-  using IoContextWorkGuard = boost::asio::executor_work_guard<boost::asio::io_context::executor_type>;
-  unique_ptr<IoContextWorkGuard> m_workGuard;
+  unique_ptr<boost::asio::io_service::work> m_ioServiceWork; // if thread needs to be preserved
 
   friend Face;
 };

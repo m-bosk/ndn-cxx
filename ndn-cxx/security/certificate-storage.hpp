@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -26,7 +26,9 @@
 #include "ndn-cxx/security/certificate-cache.hpp"
 #include "ndn-cxx/security/trust-anchor-container.hpp"
 
-namespace ndn::security {
+namespace ndn {
+namespace security {
+inline namespace v2 {
 
 /**
  * @brief Storage for trusted anchors, verified certificate cache, and unverified certificate cache.
@@ -133,6 +135,8 @@ protected:
   CertificateCache m_unverifiedCertCache;
 };
 
-} // namespace ndn::security
+} // inline namespace v2
+} // namespace security
+} // namespace ndn
 
 #endif // NDN_CXX_SECURITY_CERTIFICATE_STORAGE_HPP

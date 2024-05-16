@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -22,14 +22,33 @@
 #include "ndn-cxx/security/pib/key-container.hpp"
 #include "ndn-cxx/security/pib/impl/key-impl.hpp"
 #include "ndn-cxx/security/pib/pib-impl.hpp"
+#include "ndn-cxx/util/concepts.hpp"
 #include "ndn-cxx/util/logger.hpp"
 
-namespace ndn::security::pib {
+namespace ndn {
+namespace security {
+namespace pib {
 
 NDN_LOG_INIT(ndn.security.KeyContainer);
 
+NDN_CXX_ASSERT_FORWARD_ITERATOR(KeyContainer::const_iterator);
+
+KeyContainer::const_iterator::const_iterator(NameSet::const_iterator it,
+                                             const KeyContainer& container) noexcept
+  : m_it(it)
+  , m_container(&container)
+{
+}
+
+Key
+KeyContainer::const_iterator::operator*()
+{
+  BOOST_ASSERT(m_container != nullptr);
+  return m_container->get(*m_it);
+}
+
 bool
-KeyContainer::const_iterator::equals(const const_iterator& other) const noexcept
+KeyContainer::const_iterator::operator==(const const_iterator& other) const
 {
   bool isThisEnd = m_container == nullptr || m_it == m_container->m_keyNames.end();
   bool isOtherEnd = other.m_container == nullptr || other.m_it == other.m_container->m_keyNames.end();
@@ -64,7 +83,7 @@ KeyContainer::add(span<const uint8_t> keyBits, const Name& keyName)
   NDN_LOG_DEBUG((isNew ? "Adding " : "Replacing ") << keyName);
   m_pib->addKey(m_identity, keyName, keyBits);
 
-  auto key = std::make_shared<KeyImpl>(keyName, Buffer(keyBits.begin(), keyBits.end()), m_pib);
+  auto key = std::make_shared<detail::KeyImpl>(keyName, Buffer(keyBits.begin(), keyBits.end()), m_pib);
   m_keys[keyName] = key; // use insert_or_assign in C++17
   return Key(key);
 }
@@ -96,7 +115,8 @@ KeyContainer::get(const Name& keyName) const
                                     "`" + m_identity.toUri() + "`"));
   }
 
-  if (auto it = m_keys.find(keyName); it != m_keys.end()) {
+  auto it = m_keys.find(keyName);
+  if (it != m_keys.end()) {
     return Key(it->second);
   }
 
@@ -104,7 +124,7 @@ KeyContainer::get(const Name& keyName) const
   // because getKeyBits will throw if it doesn't
   auto keyBits = m_pib->getKeyBits(keyName);
 
-  auto key = std::make_shared<KeyImpl>(keyName, std::move(keyBits), m_pib);
+  auto key = std::make_shared<detail::KeyImpl>(keyName, std::move(keyBits), m_pib);
   m_keys[keyName] = key;
   return Key(key);
 }
@@ -115,4 +135,6 @@ KeyContainer::isConsistent() const
   return m_keyNames == m_pib->getKeysOfIdentity(m_identity);
 }
 
-} // namespace ndn::security::pib
+} // namespace pib
+} // namespace security
+} // namespace ndn

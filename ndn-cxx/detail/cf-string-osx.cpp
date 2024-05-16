@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2019 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -20,9 +20,10 @@
  */
 
 #include "ndn-cxx/detail/cf-string-osx.hpp"
-#include "ndn-cxx/detail/common.hpp"
 
-namespace ndn::detail::cfstring {
+namespace ndn {
+namespace detail {
+namespace cfstring {
 
 CFReleaser<CFStringRef>
 fromBuffer(const uint8_t* buf, size_t buflen)
@@ -65,4 +66,6 @@ toStdString(CFStringRef cfStr)
   return str;
 }
 
-} // namespace ndn::detail::cfstring
+} // namespace cfstring
+} // namespace detail
+} // namespace ndn

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -23,9 +23,11 @@
 
 #include "tests/test-common.hpp"
 
-namespace ndn::tests {
+namespace ndn {
+namespace mgmt {
+namespace tests {
 
-using namespace ndn::mgmt;
+using namespace ndn::tests;
 
 class StatusDatasetContextFixture
 {
@@ -299,4 +301,6 @@ BOOST_AUTO_TEST_SUITE_END() // AbnormalState
 BOOST_AUTO_TEST_SUITE_END() // TestStatusDatasetContext
 BOOST_AUTO_TEST_SUITE_END() // Mgmt
 
-} // namespace ndn::tests
+} // namespace tests
+} // namespace mgmt
+} // namespace ndn

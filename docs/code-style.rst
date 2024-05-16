@@ -3,11 +3,11 @@ ndn-cxx Code Style and Coding Guidelines
 
 Based on
 
-* "C++ Programming Style Guidelines" by Geotechnical Software Services, Copyright © 1996-2011.
-  The original document is available at `<http://geosoft.no/development/cppstyle.html>`__
+* "C++ Programming Style Guidelines" by Geotechnical Software Services, Copyright © 1996 – 2011.
+  The original document is available at `<http://geosoft.no/development/cppstyle.html>`_
 
 * NDN Platform "C++, C, C#, Java and JavaScript Code Guidelines".
-  The original document is available at `<https://named-data.net/codebase/platform/documentation/ndn-platform-development-guidelines/cpp-code-guidelines/>`__
+  The original document is available at `<https://named-data.net/codebase/platform/documentation/ndn-platform-development-guidelines/cpp-code-guidelines/>`_
 
 1. Code layout
 --------------
@@ -52,11 +52,11 @@ extended it to C++.
 
         } // namespace example
 
-    Note that code inside the namespace is **not** indented. Avoid the following:
+    Note that code inside namespace is **not** indented. Avoid the following:
 
     .. code-block:: c++
 
-        // WRONG
+        // NOT
         //
         // namespace example {
         //
@@ -180,7 +180,7 @@ extended it to C++.
         switch (condition) {
           case ABC:        // 2 space indent
             statements;    // 4 space indent
-            [[fallthrough]];
+            NDN_CXX_FALLTHROUGH;
 
           case DEF:
             statements;
@@ -211,7 +211,7 @@ extended it to C++.
           // Correct style
           case A1: {
             statements;
-            [[fallthrough]];
+            NDN_CXX_FALLTHROUGH;
           }
 
           // Incorrect style: braces should cover the entire case block
@@ -232,7 +232,7 @@ extended it to C++.
         switch (condition) {
         case ABC:        // no indent
           statements;    // 2 space indent
-          [[fallthrough]];
+          NDN_CXX_FALLTHROUGH;
 
         case DEF:
           statements;
@@ -243,11 +243,11 @@ extended it to C++.
           break;
         }
 
-    The ``[[fallthrough]]`` annotation must be included whenever there is a
-    case without a break statement. Leaving the break out is a common error,
+    The ``NDN_CXX_FALLTHROUGH`` annotation must be included whenever there is
+    a case without a break statement. Leaving the break out is a common error,
     and it must be made clear that it is intentional when it is not there.
-    Moreover, modern compilers will warn when a case that falls through is
-    not explicitly annotated.
+    Moreover, modern compilers will warn when a case that falls through is not
+    explicitly annotated.
 
 1.11. A ``try-catch`` statement should have the following form:
 
@@ -479,11 +479,13 @@ written in mixed case starting with lower case.
 
     .. code-block:: c++
 
-        namespace model::analyzer {
+        namespace model {
+        namespace analyzer {
 
         ...
 
-        } // namespace model::analyzer
+        } // namespace analyzer
+        } // namespace model
 
 2.7. Names representing generic template types should be a single uppercase letter.
 

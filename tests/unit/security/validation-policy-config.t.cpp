@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -24,16 +24,20 @@
 #include "ndn-cxx/security/transform/base64-encode.hpp"
 #include "ndn-cxx/security/transform/buffer-source.hpp"
 #include "ndn-cxx/security/transform/stream-sink.hpp"
+#include "ndn-cxx/util/io.hpp"
 
 #include "tests/boost-test.hpp"
 #include "tests/unit/security/validator-config/common.hpp"
 #include "tests/unit/security/validator-fixture.hpp"
 
-#include <boost/mp11/list.hpp>
+namespace ndn {
+namespace security {
+inline namespace v2 {
+namespace validator_config {
+namespace tests {
 
-namespace ndn::tests {
-
-using ndn::security::ValidationPolicyConfig;
+using namespace ndn::tests;
+using namespace ndn::security::tests;
 
 BOOST_AUTO_TEST_SUITE(Security)
 BOOST_AUTO_TEST_SUITE(TestValidationPolicyConfig)
@@ -56,18 +60,44 @@ BOOST_FIXTURE_TEST_CASE(EmptyConfig, HierarchicalValidatorFixture<ValidationPoli
   VALIDATE_FAILURE(i, "Empty policy should reject everything");
 }
 
+template<typename Packet>
+class PacketName;
+
+template<>
+class PacketName<Interest>
+{
+public:
+  static std::string
+  getName()
+  {
+    return "interest";
+  }
+};
+
+template<>
+class PacketName<Data>
+{
+public:
+  static std::string
+  getName()
+  {
+    return "data";
+  }
+};
+
 template<typename PacketType>
 class ValidationPolicyConfigFixture : public HierarchicalValidatorFixture<ValidationPolicyConfig>
 {
 public:
   ValidationPolicyConfigFixture()
+    : path(boost::filesystem::path(UNIT_TESTS_TMPDIR) / "security" / "validation-policy-config")
   {
     boost::filesystem::create_directories(path);
     baseConfig = R"CONF(
         rule
         {
           id test-rule-id
-          for )CONF" + std::string(getPacketName()) + R"CONF(
+          for )CONF" + PacketName<Packet>::getName() + R"CONF(
           filter
           {
             type name
@@ -88,23 +118,11 @@ public:
     boost::filesystem::remove_all(path);
   }
 
-private:
-  static constexpr std::string_view
-  getPacketName()
-  {
-    if constexpr (std::is_same_v<PacketType, Interest>)
-      return "interest";
-    else if constexpr (std::is_same_v<PacketType, Data>)
-      return "data";
-    else
-      return "";
-  }
-
 protected:
-  const boost::filesystem::path path{boost::filesystem::path(UNIT_TESTS_TMPDIR) / "security" / "validation-policy-config"};
-  std::string baseConfig;
-
   using Packet = PacketType;
+
+  const boost::filesystem::path path;
+  std::string baseConfig;
 };
 
 template<typename PacketType>
@@ -245,8 +263,9 @@ public:
   }
 };
 
-struct NoRefresh
+class NoRefresh
 {
+public:
   static std::string
   getRefreshString()
   {
@@ -254,8 +273,9 @@ struct NoRefresh
   }
 };
 
-struct Refresh1h
+class Refresh1h
 {
+public:
   static std::string
   getRefreshString()
   {
@@ -269,8 +289,9 @@ struct Refresh1h
   }
 };
 
-struct Refresh1m
+class Refresh1m
 {
+public:
   static std::string
   getRefreshString()
   {
@@ -284,8 +305,9 @@ struct Refresh1m
   }
 };
 
-struct Refresh1s
+class Refresh1s
 {
+public:
   static std::string
   getRefreshString()
   {
@@ -324,20 +346,29 @@ public:
   }
 };
 
-template<typename PacketType>
-using Policies = boost::mp11::mp_list<
-  LoadStringWithFileAnchor<PacketType>,
-  LoadFileWithFileAnchor<PacketType>,
-  LoadFileWithMultipleFileAnchors<PacketType>,
-  LoadSectionWithFileAnchor<PacketType>,
-  LoadStringWithBase64Anchor<PacketType>,
-  LoadStringWithDirAnchor<PacketType>,
-  LoadStringWithDirAnchor<PacketType, Refresh1h>,
-  LoadStringWithDirAnchor<PacketType, Refresh1m>,
-  LoadStringWithDirAnchor<PacketType, Refresh1s>
->;
+using DataPolicies = boost::mpl::vector<LoadStringWithFileAnchor<Data>,
+                                        LoadFileWithFileAnchor<Data>,
+                                        LoadFileWithMultipleFileAnchors<Data>,
+                                        LoadSectionWithFileAnchor<Data>,
+                                        LoadStringWithBase64Anchor<Data>,
+                                        LoadStringWithDirAnchor<Data>,
+                                        LoadStringWithDirAnchor<Data, Refresh1h>,
+                                        LoadStringWithDirAnchor<Data, Refresh1m>,
+                                        LoadStringWithDirAnchor<Data, Refresh1s>
+                                        >;
 
-BOOST_FIXTURE_TEST_CASE_TEMPLATE(ValidateData, Policy, Policies<Data>, Policy)
+using InterestPolicies = boost::mpl::vector<LoadStringWithFileAnchor<Interest>,
+                                            LoadFileWithFileAnchor<Interest>,
+                                            LoadFileWithMultipleFileAnchors<Interest>,
+                                            LoadSectionWithFileAnchor<Interest>,
+                                            LoadStringWithBase64Anchor<Interest>,
+                                            LoadStringWithDirAnchor<Interest>,
+                                            LoadStringWithDirAnchor<Interest, Refresh1h>,
+                                            LoadStringWithDirAnchor<Interest, Refresh1m>,
+                                            LoadStringWithDirAnchor<Interest, Refresh1s>
+                                            >;
+
+BOOST_FIXTURE_TEST_CASE_TEMPLATE(ValidateData, Policy, DataPolicies, Policy)
 {
   BOOST_CHECK_EQUAL(this->policy.m_dataRules.size(), 1);
   BOOST_CHECK_EQUAL(this->policy.m_interestRules.size(), 0);
@@ -373,7 +404,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(ValidateData, Policy, Policies<Data>, Policy)
   VALIDATE_FAILURE(packet, "Should fail, because subSelfSignedIdentity is not a trust anchor");
 }
 
-BOOST_FIXTURE_TEST_CASE_TEMPLATE(ValidateInterest, Policy, Policies<Interest>, Policy)
+BOOST_FIXTURE_TEST_CASE_TEMPLATE(ValidateInterest, Policy, InterestPolicies, Policy)
 {
   BOOST_CHECK_EQUAL(this->policy.m_dataRules.size(), 0);
   BOOST_CHECK_EQUAL(this->policy.m_interestRules.size(), 1);
@@ -661,7 +692,7 @@ BOOST_FIXTURE_TEST_CASE(Reload, HierarchicalValidatorFixture<ValidationPolicyCon
   BOOST_CHECK_EQUAL(this->policy.m_interestRules.size(), 0);
 }
 
-using Packets = boost::mp11::mp_list<Interest, Data>;
+using Packets = boost::mpl::vector<Interest, Data>;
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(TrustAnchorWildcard, Packet, Packets, ValidationPolicyConfigFixture<Packet>)
 {
@@ -703,10 +734,12 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(TrustAnchorWildcard, Packet, Packets, Validatio
   VALIDATE_SUCCESS(packet, "Policy should accept everything");
 }
 
-using RefreshPolicies = boost::mp11::mp_list<Refresh1h, Refresh1m, Refresh1s>;
+using RefreshPolicies = boost::mpl::vector<Refresh1h, Refresh1m, Refresh1s>;
 
 template<typename RefreshPolicy>
-using RefreshPolicyFixture = LoadStringWithDirAnchor<Data, RefreshPolicy>;
+class RefreshPolicyFixture : public LoadStringWithDirAnchor<Data, RefreshPolicy>
+{
+};
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(ValidateRefresh, Refresh, RefreshPolicies, RefreshPolicyFixture<Refresh>)
 {
@@ -725,11 +758,8 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(ValidateRefresh, Refresh, RefreshPolicies, Refr
   VALIDATE_FAILURE(packet, "Should fail, as the trust anchor should no longer exist");
 }
 
-BOOST_FIXTURE_TEST_CASE(OrphanedPolicyLoad, HierarchicalValidatorFixture<ValidationPolicyConfig>,
-  * ut::description("test for bug #4758"))
+BOOST_FIXTURE_TEST_CASE(OrphanedPolicyLoad, HierarchicalValidatorFixture<ValidationPolicyConfig>) // Bug #4758
 {
-  using ndn::security::validator_config::Error;
-
   ValidationPolicyConfig policy1;
   BOOST_CHECK_THROW(policy1.load("trust-anchor { type any }", "test-config"), Error);
 
@@ -737,7 +767,8 @@ BOOST_FIXTURE_TEST_CASE(OrphanedPolicyLoad, HierarchicalValidatorFixture<Validat
   BOOST_CHECK_THROW(policy1.load("trust-anchor { type any }", "test-config"), Error);
 
   ValidationPolicyConfig policy2;
-  const std::string config = R"CONF(
+
+  std::string config = R"CONF(
       trust-anchor
       {
         type dir
@@ -745,6 +776,7 @@ BOOST_FIXTURE_TEST_CASE(OrphanedPolicyLoad, HierarchicalValidatorFixture<Validat
         refresh 1h
       }
     )CONF";
+
   // Inserting trust anchor would have triggered a segfault
   BOOST_CHECK_THROW(policy2.load(config, "test-config"), Error);
 }
@@ -752,4 +784,8 @@ BOOST_FIXTURE_TEST_CASE(OrphanedPolicyLoad, HierarchicalValidatorFixture<Validat
 BOOST_AUTO_TEST_SUITE_END() // TestValidationPolicyConfig
 BOOST_AUTO_TEST_SUITE_END() // Security
 
-} // namespace ndn::tests
+} // namespace tests
+} // namespace validator_config
+} // inline namespace v2
+} // namespace security
+} // namespace ndn

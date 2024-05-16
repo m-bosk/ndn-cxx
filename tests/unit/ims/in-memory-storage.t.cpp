@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -29,17 +29,20 @@
 #include "tests/test-common.hpp"
 #include "tests/unit/io-fixture.hpp"
 
-#include <boost/mp11/list.hpp>
+#include <boost/mpl/vector.hpp>
 
-namespace ndn::tests {
+namespace ndn {
+namespace tests {
+
+using namespace ndn::tests;
 
 BOOST_AUTO_TEST_SUITE(Ims)
 BOOST_AUTO_TEST_SUITE(TestInMemoryStorage)
 
-using InMemoryStorages = boost::mp11::mp_list<InMemoryStoragePersistent,
-                                              InMemoryStorageFifo,
-                                              InMemoryStorageLfu,
-                                              InMemoryStorageLru>;
+using InMemoryStorages = boost::mpl::vector<InMemoryStoragePersistent,
+                                            InMemoryStorageFifo,
+                                            InMemoryStorageLfu,
+                                            InMemoryStorageLru>;
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(Insertion, T, InMemoryStorages)
 {
@@ -371,9 +374,9 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(EraseCanonical, T, InMemoryStorages)
   BOOST_CHECK_EQUAL(ims.size(), 6);
 }
 
-using InMemoryStoragesLimited = boost::mp11::mp_list<InMemoryStorageFifo,
-                                                     InMemoryStorageLfu,
-                                                     InMemoryStorageLru>;
+using InMemoryStoragesLimited = boost::mpl::vector<InMemoryStorageFifo,
+                                                   InMemoryStorageLfu,
+                                                   InMemoryStorageLru>;
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(SetCapacity, T, InMemoryStoragesLimited)
 {
@@ -447,7 +450,7 @@ protected:
          const time::milliseconds& freshWindow = InMemoryStorage::INFINITE_WINDOW)
   {
     auto data = makeData(name);
-    data->setContent({reinterpret_cast<const uint8_t*>(&id), sizeof(id)});
+    data->setContent(make_span(reinterpret_cast<const uint8_t*>(&id), sizeof(id)));
 
     if (modifyData != nullptr) {
       modifyData(*data);
@@ -562,8 +565,8 @@ BOOST_AUTO_TEST_CASE(PrefixName_NoCanBePrefix)
 
 BOOST_AUTO_TEST_CASE(MustBeFresh)
 {
-  insert(1, "/A/1", nullptr, 0_ms); // omitted FreshnessPeriod means FreshnessPeriod = 0 ms
-  insert(2, "/A/2", [] (Data& data) { data.setFreshnessPeriod(0_s); }, 0_ms);
+  insert(1, "/A/1"); // omitted FreshnessPeriod means FreshnessPeriod = 0 ms
+  insert(2, "/A/2", [] (Data& data) { data.setFreshnessPeriod(0_s); });
   insert(3, "/A/3", [] (Data& data) { data.setFreshnessPeriod(1_s); }, 1_s);
   insert(4, "/A/4", [] (Data& data) { data.setFreshnessPeriod(1_h); }, 1_h);
 
@@ -598,4 +601,5 @@ BOOST_AUTO_TEST_SUITE_END() // Find
 BOOST_AUTO_TEST_SUITE_END() // TestInMemoryStorage
 BOOST_AUTO_TEST_SUITE_END() // Ims
 
-} // namespace ndn::tests
+} // namespace tests
+} // namespace ndn

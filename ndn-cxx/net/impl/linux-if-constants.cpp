@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2018 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -28,7 +28,9 @@
 #include <sys/socket.h>
 #include <linux/if.h>
 
-namespace ndn::net::linux_if {
+namespace ndn {
+namespace net {
+namespace linux_if {
 
 const uint32_t FLAG_LOWER_UP = IFF_LOWER_UP;
 const uint32_t FLAG_DORMANT  = IFF_DORMANT;
@@ -42,6 +44,8 @@ const uint8_t OPER_STATE_TESTING        = IF_OPER_TESTING;
 const uint8_t OPER_STATE_DORMANT        = IF_OPER_DORMANT;
 const uint8_t OPER_STATE_UP             = IF_OPER_UP;
 
-} // namespace ndn::net::linux_if
+} // namespace linux_if
+} // namespace net
+} // namespace ndn
 
 #endif // __linux__

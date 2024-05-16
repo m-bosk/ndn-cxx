@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2021 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -24,7 +24,9 @@
 
 #include "ndn-cxx/detail/common.hpp"
 
-namespace ndn::security {
+namespace ndn {
+namespace security {
+inline namespace v2 {
 
 class Certificate;
 class CertificateRequest;
@@ -82,6 +84,8 @@ protected:
   CertificateStorage* m_certStorage;
 };
 
-} // namespace ndn::security
+} // inline namespace v2
+} // namespace security
+} // namespace ndn
 
 #endif // NDN_CXX_SECURITY_CERTIFICATE_FETCHER_HPP

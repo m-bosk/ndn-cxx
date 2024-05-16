@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -22,14 +22,15 @@
 #ifndef NDN_CXX_SECURITY_TRANSFORM_PUBLIC_KEY_HPP
 #define NDN_CXX_SECURITY_TRANSFORM_PUBLIC_KEY_HPP
 
-#include "ndn-cxx/detail/common.hpp"
-#include "ndn-cxx/encoding/buffer.hpp"
 #include "ndn-cxx/security/security-common.hpp"
+#include "ndn-cxx/encoding/buffer.hpp"
 
-namespace ndn::security::transform {
+namespace ndn {
+namespace security {
+namespace transform {
 
 /**
- * @brief Abstraction of a public key in crypto transformations.
+ * @brief Abstraction of public key in crypto transformation
  */
 class PublicKey : noncopyable
 {
@@ -128,6 +129,8 @@ private:
   const unique_ptr<Impl> m_impl;
 };
 
-} // namespace ndn::security::transform
+} // namespace transform
+} // namespace security
+} // namespace ndn
 
 #endif // NDN_CXX_SECURITY_TRANSFORM_PUBLIC_KEY_HPP

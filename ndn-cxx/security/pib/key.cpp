@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -22,12 +22,13 @@
 #include "ndn-cxx/security/pib/key.hpp"
 #include "ndn-cxx/security/pib/impl/key-impl.hpp"
 
-namespace ndn::security {
+namespace ndn {
+namespace security {
 namespace pib {
 
 Key::Key() noexcept = default;
 
-Key::Key(weak_ptr<KeyImpl> impl) noexcept
+Key::Key(weak_ptr<detail::KeyImpl> impl) noexcept
   : m_impl(std::move(impl))
 {
 }
@@ -103,7 +104,7 @@ Key::operator bool() const noexcept
   return !m_impl.expired();
 }
 
-shared_ptr<KeyImpl>
+shared_ptr<detail::KeyImpl>
 Key::lock() const
 {
   auto impl = m_impl.lock();
@@ -121,6 +122,8 @@ Key::equals(const Key& other) const noexcept
 }
 
 } // namespace pib
+
+inline namespace v2 {
 
 Name
 constructKeyName(const Name& identity, const name::Component& keyId)
@@ -148,4 +151,6 @@ extractIdentityFromKeyName(const Name& keyName)
   return keyName.getPrefix(-Certificate::MIN_KEY_NAME_LENGTH); // trim everything after and including "KEY"
 }
 
-} // namespace ndn::security
+} // inline namespace v2
+} // namespace security
+} // namespace ndn

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2021 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -26,7 +26,8 @@
 #include <sstream>
 #include <string>
 
-namespace ndn::util {
+namespace ndn {
+namespace util {
 
 /**
  * @brief Output to stream with specified indent or prefix
@@ -53,7 +54,7 @@ namespace ndn::util {
 class IndentedStream : public std::ostream
 {
 public:
-  IndentedStream(std::ostream& os, std::string_view indent);
+  IndentedStream(std::ostream& os, const std::string& indent);
 
   ~IndentedStream() override;
 
@@ -62,7 +63,7 @@ private:
   class StreamBuf : public std::stringbuf
   {
   public:
-    StreamBuf(std::ostream& os, std::string_view indent);
+    StreamBuf(std::ostream& os, const std::string& indent);
 
     int
     sync() override;
@@ -75,6 +76,7 @@ private:
   StreamBuf m_buffer;
 };
 
-} // namespace ndn::util
+} // namespace util
+} // namespace ndn
 
 #endif // NDN_CXX_UTIL_INDENTED_STREAM_HPP

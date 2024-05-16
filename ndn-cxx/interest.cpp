@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -29,11 +29,18 @@
 
 #include <boost/range/adaptor/reversed.hpp>
 
-#include <algorithm>
 #include <cstring>
 #include <sstream>
 
 namespace ndn {
+
+BOOST_CONCEPT_ASSERT((WireEncodable<Interest>));
+BOOST_CONCEPT_ASSERT((WireEncodableWithEncodingBuffer<Interest>));
+BOOST_CONCEPT_ASSERT((WireDecodable<Interest>));
+static_assert(std::is_base_of<tlv::Error, Interest::Error>::value,
+              "Interest::Error must inherit from tlv::Error");
+
+bool Interest::s_autoCheckParametersDigest = true;
 
 Interest::Interest(const Name& name, time::milliseconds lifetime)
 {
@@ -81,14 +88,20 @@ Interest::wireEncode(EncodingImpl<TAG>& encoder) const
     totalLength += prependBlock(encoder, block);
   }
 
+  // SoftStateInterest
+  if (getIsSoftState()) {
+    totalLength += prependEmptyBlock(encoder, tlv::IsSoftState);
+  }
+
   // HopLimit
-  if (m_hopLimit) {
+  if (getHopLimit()) {
     totalLength += prependBinaryBlock(encoder, tlv::HopLimit, {*m_hopLimit});
   }
 
   // InterestLifetime
-  if (m_interestLifetime != DEFAULT_INTEREST_LIFETIME.count()) {
-    totalLength += prependNonNegativeIntegerBlock(encoder, tlv::InterestLifetime, m_interestLifetime);
+  if (getInterestLifetime() != DEFAULT_INTEREST_LIFETIME) {
+    totalLength += prependNonNegativeIntegerBlock(encoder, tlv::InterestLifetime,
+                                                  static_cast<uint64_t>(getInterestLifetime().count()));
   }
 
   // Nonce
@@ -155,6 +168,7 @@ Interest::wireDecode(const Block& wire)
   //              [Nonce]
   //              [InterestLifetime]
   //              [HopLimit]
+  //              [IsSoftState]
   //              [ApplicationParameters [InterestSignature]]
 
   auto element = m_wire.elements_begin();
@@ -176,7 +190,7 @@ Interest::wireDecode(const Block& wire)
   m_canBePrefix = m_mustBeFresh = false;
   m_forwardingHint.clear();
   m_nonce.reset();
-  m_interestLifetime = DEFAULT_INTEREST_LIFETIME.count();
+  m_interestLifetime = DEFAULT_INTEREST_LIFETIME;
   m_hopLimit.reset();
   m_parameters.clear();
 
@@ -261,7 +275,7 @@ Interest::wireDecode(const Block& wire)
         if (lastElement >= 6) {
           NDN_THROW(Error("InterestLifetime element is out of order"));
         }
-        m_interestLifetime = readNonNegativeInteger(*element);
+        m_interestLifetime = time::milliseconds(readNonNegativeInteger(*element));
         lastElement = 6;
         break;
       }
@@ -276,13 +290,24 @@ Interest::wireDecode(const Block& wire)
         lastElement = 7;
         break;
       }
-      case tlv::ApplicationParameters: {
+      case tlv::IsSoftState: {
         if (lastElement >= 8) {
+          break; // IsSoftState is non-critical, ignore out-of-order appearance
+        }
+        if (element->value_size() != 0) {
+          NDN_THROW(Error("MustBeFresh element has non-zero TLV-LENGTH"));
+        }
+        m_isSoftState = true;
+        lastElement = 8;
+        break;
+      }
+      case tlv::ApplicationParameters: {
+        if (lastElement >= 9) {
           break; // ApplicationParameters is non-critical, ignore out-of-order appearance
         }
         BOOST_ASSERT(!hasApplicationParameters());
         m_parameters.push_back(*element);
-        lastElement = 8;
+        lastElement = 9;
         break;
       }
       default: { // unrecognized element
@@ -318,26 +343,33 @@ Interest::toUri() const
 bool
 Interest::matchesData(const Data& data) const
 {
+  size_t interestNameLength = m_name.size();
   const Name& dataName = data.getName();
   size_t fullNameLength = dataName.size() + 1;
 
   // check Name and CanBePrefix
-  if (m_name.size() == fullNameLength) {
+  if (interestNameLength == fullNameLength) {
     if (m_name.get(-1).isImplicitSha256Digest()) {
-      return m_name == data.getFullName();
+      if (m_name != data.getFullName()) {
+        return false;
+      }
     }
     else {
-      // the Interest name has the same length as the Data full name, but the last
-      // component is not a digest, so there is no possibility of matching
+      // Interest Name is same length as Data full Name, but last component isn't digest
+      // so there's no possibility of matching
       return false;
     }
   }
-  else if (m_canBePrefix) {
-    return m_name.isPrefixOf(dataName);
+  else if (getCanBePrefix() ? !m_name.isPrefixOf(dataName) : (m_name != dataName)) {
+    return false;
   }
-  else {
-    return m_name == dataName;
+
+  // check MustBeFresh
+  if (getMustBeFresh() && data.getFreshnessPeriod() <= 0_ms) {
+    return false;
   }
+
+  return true;
 }
 
 bool
@@ -369,26 +401,6 @@ Interest::setName(const Name& name)
 }
 
 Interest&
-Interest::setCanBePrefix(bool canBePrefix)
-{
-  if (canBePrefix != m_canBePrefix) {
-    m_canBePrefix = canBePrefix;
-    m_wire.reset();
-  }
-  return *this;
-}
-
-Interest&
-Interest::setMustBeFresh(bool mustBeFresh)
-{
-  if (mustBeFresh != m_mustBeFresh) {
-    m_mustBeFresh = mustBeFresh;
-    m_wire.reset();
-  }
-  return *this;
-}
-
-Interest&
 Interest::setForwardingHint(std::vector<Name> value)
 {
   m_forwardingHint = std::move(value);
@@ -396,7 +408,7 @@ Interest::setForwardingHint(std::vector<Name> value)
   return *this;
 }
 
-[[nodiscard]] static auto
+static auto
 generateNonce()
 {
   uint32_t r = random::generateWord32();
@@ -416,7 +428,7 @@ Interest::getNonce() const
 }
 
 Interest&
-Interest::setNonce(std::optional<Interest::Nonce> nonce)
+Interest::setNonce(optional<Interest::Nonce> nonce)
 {
   if (nonce != m_nonce) {
     m_nonce = nonce;
@@ -438,15 +450,6 @@ Interest::refreshNonce()
   m_wire.reset();
 }
 
-time::milliseconds
-Interest::getInterestLifetime() const noexcept
-{
-  if (m_interestLifetime > static_cast<uint64_t>(time::milliseconds::max().count())) {
-    return time::milliseconds::max();
-  }
-  return time::milliseconds(m_interestLifetime);
-}
-
 Interest&
 Interest::setInterestLifetime(time::milliseconds lifetime)
 {
@@ -454,16 +457,15 @@ Interest::setInterestLifetime(time::milliseconds lifetime)
     NDN_THROW(std::invalid_argument("InterestLifetime must be >= 0"));
   }
 
-  uint64_t lifetimeMillis = static_cast<uint64_t>(lifetime.count());
-  if (lifetimeMillis != m_interestLifetime) {
-    m_interestLifetime = lifetimeMillis;
+  if (lifetime != m_interestLifetime) {
+    m_interestLifetime = lifetime;
     m_wire.reset();
   }
   return *this;
 }
 
 Interest&
-Interest::setHopLimit(std::optional<uint8_t> hopLimit)
+Interest::setHopLimit(optional<uint8_t> hopLimit)
 {
   if (hopLimit != m_hopLimit) {
     m_hopLimit = hopLimit;
@@ -511,16 +513,10 @@ Interest::setApplicationParameters(span<const uint8_t> value)
 }
 
 Interest&
-Interest::setApplicationParameters(std::string_view value)
-{
-  return setApplicationParametersInternal(makeStringBlock(tlv::ApplicationParameters, value));
-}
-
-Interest&
 Interest::setApplicationParameters(ConstBufferPtr value)
 {
-  if (!value) {
-    NDN_THROW(std::invalid_argument("ApplicationParameters buffer cannot be null"));
+  if (value == nullptr) {
+    NDN_THROW(std::invalid_argument("ApplicationParameters buffer cannot be nullptr"));
   }
 
   return setApplicationParametersInternal({tlv::ApplicationParameters, std::move(value)});
@@ -548,14 +544,14 @@ Interest::isSigned() const noexcept
          m_name[-1].type() == tlv::ParametersSha256DigestComponent;
 }
 
-std::optional<SignatureInfo>
+optional<SignatureInfo>
 Interest::getSignatureInfo() const
 {
   auto blockIt = findFirstParameter(tlv::InterestSignatureInfo);
   if (blockIt != m_parameters.end()) {
-    return std::make_optional<SignatureInfo>(*blockIt, SignatureInfo::Type::Interest);
+    return make_optional<SignatureInfo>(*blockIt, SignatureInfo::Type::Interest);
   }
-  return std::nullopt;
+  return nullopt;
 }
 
 Interest&
@@ -646,8 +642,8 @@ Interest::setSignatureValue(span<const uint8_t> value)
 Interest&
 Interest::setSignatureValue(ConstBufferPtr value)
 {
-  if (!value) {
-    NDN_THROW(std::invalid_argument("InterestSignatureValue buffer cannot be null"));
+  if (value == nullptr) {
+    NDN_THROW(std::invalid_argument("InterestSignatureValue buffer cannot be nullptr"));
   }
 
   return setSignatureValueInternal({tlv::InterestSignatureValue, std::move(value)});
@@ -779,7 +775,8 @@ operator<<(std::ostream& os, const Interest& interest)
   auto printOne = [&] (const auto&... args) {
     os << delim;
     delim = '&';
-    (os << ... << args);
+    using expand = int[];
+    (void)expand{(os << args, 0)...}; // use a fold expression when we switch to C++17
   };
 
   if (interest.getCanBePrefix()) {

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2021 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -24,12 +24,14 @@
 #include "tests/boost-test.hpp"
 #include "tests/key-chain-fixture.hpp"
 
-namespace ndn::tests {
+namespace ndn {
+namespace security {
+namespace tests {
 
-using ndn::security::ValidatorNull;
+using std::bind;
 
 BOOST_AUTO_TEST_SUITE(Security)
-BOOST_FIXTURE_TEST_SUITE(TestValidatorNull, KeyChainFixture)
+BOOST_FIXTURE_TEST_SUITE(TestValidatorNull, ndn::tests::KeyChainFixture)
 
 BOOST_AUTO_TEST_CASE(ValidateData)
 {
@@ -39,8 +41,8 @@ BOOST_AUTO_TEST_CASE(ValidateData)
 
   ValidatorNull validator;
   validator.validate(data,
-                     [] (auto&&...) { BOOST_CHECK_MESSAGE(true, "Validation should succeed"); },
-                     [] (auto&&...) { BOOST_CHECK_MESSAGE(false, "Validation should not have failed"); });
+                     bind([] { BOOST_CHECK_MESSAGE(true, "Validation should succeed"); }),
+                     bind([] { BOOST_CHECK_MESSAGE(false, "Validation should not have failed"); }));
 }
 
 BOOST_AUTO_TEST_CASE(ValidateInterest)
@@ -51,11 +53,13 @@ BOOST_AUTO_TEST_CASE(ValidateInterest)
 
   ValidatorNull validator;
   validator.validate(interest,
-                     [] (auto&&...) { BOOST_CHECK_MESSAGE(true, "Validation should succeed"); },
-                     [] (auto&&...) { BOOST_CHECK_MESSAGE(false, "Validation should not have failed"); });
+                     bind([] { BOOST_CHECK_MESSAGE(true, "Validation should succeed"); }),
+                     bind([] { BOOST_CHECK_MESSAGE(false, "Validation should not have failed"); }));
 }
 
 BOOST_AUTO_TEST_SUITE_END() // TestValidatorNull
 BOOST_AUTO_TEST_SUITE_END() // Security
 
-} // namespace ndn::tests
+} // namespace tests
+} // namespace security
+} // namespace ndn

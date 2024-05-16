@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -31,13 +31,12 @@
 
 #include <boost/lexical_cast.hpp>
 
-namespace ndn::tests {
+namespace ndn {
+namespace security {
+inline namespace v2 {
+namespace tests {
 
-using ndn::security::Certificate;
-using ndn::security::Identity;
-using ndn::security::ValidationError;
-
-class ValidatorFixtureBase : public IoKeyChainFixture
+class ValidatorFixtureBase : public ndn::tests::IoKeyChainFixture
 {
 protected:
   ValidatorFixtureBase();
@@ -64,17 +63,17 @@ protected:
   addSubCertificate(const Name& subIdentityName, const Identity& issuer);
 
 protected:
-  DummyClientFace face{m_io, {true, true}};
+  util::DummyClientFace face{m_io, {true, true}};
   std::function<void(const Interest&)> processInterest;
-  security::CertificateCache cache{100_days};
+  CertificateCache cache{100_days};
   ValidationError lastError{ValidationError::NO_ERROR};
 
 private:
-  static constexpr time::milliseconds s_mockPeriod{250};
-  static constexpr int s_mockTimes{200};
+  static const time::milliseconds s_mockPeriod;
+  static const int s_mockTimes;
 };
 
-template<class ValidationPolicyT, class CertificateFetcherT = security::CertificateFetcherFromNetwork>
+template<class ValidationPolicyT, class CertificateFetcherT = CertificateFetcherFromNetwork>
 class ValidatorFixture : public ValidatorFixtureBase
 {
 protected:
@@ -110,11 +109,11 @@ protected:
   }
 
 protected:
-  security::Validator validator;
+  Validator validator;
   ValidationPolicyT& policy;
 };
 
-template<class ValidationPolicyT, class CertificateFetcherT = security::CertificateFetcherFromNetwork>
+template<class ValidationPolicyT, class CertificateFetcherT = CertificateFetcherFromNetwork>
 class HierarchicalValidatorFixture : public ValidatorFixture<ValidationPolicyT, CertificateFetcherT>
 {
 protected:
@@ -143,7 +142,7 @@ protected:
 #define VALIDATE_SUCCESS(packet, message) this->validate(packet, message, true, __LINE__)
 #define VALIDATE_FAILURE(packet, message) this->validate(packet, message, false, __LINE__)
 
-class DummyValidationState : public security::ValidationState
+class DummyValidationState : public ValidationState
 {
 public:
   ~DummyValidationState() override
@@ -159,7 +158,7 @@ public:
 
 private:
   void
-  verifyOriginalPacket(const std::optional<Certificate>&) override
+  verifyOriginalPacket(const optional<Certificate>&) override
   {
     // do nothing
   }
@@ -191,7 +190,7 @@ struct DataPkt
     return Data(name);
   }
 
-  static shared_ptr<security::ValidationState>
+  static shared_ptr<ValidationState>
   makeState()
   {
     return make_shared<DummyValidationState>();
@@ -215,11 +214,11 @@ struct InterestV02Pkt
     return Interest(name);
   }
 
-  static shared_ptr<security::ValidationState>
+  static shared_ptr<ValidationState>
   makeState()
   {
     auto state = make_shared<DummyValidationState>();
-    state->setTag(make_shared<security::SignedInterestFormatTag>(security::SignedInterestFormat::V02));
+    state->setTag(make_shared<SignedInterestFormatTag>(SignedInterestFormat::V02));
     return state;
   }
 };
@@ -241,15 +240,18 @@ struct InterestV03Pkt
     return Interest(name);
   }
 
-  static shared_ptr<security::ValidationState>
+  static shared_ptr<ValidationState>
   makeState()
   {
     auto state = make_shared<DummyValidationState>();
-    state->setTag(make_shared<security::SignedInterestFormatTag>(security::SignedInterestFormat::V03));
+    state->setTag(make_shared<SignedInterestFormatTag>(SignedInterestFormat::V03));
     return state;
   }
 };
 
-} // namespace ndn::tests
+} // namespace tests
+} // inline namespace v2
+} // namespace security
+} // namespace ndn
 
 #endif // NDN_CXX_TESTS_UNIT_SECURITY_VALIDATOR_FIXTURE_HPP

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -27,7 +27,9 @@
 #include "ndn-cxx/security/validator-config/name-relation.hpp"
 #include "ndn-cxx/util/regex.hpp"
 
-namespace ndn::security {
+namespace ndn {
+namespace security {
+inline namespace v2 {
 
 class ValidationState;
 
@@ -168,8 +170,8 @@ class HyperRelationChecker : public Checker
 {
 public:
   HyperRelationChecker(tlv::SignatureTypeValue sigType,
-                       const std::string& pktNameExpr, const std::string& pktNameExpand,
-                       const std::string& klNameExpr, const std::string& klNameExpand,
+                       const std::string& pktNameExpr, const std::string pktNameExpand,
+                       const std::string& klNameExpr, const std::string klNameExpand,
                        const NameRelation& hyperRelation);
 
 protected:
@@ -183,6 +185,8 @@ private:
 };
 
 } // namespace validator_config
-} // namespace ndn::security
+} // inline namespace v2
+} // namespace security
+} // namespace ndn
 
 #endif // NDN_CXX_SECURITY_VALIDATOR_CONFIG_CHECKER_HPP

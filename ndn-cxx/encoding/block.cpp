@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -25,22 +25,19 @@
 #include "ndn-cxx/encoding/buffer-stream.hpp"
 #include "ndn-cxx/encoding/encoding-buffer.hpp"
 #include "ndn-cxx/encoding/tlv.hpp"
-#include "ndn-cxx/security/transform/hex-decode.hpp"
-#include "ndn-cxx/security/transform/step-source.hpp"
-#include "ndn-cxx/security/transform/stream-sink.hpp"
+#include "ndn-cxx/security/transform.hpp"
 #include "ndn-cxx/util/ostream-joiner.hpp"
-#include "ndn-cxx/util/scope.hpp"
 #include "ndn-cxx/util/string-helper.hpp"
 
 #include <boost/asio/buffer.hpp>
 #include <boost/range/adaptor/reversed.hpp>
-
-#include <algorithm>
 #include <cstring>
 
 namespace ndn {
 
-constexpr size_t MAX_SIZE_OF_BLOCK_FROM_STREAM = MAX_NDN_PACKET_SIZE;
+BOOST_CONCEPT_ASSERT((boost::EqualityComparable<Block>));
+
+const size_t MAX_SIZE_OF_BLOCK_FROM_STREAM = MAX_NDN_PACKET_SIZE;
 
 // ---- constructor, creation, assignment ----
 
@@ -171,22 +168,22 @@ Block::fromBuffer(ConstBufferPtr buffer, size_t offset)
   uint32_t type = 0;
   bool isOk = tlv::readType(pos, end, type);
   if (!isOk) {
-    return {false, {}};
+    return std::make_tuple(false, Block());
   }
 
   uint64_t length = 0;
   isOk = tlv::readVarNumber(pos, end, length);
   if (!isOk) {
-    return {false, {}};
+    return std::make_tuple(false, Block());
   }
   // pos now points to TLV-VALUE
 
   BOOST_ASSERT(pos <= end);
   if (length > static_cast<uint64_t>(std::distance(pos, end))) {
-    return {false, {}};
+    return std::make_tuple(false, Block());
   }
 
-  return {true, Block(std::move(buffer), type, begin, pos + length, pos, pos + length)};
+  return std::make_tuple(true, Block(std::move(buffer), type, begin, pos + length, pos, pos + length));
 }
 
 std::tuple<bool, Block>
@@ -198,24 +195,25 @@ Block::fromBuffer(span<const uint8_t> buffer)
   uint32_t type = 0;
   bool isOk = tlv::readType(pos, end, type);
   if (!isOk) {
-    return {false, {}};
+    return std::make_tuple(false, Block());
   }
   uint64_t length = 0;
   isOk = tlv::readVarNumber(pos, end, length);
   if (!isOk) {
-    return {false, {}};
+    return std::make_tuple(false, Block());
   }
   // pos now points to TLV-VALUE
 
   BOOST_ASSERT(pos <= end);
   if (length > static_cast<uint64_t>(std::distance(pos, end))) {
-    return {false, {}};
+    return std::make_tuple(false, Block());
   }
   std::advance(pos, length);
   // pos now points to the end of the TLV
 
   auto b = std::make_shared<Buffer>(buffer.begin(), pos);
-  return {true, Block(b, type, b->begin(), b->end(), std::prev(b->end(), length), b->end())};
+  return std::make_tuple(true, Block(b, type, b->begin(), b->end(),
+                                     std::prev(b->end(), length), b->end()));
 }
 
 Block
@@ -252,23 +250,17 @@ Block::fromStream(std::istream& is)
 
 // ---- wire format ----
 
-const uint8_t*
-Block::data() const
+void
+Block::reset() noexcept
 {
-  if (!hasWire())
-    NDN_THROW(Error("Underlying wire buffer is empty"));
-
-  return &*m_begin;
+  *this = {};
 }
 
-size_t
-Block::size() const
+void
+Block::resetWire() noexcept
 {
-  if (!isValid()) {
-    NDN_THROW(Error("Cannot determine size of invalid block"));
-  }
-
-  return m_size;
+  m_buffer.reset(); // discard underlying buffer by resetting shared_ptr
+  m_begin = m_end = m_valueBegin = m_valueEnd = {};
 }
 
 Block::const_iterator
@@ -289,17 +281,23 @@ Block::end() const
   return m_end;
 }
 
-void
-Block::reset() noexcept
+const uint8_t*
+Block::data() const
 {
-  *this = {};
+  if (!hasWire())
+    NDN_THROW(Error("Underlying wire buffer is empty"));
+
+  return &*m_begin;
 }
 
-void
-Block::resetWire() noexcept
+size_t
+Block::size() const
 {
-  m_buffer.reset(); // discard underlying buffer by resetting shared_ptr
-  m_begin = m_end = m_valueBegin = m_valueEnd = {};
+  if (!isValid()) {
+    NDN_THROW(Error("Cannot determine size of invalid block"));
+  }
+
+  return m_size;
 }
 
 // ---- value ----
@@ -413,12 +411,13 @@ Block::encode(EncodingBuffer& encoder)
 const Block&
 Block::get(uint32_t type) const
 {
-  if (auto it = find(type); it != m_elements.end()) {
+  auto it = this->find(type);
+  if (it != m_elements.end()) {
     return *it;
   }
 
-  NDN_THROW(Error("No sub-element of type " + std::to_string(type) +
-                  " found in block of type " + std::to_string(m_type)));
+  NDN_THROW(Error("No sub-element of type " + to_string(type) +
+                  " found in block of type " + to_string(m_type)));
 }
 
 Block::element_const_iterator
@@ -481,43 +480,40 @@ Block::operator boost::asio::const_buffer() const
 }
 
 bool
-Block::equals(const Block& other) const noexcept
+operator==(const Block& lhs, const Block& rhs) noexcept
 {
-  return type() == other.type() &&
-         value_size() == other.value_size() &&
-         (value_size() == 0 ||
-          std::equal(value_begin(), value_end(), other.value_begin()));
+  return lhs.type() == rhs.type() &&
+         lhs.value_size() == rhs.value_size() &&
+         (lhs.value_size() == 0 ||
+          std::memcmp(lhs.value(), rhs.value(), lhs.value_size()) == 0);
 }
 
-void
-Block::print(std::ostream& os) const
+std::ostream&
+operator<<(std::ostream& os, const Block& block)
 {
-  auto oldFlags = os.flags(std::ios_base::dec);
-  auto restoreFlags = make_scope_exit([&] {
-    os.flags(oldFlags);
-  });
+  auto oldFmt = os.flags(std::ios_base::dec);
 
-  if (!isValid()) {
+  if (!block.isValid()) {
     os << "[invalid]";
   }
-  else if (!m_elements.empty()) {
+  else if (!block.m_elements.empty()) {
     EncodingEstimator estimator;
-    size_t tlvLength = encodeValue(estimator);
-    os << type() << '[' << tlvLength << "]={";
-    std::copy(elements_begin(), elements_end(), make_ostream_joiner(os, ','));
+    size_t tlvLength = block.encodeValue(estimator);
+    os << block.type() << '[' << tlvLength << "]={";
+    std::copy(block.elements_begin(), block.elements_end(), make_ostream_joiner(os, ','));
     os << '}';
   }
-  else if (value_size() > 0) {
-    os << type() << '[' << value_size() << "]=";
-    printHex(os, value_bytes(), true);
+  else if (block.value_size() > 0) {
+    os << block.type() << '[' << block.value_size() << "]=";
+    printHex(os, block.value_bytes(), true);
   }
   else {
-    os << type() << "[empty]";
+    os << block.type() << "[empty]";
   }
-}
 
-inline namespace literals {
-inline namespace block_literals {
+  os.flags(oldFmt);
+  return os;
+}
 
 Block
 operator ""_block(const char* input, std::size_t len)
@@ -543,6 +539,4 @@ operator ""_block(const char* input, std::size_t len)
   return Block(os.buf());
 }
 
-} // inline namespace block_literals
-} // inline namespace literals
 } // namespace ndn

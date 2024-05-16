@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -23,19 +23,13 @@
 
 #include "tests/test-common.hpp"
 
-namespace ndn::tests {
-
-BOOST_CONCEPT_ASSERT((boost::EqualityComparable<Link>));
-BOOST_CONCEPT_ASSERT((WireEncodable<Link>));
-BOOST_CONCEPT_ASSERT((WireEncodableWithEncodingBuffer<Link>));
-BOOST_CONCEPT_ASSERT((WireDecodable<Link>));
-static_assert(std::is_convertible_v<Link::Error*, Data::Error*>,
-              "Link::Error should inherit from Data::Error");
+namespace ndn {
+namespace tests {
 
 BOOST_AUTO_TEST_SUITE(TestLink)
 
 const uint8_t GOOD_LINK[] = {
-  0x06, 0xd0, // Data
+0x06, 0xd0, // Data
     0x07, 0x14, // Name
         0x08, 0x05,
             0x6c, 0x6f, 0x63, 0x61, 0x6c,
@@ -84,7 +78,7 @@ BOOST_AUTO_TEST_SUITE(EncodeDecode)
 BOOST_AUTO_TEST_CASE(Decode)
 {
   Link link(Block{GOOD_LINK});
-  BOOST_TEST(link.getName() == "/local/ndn/prefix");
+  BOOST_CHECK_EQUAL(link.getName(), Name("/local/ndn/prefix"));
   BOOST_TEST(link.getDelegationList() == std::vector<Name>({"/local", "/ndn"}),
              boost::test_tools::per_element());
 }
@@ -104,23 +98,12 @@ BOOST_AUTO_TEST_CASE(Encode)
 {
   Link link1("/test", {"/test1", "/test2", "/test3"});
   signData(link1);
-  BOOST_TEST(link1.getName() == "/test");
-  BOOST_TEST(link1.getContentType() == tlv::ContentType_Link);
+  Block wire = link1.wireEncode();
 
-  Link link2(link1.wireEncode());
-  BOOST_TEST(link2.getName() == "/test");
+  Link link2(wire);
+  BOOST_CHECK_EQUAL(link2.getName(), "/test");
   BOOST_TEST(link2.getDelegationList() == std::vector<Name>({"/test1", "/test2", "/test3"}),
              boost::test_tools::per_element());
-}
-
-BOOST_AUTO_TEST_CASE(EncodeEmpty)
-{
-  Link link("/L");
-  signData(link);
-  BOOST_TEST(link.getName() == "/L");
-  BOOST_TEST(link.getContentType() == tlv::ContentType_Link);
-  BOOST_TEST(link.getContent() == "1500"_block);
-  BOOST_TEST(link.getDelegationList().empty() == true);
 }
 
 BOOST_AUTO_TEST_SUITE_END() // EncodeDecode
@@ -185,4 +168,5 @@ BOOST_AUTO_TEST_SUITE_END() // Modify
 
 BOOST_AUTO_TEST_SUITE_END() // TestLink
 
-} // namespace ndn::tests
+} // namespace tests
+} // namespace ndn

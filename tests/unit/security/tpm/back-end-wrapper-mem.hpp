@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2021 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -24,7 +24,10 @@
 
 #include "ndn-cxx/security/tpm/impl/back-end-mem.hpp"
 
-namespace ndn::tests {
+namespace ndn {
+namespace security {
+namespace tpm {
+namespace tests {
 
 /**
  * @brief A wrapper of tpm::BackEndMem for unit test template.
@@ -33,11 +36,11 @@ class BackEndWrapperMem
 {
 public:
   BackEndWrapperMem()
-    : m_impl(make_unique<security::tpm::BackEndMem>())
+    : m_impl(make_unique<BackEndMem>())
   {
   }
 
-  security::tpm::BackEnd&
+  BackEnd&
   getTpm()
   {
     return *m_impl;
@@ -50,9 +53,12 @@ public:
   }
 
 private:
-  const unique_ptr<security::tpm::BackEnd> m_impl;
+  const unique_ptr<BackEnd> m_impl;
 };
 
-} // namespace ndn::tests
+} // namespace tests
+} // namespace tpm
+} // namespace security
+} // namespace ndn
 
 #endif // NDN_CXX_TESTS_UNIT_SECURITY_TPM_BACK_END_WRAPPER_MEM_HPP

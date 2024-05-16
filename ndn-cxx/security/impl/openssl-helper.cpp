@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -21,13 +21,9 @@
 
 #include "ndn-cxx/security/impl/openssl-helper.hpp"
 
-#include <limits>
-
-#if OPENSSL_VERSION_NUMBER >= 0x30000000L
-#include <openssl/core_names.h>
-#endif
-
-namespace ndn::security::detail {
+namespace ndn {
+namespace security {
+namespace detail {
 
 const EVP_MD*
 digestAlgorithmToEvpMd(DigestAlgorithm algo)
@@ -63,16 +59,7 @@ digestAlgorithmToEvpMd(DigestAlgorithm algo)
 int
 getEvpPkeyType(const EVP_PKEY* key)
 {
-  int keyType = EVP_PKEY_base_id(key);
-  if (keyType > 0)
-    return keyType;
-
-#if OPENSSL_VERSION_NUMBER >= 0x30000000L
-  if (EVP_PKEY_is_a(key, OSSL_MAC_NAME_HMAC))
-    return EVP_PKEY_HMAC;
-#endif
-
-  return keyType;
+  return EVP_PKEY_base_id(key);
 }
 
 EvpMdCtx::EvpMdCtx()
@@ -134,4 +121,6 @@ Bio::write(span<const uint8_t> buf) noexcept
   return n >= 0 && static_cast<size_t>(n) == buf.size();
 }
 
-} // namespace ndn::security::detail
+} // namespace detail
+} // namespace security
+} // namespace ndn

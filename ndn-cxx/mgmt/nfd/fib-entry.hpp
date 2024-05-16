@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2021 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -22,10 +22,11 @@
 #ifndef NDN_CXX_MGMT_NFD_FIB_ENTRY_HPP
 #define NDN_CXX_MGMT_NFD_FIB_ENTRY_HPP
 
-#include "ndn-cxx/encoding/nfd-constants.hpp"
 #include "ndn-cxx/name.hpp"
+#include "ndn-cxx/encoding/block.hpp"
 
-namespace ndn::nfd {
+namespace ndn {
+namespace nfd {
 
 /** \ingroup management
  *  \sa https://redmine.named-data.net/projects/nfd/wiki/FibMgmt#FIB-Dataset
@@ -73,8 +74,8 @@ public:
   wireDecode(const Block& block);
 
 private:
-  uint64_t m_faceId = INVALID_FACE_ID;
-  uint64_t m_cost = 0;
+  uint64_t m_faceId;
+  uint64_t m_cost;
 
   mutable Block m_wire;
 };
@@ -172,6 +173,7 @@ operator!=(const FibEntry& a, const FibEntry& b)
 std::ostream&
 operator<<(std::ostream& os, const FibEntry& entry);
 
-} // namespace ndn::nfd
+} // namespace nfd
+} // namespace ndn
 
 #endif // NDN_CXX_MGMT_NFD_FIB_ENTRY_HPP

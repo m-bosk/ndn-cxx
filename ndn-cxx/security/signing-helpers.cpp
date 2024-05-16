@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2021 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -21,7 +21,8 @@
 
 #include "ndn-cxx/security/signing-helpers.hpp"
 
-namespace ndn::security {
+namespace ndn {
+namespace security {
 
 SigningInfo
 signingByIdentity(const Name& identityName)
@@ -65,4 +66,5 @@ signingWithSha256()
   return SigningInfo(SigningInfo::SIGNER_TYPE_SHA256);
 }
 
-} // namespace ndn::security
+} // namespace security
+} // namespace ndn

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -28,21 +28,11 @@
 #include <boost/algorithm/string/case_conv.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/lexical_cast.hpp>
-#include <boost/mp11/list.hpp>
+#include <boost/mpl/vector.hpp>
 
-namespace ndn::tests {
-
-using ndn::name::Component;
-using ndn::name::UriFormat;
-
-static_assert(sizeof(Component) == sizeof(Block));
-BOOST_CONCEPT_ASSERT((boost::EqualityComparable<Component>));
-BOOST_CONCEPT_ASSERT((boost::Comparable<Component>));
-BOOST_CONCEPT_ASSERT((WireEncodable<Component>));
-BOOST_CONCEPT_ASSERT((WireEncodableWithEncodingBuffer<Component>));
-BOOST_CONCEPT_ASSERT((WireDecodable<Component>));
-static_assert(std::is_convertible_v<Component::Error*, tlv::Error*>,
-              "name::Component::Error must inherit from tlv::Error");
+namespace ndn {
+namespace name {
+namespace tests {
 
 BOOST_AUTO_TEST_SUITE(TestNameComponent)
 
@@ -63,46 +53,45 @@ BOOST_AUTO_TEST_CASE(Generic)
   BOOST_CHECK_EQUAL(comp.toUri(UriFormat::ENV_OR_CANONICAL), "8=ndn-cxx");
   BOOST_CHECK_EQUAL(comp.toUri(UriFormat::ENV_OR_ALTERNATE), "ndn-cxx");
   BOOST_CHECK_EQUAL(boost::lexical_cast<std::string>(comp), "ndn-cxx");
-  BOOST_CHECK_EQUAL(Component::fromUri("ndn-cxx"), comp);
-  BOOST_CHECK_EQUAL(Component::fromUri("8=ndn-cxx"sv), comp);
+  BOOST_CHECK_EQUAL(Component::fromEscapedString("ndn-cxx"), comp);
+  BOOST_CHECK_EQUAL(Component::fromEscapedString("8=ndn-cxx"), comp);
 
   comp.wireDecode("0800"_block);
   BOOST_CHECK_EQUAL(comp.toUri(), "...");
-  BOOST_CHECK_EQUAL(Component::fromUri("..."), comp);
-  BOOST_CHECK_EQUAL(Component::fromUri("8=..."sv), comp);
-  BOOST_CHECK_EQUAL(Component::fromUri(".%2E."sv), comp);
+  BOOST_CHECK_EQUAL(Component::fromEscapedString("..."), comp);
+  BOOST_CHECK_EQUAL(Component::fromEscapedString("8=..."), comp);
+  BOOST_CHECK_EQUAL(Component::fromEscapedString(".%2E."), comp);
 
   comp.wireDecode("0801 2E"_block);
   BOOST_CHECK_EQUAL(comp.toUri(), "....");
-  BOOST_CHECK_EQUAL(Component::fromUri("...."), comp);
-  BOOST_CHECK_EQUAL(Component::fromUri("%2E..%2E"sv), comp);
+  BOOST_CHECK_EQUAL(Component::fromEscapedString("...."), comp);
+  BOOST_CHECK_EQUAL(Component::fromEscapedString("%2E..%2E"), comp);
 
   comp.wireDecode("0803 2E412E"_block);
   BOOST_CHECK_EQUAL(comp.toUri(), ".A.");
-  BOOST_CHECK_EQUAL(Component::fromUri(".A."sv), comp);
+  BOOST_CHECK_EQUAL(Component::fromEscapedString(".A."), comp);
 
   comp.wireDecode("0807 666F6F25626172"_block);
   BOOST_CHECK_EQUAL(comp.toUri(), "foo%25bar");
-  BOOST_CHECK_EQUAL(Component::fromUri("foo%25bar"), comp);
-  BOOST_CHECK_EQUAL(Component::fromUri("8=foo%25bar"sv), comp);
+  BOOST_CHECK_EQUAL(Component::fromEscapedString("foo%25bar"), comp);
+  BOOST_CHECK_EQUAL(Component::fromEscapedString("8=foo%25bar"), comp);
 
   comp.wireDecode("0804 2D2E5F7E"_block);
   BOOST_CHECK_EQUAL(comp.toUri(), "-._~");
-  BOOST_CHECK_EQUAL(Component::fromUri("-._~"sv), comp);
+  BOOST_CHECK_EQUAL(Component::fromEscapedString("-._~"), comp);
 
   comp.wireDecode("0803 393D41"_block);
   BOOST_CHECK_EQUAL(comp.toUri(), "9%3DA");
-  BOOST_CHECK_EQUAL(Component::fromUri("9%3DA"sv), comp);
+  BOOST_CHECK_EQUAL(Component::fromEscapedString("9%3DA"), comp);
 
   comp = Component(":/?#[]@");
   BOOST_CHECK_EQUAL(comp.toUri(), "%3A%2F%3F%23%5B%5D%40");
-  BOOST_CHECK_EQUAL(Component::fromUri("%3A%2F%3F%23%5B%5D%40"sv), comp);
+  BOOST_CHECK_EQUAL(Component::fromEscapedString("%3A%2F%3F%23%5B%5D%40"), comp);
 
-  BOOST_CHECK_THROW(Component::fromUri(""), Component::Error);
-  BOOST_CHECK_THROW(Component::fromUri(""sv), Component::Error);
-  BOOST_CHECK_THROW(Component::fromUri("."sv), Component::Error);
-  BOOST_CHECK_THROW(Component::fromUri(".."sv), Component::Error);
-  BOOST_CHECK_THROW(Component::fromUri("8="sv), Component::Error);
+  BOOST_CHECK_THROW(Component::fromEscapedString(""), Component::Error);
+  BOOST_CHECK_THROW(Component::fromEscapedString("."), Component::Error);
+  BOOST_CHECK_THROW(Component::fromEscapedString(".."), Component::Error);
+  BOOST_CHECK_THROW(Component::fromEscapedString("8="), Component::Error);
 }
 
 static void
@@ -120,21 +109,21 @@ testSha256Component(uint32_t type, const std::string& uriPrefix)
 
   BOOST_CHECK_EQUAL(comp.type(), type);
   BOOST_CHECK_EQUAL(comp.toUri(), uriPrefix + hexLower);
-  BOOST_CHECK_EQUAL(comp.toUri(UriFormat::CANONICAL), std::to_string(type) + "=" + hexPctCanonical);
+  BOOST_CHECK_EQUAL(comp.toUri(UriFormat::CANONICAL), to_string(type) + "=" + hexPctCanonical);
   BOOST_CHECK_EQUAL(comp.toUri(UriFormat::ALTERNATE), uriPrefix + hexLower);
-  BOOST_CHECK_EQUAL(comp.toUri(UriFormat::ENV_OR_CANONICAL), std::to_string(type) + "=" + hexPctCanonical);
+  BOOST_CHECK_EQUAL(comp.toUri(UriFormat::ENV_OR_CANONICAL), to_string(type) + "=" + hexPctCanonical);
   BOOST_CHECK_EQUAL(comp.toUri(UriFormat::ENV_OR_ALTERNATE), uriPrefix + hexLower);
   BOOST_CHECK_EQUAL(boost::lexical_cast<std::string>(comp), uriPrefix + hexLower);
-  BOOST_CHECK_EQUAL(comp, Component::fromUri(uriPrefix + hexLower));
-  BOOST_CHECK_EQUAL(comp, Component::fromUri(uriPrefix + hexUpper));
-  BOOST_CHECK_EQUAL(comp, Component::fromUri(std::to_string(type) + "=" + hexPct));
-  BOOST_CHECK_EQUAL(comp, Component::fromUri(std::to_string(type) + "=" + hexPctCanonical));
+  BOOST_CHECK_EQUAL(comp, Component::fromEscapedString(uriPrefix + hexLower));
+  BOOST_CHECK_EQUAL(comp, Component::fromEscapedString(uriPrefix + hexUpper));
+  BOOST_CHECK_EQUAL(comp, Component::fromEscapedString(to_string(type) + "=" + hexPct));
+  BOOST_CHECK_EQUAL(comp, Component::fromEscapedString(to_string(type) + "=" + hexPctCanonical));
 
   CHECK_COMP_ERR(comp.wireDecode(Block(type, fromHex("A791806951F25C4D"))), "TLV-LENGTH must be 32");
-  CHECK_COMP_ERR(Component::fromUri(uriPrefix), "TLV-LENGTH must be 32");
-  CHECK_COMP_ERR(Component::fromUri(uriPrefix + "a791806951f25c4d"), "TLV-LENGTH must be 32");
-  CHECK_COMP_ERR(Component::fromUri(uriPrefix + "foo"), "invalid hex encoding");
-  CHECK_COMP_ERR(Component::fromUri(boost::to_upper_copy(uriPrefix) + hexLower), "Unknown TLV-TYPE");
+  CHECK_COMP_ERR(Component::fromEscapedString(uriPrefix), "TLV-LENGTH must be 32");
+  CHECK_COMP_ERR(Component::fromEscapedString(uriPrefix + "a791806951f25c4d"), "TLV-LENGTH must be 32");
+  CHECK_COMP_ERR(Component::fromEscapedString(uriPrefix + "foo"), "invalid hex encoding");
+  CHECK_COMP_ERR(Component::fromEscapedString(boost::to_upper_copy(uriPrefix) + hexLower), "Unknown TLV-TYPE");
 }
 
 BOOST_AUTO_TEST_CASE(ImplicitDigest)
@@ -155,32 +144,32 @@ testDecimalComponent(uint32_t type, const std::string& uriPrefix)
   BOOST_CHECK_EQUAL(comp.isNumber(), true);
   const auto compUri = uriPrefix + "42";
   BOOST_CHECK_EQUAL(comp.toUri(), compUri);
-  BOOST_CHECK_EQUAL(comp.toUri(UriFormat::CANONICAL), std::to_string(type) + "=%2A");
+  BOOST_CHECK_EQUAL(comp.toUri(UriFormat::CANONICAL), to_string(type) + "=%2A");
   BOOST_CHECK_EQUAL(comp.toUri(UriFormat::ALTERNATE), compUri);
-  BOOST_CHECK_EQUAL(comp.toUri(UriFormat::ENV_OR_CANONICAL), std::to_string(type) + "=%2A");
+  BOOST_CHECK_EQUAL(comp.toUri(UriFormat::ENV_OR_CANONICAL), to_string(type) + "=%2A");
   BOOST_CHECK_EQUAL(comp.toUri(UriFormat::ENV_OR_ALTERNATE), compUri);
   BOOST_CHECK_EQUAL(boost::lexical_cast<std::string>(comp), compUri);
-  BOOST_CHECK_EQUAL(comp, Component::fromUri(compUri));
-  BOOST_CHECK_EQUAL(comp, Component::fromUri(std::to_string(type) + "=%2A"));
+  BOOST_CHECK_EQUAL(comp, Component::fromEscapedString(compUri));
+  BOOST_CHECK_EQUAL(comp, Component::fromEscapedString(to_string(type) + "=%2A"));
   BOOST_CHECK_EQUAL(comp, Component::fromNumber(42, type));
 
   const Component comp2(type, fromHex("010203")); // TLV-VALUE is *not* a NonNegativeInteger
   BOOST_CHECK_EQUAL(comp2.type(), type);
   BOOST_CHECK_EQUAL(comp2.isNumber(), false);
-  const auto comp2Uri = std::to_string(type) + "=%01%02%03";
+  const auto comp2Uri = to_string(type) + "=%01%02%03";
   BOOST_CHECK_EQUAL(comp2.toUri(), comp2Uri);
   BOOST_CHECK_EQUAL(boost::lexical_cast<std::string>(comp2), comp2Uri);
-  BOOST_CHECK_EQUAL(comp2, Component::fromUri(comp2Uri));
+  BOOST_CHECK_EQUAL(comp2, Component::fromEscapedString(comp2Uri));
 
-  CHECK_COMP_ERR(Component::fromUri(uriPrefix), "invalid format");
-  CHECK_COMP_ERR(Component::fromUri(uriPrefix + "foo"), "invalid format");
-  CHECK_COMP_ERR(Component::fromUri(uriPrefix + "00"), "invalid format");
-  CHECK_COMP_ERR(Component::fromUri(uriPrefix + "-1"), "invalid format");
-  CHECK_COMP_ERR(Component::fromUri(uriPrefix + "9.3"), "invalid format");
-  CHECK_COMP_ERR(Component::fromUri(uriPrefix + " 84"), "invalid format");
-  CHECK_COMP_ERR(Component::fromUri(uriPrefix + "0xAF"), "invalid format");
-  CHECK_COMP_ERR(Component::fromUri(uriPrefix + "18446744073709551616"), "out of range");
-  CHECK_COMP_ERR(Component::fromUri(boost::to_upper_copy(uriPrefix) + "42"), "Unknown TLV-TYPE");
+  CHECK_COMP_ERR(Component::fromEscapedString(uriPrefix), "invalid format");
+  CHECK_COMP_ERR(Component::fromEscapedString(uriPrefix + "foo"), "invalid format");
+  CHECK_COMP_ERR(Component::fromEscapedString(uriPrefix + "00"), "invalid format");
+  CHECK_COMP_ERR(Component::fromEscapedString(uriPrefix + "-1"), "invalid format");
+  CHECK_COMP_ERR(Component::fromEscapedString(uriPrefix + "9.3"), "invalid format");
+  CHECK_COMP_ERR(Component::fromEscapedString(uriPrefix + " 84"), "invalid format");
+  CHECK_COMP_ERR(Component::fromEscapedString(uriPrefix + "0xAF"), "invalid format");
+  CHECK_COMP_ERR(Component::fromEscapedString(uriPrefix + "18446744073709551616"), "out of range");
+  CHECK_COMP_ERR(Component::fromEscapedString(boost::to_upper_copy(uriPrefix) + "42"), "Unknown TLV-TYPE");
 }
 
 BOOST_AUTO_TEST_CASE(Segment)
@@ -218,17 +207,17 @@ BOOST_AUTO_TEST_CASE(Keyword)
   BOOST_CHECK_EQUAL(comp.toUri(UriFormat::ALTERNATE), "32=ndn-cxx");
   BOOST_CHECK_EQUAL(comp.toUri(UriFormat::ENV_OR_CANONICAL), "32=ndn-cxx");
   BOOST_CHECK_EQUAL(comp.toUri(UriFormat::ENV_OR_ALTERNATE), "32=ndn-cxx");
-  BOOST_CHECK_EQUAL(Component::fromUri("32=ndn-cxx"sv), comp);
+  BOOST_CHECK_EQUAL(Component::fromEscapedString("32=ndn-cxx"), comp);
 
   comp.wireDecode("2000"_block);
   BOOST_CHECK_EQUAL(comp.type(), tlv::KeywordNameComponent);
   BOOST_CHECK_EQUAL(comp.isKeyword(), true);
   BOOST_CHECK_EQUAL(comp.toUri(), "32=...");
-  BOOST_CHECK_EQUAL(Component::fromUri("32=..."sv), comp);
+  BOOST_CHECK_EQUAL(Component::fromEscapedString("32=..."), comp);
 
-  BOOST_CHECK_THROW(Component::fromUri("32="sv), Component::Error);
-  BOOST_CHECK_THROW(Component::fromUri("32=."sv), Component::Error);
-  BOOST_CHECK_THROW(Component::fromUri("32=.."sv), Component::Error);
+  BOOST_CHECK_THROW(Component::fromEscapedString("32="), Component::Error);
+  BOOST_CHECK_THROW(Component::fromEscapedString("32=."), Component::Error);
+  BOOST_CHECK_THROW(Component::fromEscapedString("32=.."), Component::Error);
 }
 
 BOOST_AUTO_TEST_CASE(OtherType)
@@ -240,21 +229,21 @@ BOOST_AUTO_TEST_CASE(OtherType)
   BOOST_CHECK_EQUAL(comp.toUri(UriFormat::ALTERNATE), "9=ndn-cxx");
   BOOST_CHECK_EQUAL(comp.toUri(UriFormat::ENV_OR_CANONICAL), "9=ndn-cxx");
   BOOST_CHECK_EQUAL(comp.toUri(UriFormat::ENV_OR_ALTERNATE), "9=ndn-cxx");
-  BOOST_CHECK_EQUAL(Component::fromUri("9=ndn-cxx"sv), comp);
+  BOOST_CHECK_EQUAL(Component::fromEscapedString("9=ndn-cxx"), comp);
 
   comp.wireDecode("FDFFFF00"_block);
   BOOST_CHECK_EQUAL(comp.type(), 0xFFFF);
   BOOST_CHECK_EQUAL(comp.toUri(), "65535=...");
-  BOOST_CHECK_EQUAL(Component::fromUri("65535=..."sv), comp);
+  BOOST_CHECK_EQUAL(Component::fromEscapedString("65535=..."), comp);
 
   comp.wireDecode("FD576501 2E"_block);
   BOOST_CHECK_EQUAL(comp.type(), 0x5765);
   BOOST_CHECK_EQUAL(comp.toUri(), "22373=....");
-  BOOST_CHECK_EQUAL(Component::fromUri("22373=...."sv), comp);
+  BOOST_CHECK_EQUAL(Component::fromEscapedString("22373=...."), comp);
 
-  BOOST_CHECK_THROW(Component::fromUri("3="sv), Component::Error);
-  BOOST_CHECK_THROW(Component::fromUri("3=."sv), Component::Error);
-  BOOST_CHECK_THROW(Component::fromUri("3=.."sv), Component::Error);
+  BOOST_CHECK_THROW(Component::fromEscapedString("3="), Component::Error);
+  BOOST_CHECK_THROW(Component::fromEscapedString("3=."), Component::Error);
+  BOOST_CHECK_THROW(Component::fromEscapedString("3=.."), Component::Error);
 }
 
 BOOST_AUTO_TEST_CASE(InvalidType)
@@ -263,21 +252,21 @@ BOOST_AUTO_TEST_CASE(InvalidType)
   BOOST_CHECK_THROW(comp.wireDecode(Block{}), Component::Error);
   BOOST_CHECK_THROW(comp.wireDecode("FE0001000001 80"_block), Component::Error);
 
-  BOOST_CHECK_THROW(Component::fromUri("0=A"), Component::Error);
-  BOOST_CHECK_THROW(Component::fromUri("65536=A"), Component::Error);
-  BOOST_CHECK_THROW(Component::fromUri("4294967296=A"), Component::Error);
-  BOOST_CHECK_THROW(Component::fromUri("-1=A"), Component::Error);
-  BOOST_CHECK_THROW(Component::fromUri("+=A"), Component::Error);
-  BOOST_CHECK_THROW(Component::fromUri("=A"), Component::Error);
-  BOOST_CHECK_THROW(Component::fromUri("0x1=A"), Component::Error);
-  BOOST_CHECK_THROW(Component::fromUri("Z=A"), Component::Error);
-  BOOST_CHECK_THROW(Component::fromUri("09=A"), Component::Error);
-  BOOST_CHECK_THROW(Component::fromUri("0x3=A"), Component::Error);
-  BOOST_CHECK_THROW(Component::fromUri("+9=A"), Component::Error);
-  BOOST_CHECK_THROW(Component::fromUri(" 9=A"), Component::Error);
-  BOOST_CHECK_THROW(Component::fromUri("9 =A"), Component::Error);
-  BOOST_CHECK_THROW(Component::fromUri("9.0=A"), Component::Error);
-  BOOST_CHECK_THROW(Component::fromUri("9E0=A"), Component::Error);
+  BOOST_CHECK_THROW(Component::fromEscapedString("0=A"), Component::Error);
+  BOOST_CHECK_THROW(Component::fromEscapedString("65536=A"), Component::Error);
+  BOOST_CHECK_THROW(Component::fromEscapedString("4294967296=A"), Component::Error);
+  BOOST_CHECK_THROW(Component::fromEscapedString("-1=A"), Component::Error);
+  BOOST_CHECK_THROW(Component::fromEscapedString("+=A"), Component::Error);
+  BOOST_CHECK_THROW(Component::fromEscapedString("=A"), Component::Error);
+  BOOST_CHECK_THROW(Component::fromEscapedString("0x1=A"), Component::Error);
+  BOOST_CHECK_THROW(Component::fromEscapedString("Z=A"), Component::Error);
+  BOOST_CHECK_THROW(Component::fromEscapedString("09=A"), Component::Error);
+  BOOST_CHECK_THROW(Component::fromEscapedString("0x3=A"), Component::Error);
+  BOOST_CHECK_THROW(Component::fromEscapedString("+9=A"), Component::Error);
+  BOOST_CHECK_THROW(Component::fromEscapedString(" 9=A"), Component::Error);
+  BOOST_CHECK_THROW(Component::fromEscapedString("9 =A"), Component::Error);
+  BOOST_CHECK_THROW(Component::fromEscapedString("9.0=A"), Component::Error);
+  BOOST_CHECK_THROW(Component::fromEscapedString("9E0=A"), Component::Error);
 }
 
 BOOST_AUTO_TEST_SUITE_END() // Decode
@@ -306,12 +295,10 @@ BOOST_AUTO_TEST_CASE(ConstructFromSpan)
 
 BOOST_AUTO_TEST_SUITE(ConstructFromIterators) // Bug 2490
 
-using ContainerTypes = boost::mp11::mp_list<
-  std::vector<uint8_t>,
-  std::list<uint8_t>,
-  std::vector<int8_t>,
-  std::list<int8_t>
->;
+using ContainerTypes = boost::mpl::vector<std::vector<uint8_t>,
+                                          std::list<uint8_t>,
+                                          std::vector<int8_t>,
+                                          std::list<int8_t>>;
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(ZeroOctets, T, ContainerTypes)
 {
@@ -342,6 +329,8 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(FourOctets, T, ContainerTypes)
 
 BOOST_AUTO_TEST_SUITE_END() // ConstructFromIterators
 
+BOOST_AUTO_TEST_SUITE(NamingConvention)
+
 template<typename ArgType>
 struct ConventionTest
 {
@@ -353,8 +342,9 @@ struct ConventionTest
   std::function<bool(const Component&)> isComponent;
 };
 
-struct ConventionMarker
+class ConventionMarker
 {
+public:
   ConventionMarker()
   {
     name::setConventionEncoding(name::Convention::MARKER);
@@ -366,12 +356,13 @@ struct ConventionMarker
   }
 };
 
-struct ConventionTyped
+class ConventionTyped
 {
 };
 
-struct NumberWithMarker
+class NumberWithMarker
 {
+public:
   using ConventionRev = ConventionMarker;
 
   ConventionTest<uint64_t>
@@ -386,8 +377,9 @@ struct NumberWithMarker
   }
 };
 
-struct SegmentMarker
+class SegmentMarker
 {
+public:
   using ConventionRev = ConventionMarker;
 
   ConventionTest<uint64_t>
@@ -402,8 +394,9 @@ struct SegmentMarker
   }
 };
 
-struct SegmentTyped
+class SegmentTyped
 {
+public:
   using ConventionRev = ConventionTyped;
 
   ConventionTest<uint64_t>
@@ -418,8 +411,9 @@ struct SegmentTyped
   }
 };
 
-struct ByteOffsetTyped
+class ByteOffsetTyped
 {
+public:
   using ConventionRev = ConventionTyped;
 
   ConventionTest<uint64_t>
@@ -434,8 +428,9 @@ struct ByteOffsetTyped
   }
 };
 
-struct VersionMarker
+class VersionMarker
 {
+public:
   using ConventionRev = ConventionMarker;
 
   ConventionTest<uint64_t>
@@ -450,8 +445,9 @@ struct VersionMarker
   }
 };
 
-struct VersionTyped
+class VersionTyped
 {
+public:
   using ConventionRev = ConventionTyped;
 
   ConventionTest<uint64_t>
@@ -466,8 +462,9 @@ struct VersionTyped
   }
 };
 
-struct TimestampMarker
+class TimestampMarker
 {
+public:
   using ConventionRev = ConventionMarker;
 
   ConventionTest<time::system_clock::time_point>
@@ -482,8 +479,9 @@ struct TimestampMarker
   }
 };
 
-struct TimestampTyped
+class TimestampTyped
 {
+public:
   using ConventionRev = ConventionTyped;
 
   ConventionTest<time::system_clock::time_point>
@@ -498,8 +496,9 @@ struct TimestampTyped
   }
 };
 
-struct SequenceNumberMarker
+class SequenceNumberMarker
 {
+public:
   using ConventionRev = ConventionMarker;
 
   ConventionTest<uint64_t>
@@ -514,8 +513,9 @@ struct SequenceNumberMarker
   }
 };
 
-struct SequenceNumberTyped
+class SequenceNumberTyped
 {
+public:
   using ConventionRev = ConventionTyped;
 
   ConventionTest<uint64_t>
@@ -530,7 +530,7 @@ struct SequenceNumberTyped
   }
 };
 
-using NamingConventionTests = boost::mp11::mp_list<
+using ConventionTests = boost::mpl::vector<
   NumberWithMarker,
   SegmentMarker,
   SegmentTyped,
@@ -543,22 +543,23 @@ using NamingConventionTests = boost::mp11::mp_list<
   SequenceNumberTyped
 >;
 
-BOOST_FIXTURE_TEST_CASE_TEMPLATE(NamingConvention, T, NamingConventionTests, T::ConventionRev)
+BOOST_FIXTURE_TEST_CASE_TEMPLATE(Convention, T, ConventionTests, T::ConventionRev)
 {
+  Component invalidComponent1;
+  Component invalidComponent2("1234567890");
+
   auto test = T()();
+  const Name& expected = test.expected;
 
   Component actualComponent = test.makeComponent(test.value);
-  BOOST_CHECK_EQUAL(actualComponent, test.expected[0]);
+  BOOST_CHECK_EQUAL(actualComponent, expected[0]);
 
   Name actualName;
   test.append(actualName, test.value);
-  BOOST_CHECK_EQUAL(actualName, test.expected);
+  BOOST_CHECK_EQUAL(actualName, expected);
 
-  BOOST_CHECK_EQUAL(test.isComponent(test.expected[0]), true);
-  BOOST_CHECK_EQUAL(test.getValue(test.expected[0]), test.value);
-
-  static const Component invalidComponent1;
-  static const Component invalidComponent2("1234567890");
+  BOOST_CHECK_EQUAL(test.isComponent(expected[0]), true);
+  BOOST_CHECK_EQUAL(test.getValue(expected[0]), test.value);
 
   BOOST_CHECK_EQUAL(test.isComponent(invalidComponent1), false);
   BOOST_CHECK_EQUAL(test.isComponent(invalidComponent2), false);
@@ -566,6 +567,8 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(NamingConvention, T, NamingConventionTests, T::
   BOOST_CHECK_THROW(test.getValue(invalidComponent1), Component::Error);
   BOOST_CHECK_THROW(test.getValue(invalidComponent2), Component::Error);
 }
+
+BOOST_AUTO_TEST_SUITE_END() // NamingConvention
 
 BOOST_AUTO_TEST_CASE(Compare)
 {
@@ -594,8 +597,6 @@ BOOST_AUTO_TEST_CASE(Compare)
     for (size_t j = 0; j < comps.size(); ++j) {
       const auto& lhs = comps[i];
       const auto& rhs = comps[j];
-      BOOST_TEST_INFO_SCOPE("lhs = " << lhs);
-      BOOST_TEST_INFO_SCOPE("rhs = " << rhs);
       BOOST_CHECK_EQUAL(lhs == rhs, i == j);
       BOOST_CHECK_EQUAL(lhs != rhs, i != j);
       BOOST_CHECK_EQUAL(lhs <  rhs, i <  j);
@@ -608,4 +609,6 @@ BOOST_AUTO_TEST_CASE(Compare)
 
 BOOST_AUTO_TEST_SUITE_END() // TestNameComponent
 
-} // namespace ndn::tests
+} // namespace tests
+} // namespace name
+} // namespace ndn

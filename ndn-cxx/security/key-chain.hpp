@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -30,32 +30,30 @@
 #include "ndn-cxx/security/signing-info.hpp"
 #include "ndn-cxx/security/tpm/tpm.hpp"
 
-/**
- * @brief Contains the ndn-cxx security framework.
- */
-namespace ndn::security {
+namespace ndn {
+namespace security {
 
 /**
- * @brief Options to KeyChain::makeCertificate().
+ * @brief Options to KeyChain::makeCertificate() .
  */
 struct MakeCertificateOptions
 {
   /**
-   * @brief %Certificate name IssuerId component.
+   * @brief Certificate name IssuerId component.
    *
    * Default is "NA".
    */
   name::Component issuerId = Certificate::DEFAULT_ISSUER_ID;
 
   /**
-   * @brief %Certificate name version component.
+   * @brief Certificate name version component.
    *
-   * Default is deriving from current timestamp using the logic of Name::appendVersion().
+   * Default is deriving from current timestamp using the logic of Name::appendVersion() .
    */
-  std::optional<uint64_t> version;
+  optional<uint64_t> version;
 
   /**
-   * @brief %Certificate packet FreshnessPeriod.
+   * @brief Certificate packet FreshnessPeriod.
    *
    * As required by the certificate format, this must be positive.
    * Setting this to zero or negative causes @c std::invalid_argument exception.
@@ -65,15 +63,17 @@ struct MakeCertificateOptions
   time::milliseconds freshnessPeriod = 1_h;
 
   /**
-   * @brief %Certificate ValidityPeriod.
+   * @brief Certificate ValidityPeriod.
    *
    * It isn't an error to specify a ValidityPeriod that does not include the current time
    * or has zero duration, but the certificate won't be valid.
    *
    * Default is a ValidityPeriod from now until 365 days later.
    */
-  std::optional<ValidityPeriod> validity;
+  optional<ValidityPeriod> validity;
 };
+
+inline namespace v2 {
 
 /**
  * @brief The main interface for signing key management.
@@ -452,7 +452,7 @@ NDN_CXX_PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   static const Locator&
   getDefaultTpmLocator();
 
-#ifdef NDN_CXX_WITH_TESTS
+#ifdef NDN_CXX_HAVE_TESTS
   static void
   resetDefaultLocators();
 #endif
@@ -498,7 +498,7 @@ private: // signing
 
   static std::tuple<Name, SignatureInfo>
   prepareSignatureInfoWithKey(const SigningInfo& params, const pib::Key& key,
-                              const std::optional<Name>& certName = std::nullopt);
+                              const optional<Name>& certName = nullopt);
 
   /**
    * @brief Generate and return a raw signature for the byte ranges in @p bufs using
@@ -514,12 +514,6 @@ private:
   static Locator s_defaultPibLocator;
   static Locator s_defaultTpmLocator;
 };
-
-} // namespace ndn::security
-
-namespace ndn {
-using security::KeyChain;
-} // namespace ndn
 
 /**
  * @brief Register Pib backend class in KeyChain
@@ -552,5 +546,12 @@ public:                                                       \
     ::ndn::security::KeyChain::registerTpmBackend<TpmType>(TpmType::getScheme()); \
   }                                                           \
 } ndnCxxAuto ## TpmType ## TpmRegistrationVariable
+
+} // inline namespace v2
+} // namespace security
+
+using security::KeyChain;
+
+} // namespace ndn
 
 #endif // NDN_CXX_SECURITY_KEY_CHAIN_HPP

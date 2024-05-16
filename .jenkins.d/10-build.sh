@@ -4,8 +4,14 @@ set -eo pipefail
 if [[ -z $DISABLE_ASAN ]]; then
     ASAN="--with-sanitizer=address"
 fi
-if [[ -n $GITHUB_ACTIONS && $ID == macos && ${VERSION_ID%%.*} -le 12 ]]; then
-    KEYCHAIN="--with-osx-keychain"
+if [[ $JOB_NAME == *"code-coverage" ]]; then
+    COVERAGE="--with-coverage"
+fi
+if [[ $ID == macos && ${VERSION_ID%%.*} -ge 12 ]]; then
+    KEYCHAIN="--without-osx-keychain"
+fi
+if [[ -n $DISABLE_PCH ]]; then
+    PCH="--without-pch"
 fi
 
 set -x
@@ -18,30 +24,26 @@ if [[ $JOB_NAME != *"code-coverage" && $JOB_NAME != *"limited-build" ]]; then
     # Cleanup
     ./waf --color=yes distclean
 
-    # Build shared library in release mode with examples and benchmarks
-    ./waf --color=yes configure --disable-static --enable-shared --with-examples --with-benchmarks
+    # Build static and shared library in release mode without tests
+    ./waf --color=yes configure --enable-static --enable-shared $PCH
     ./waf --color=yes build
 
     # Cleanup
     ./waf --color=yes distclean
 fi
 
-if [[ $JOB_NAME == *"code-coverage" ]]; then
-    # Build for coverage testing: enable instrumentation and unit tests only
-    ./waf --color=yes configure --debug --with-coverage --with-unit-tests --without-tools
-    ./waf --color=yes build
-else
-    # Build shared library in debug mode with tests
-    ./waf --color=yes configure --disable-static --enable-shared --debug --with-tests $ASAN $KEYCHAIN
-    ./waf --color=yes build
-fi
+# Build shared library in debug mode with tests and examples
+./waf --color=yes configure --disable-static --enable-shared --debug --with-tests --with-examples $ASAN $COVERAGE $KEYCHAIN $PCH
+./waf --color=yes build
+
+# (tests will be run against the debug version)
 
 # Install
 sudo ./waf --color=yes install
 
+if [[ $ID_LIKE == *fedora* ]]; then
+    sudo tee /etc/ld.so.conf.d/ndn.conf >/dev/null <<< /usr/local/lib64
+fi
 if [[ $ID_LIKE == *linux* ]]; then
-    if [[ $(uname -m) == x86_64 && -d /usr/lib64 ]]; then
-        sudo tee /etc/ld.so.conf.d/ndn.conf >/dev/null <<< /usr/local/lib64
-    fi
     sudo ldconfig
 fi

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -25,7 +25,9 @@
 #include "ndn-cxx/security/validation-policy.hpp"
 #include "ndn-cxx/security/validator-config/rule.hpp"
 
-namespace ndn::security {
+namespace ndn {
+namespace security {
+inline namespace v2 {
 namespace validator_config {
 
 /**
@@ -104,6 +106,8 @@ NDN_CXX_PUBLIC_WITH_TESTS_ELSE_PRIVATE:
 
 using validator_config::ValidationPolicyConfig;
 
-} // namespace ndn::security
+} // inline namespace v2
+} // namespace security
+} // namespace ndn
 
 #endif // NDN_CXX_SECURITY_VALIDATION_POLICY_CONFIG_HPP

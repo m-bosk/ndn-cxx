@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2019 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -23,11 +23,25 @@
 #include "ndn-cxx/encoding/block-helpers.hpp"
 #include "ndn-cxx/encoding/encoding-buffer.hpp"
 #include "ndn-cxx/encoding/tlv-nfd.hpp"
+#include "ndn-cxx/util/concepts.hpp"
 #include "ndn-cxx/util/string-helper.hpp"
 
-namespace ndn::nfd {
+namespace ndn {
+namespace nfd {
 
-FaceStatus::FaceStatus() = default;
+BOOST_CONCEPT_ASSERT((StatusDatasetItem<FaceStatus>));
+
+FaceStatus::FaceStatus()
+  : m_nInInterests(0)
+  , m_nInData(0)
+  , m_nInNacks(0)
+  , m_nOutInterests(0)
+  , m_nOutData(0)
+  , m_nOutNacks(0)
+  , m_nInBytes(0)
+  , m_nOutBytes(0)
+{
+}
 
 FaceStatus::FaceStatus(const Block& block)
 {
@@ -134,7 +148,7 @@ FaceStatus::wireDecode(const Block& block)
     ++val;
   }
   else {
-    m_expirationPeriod = std::nullopt;
+    m_expirationPeriod = nullopt;
   }
 
   if (val != m_wire.elements_end() && val->type() == tlv::nfd::FaceScope) {
@@ -166,7 +180,7 @@ FaceStatus::wireDecode(const Block& block)
     ++val;
   }
   else {
-    m_baseCongestionMarkingInterval = std::nullopt;
+    m_baseCongestionMarkingInterval = nullopt;
   }
 
   if (val != m_wire.elements_end() && val->type() == tlv::nfd::DefaultCongestionThreshold) {
@@ -174,7 +188,7 @@ FaceStatus::wireDecode(const Block& block)
     ++val;
   }
   else {
-    m_defaultCongestionThreshold = std::nullopt;
+    m_defaultCongestionThreshold = nullopt;
   }
 
   if (val != m_wire.elements_end() && val->type() == tlv::nfd::Mtu) {
@@ -182,7 +196,7 @@ FaceStatus::wireDecode(const Block& block)
     ++val;
   }
   else {
-    m_mtu = std::nullopt;
+    m_mtu = nullopt;
   }
 
   if (val != m_wire.elements_end() && val->type() == tlv::nfd::NInInterests) {
@@ -270,7 +284,7 @@ FaceStatus&
 FaceStatus::unsetExpirationPeriod()
 {
   m_wire.reset();
-  m_expirationPeriod = std::nullopt;
+  m_expirationPeriod = nullopt;
   return *this;
 }
 
@@ -286,7 +300,7 @@ FaceStatus&
 FaceStatus::unsetBaseCongestionMarkingInterval()
 {
   m_wire.reset();
-  m_baseCongestionMarkingInterval = std::nullopt;
+  m_baseCongestionMarkingInterval = nullopt;
   return *this;
 }
 
@@ -302,7 +316,7 @@ FaceStatus&
 FaceStatus::unsetDefaultCongestionThreshold()
 {
   m_wire.reset();
-  m_defaultCongestionThreshold = std::nullopt;
+  m_defaultCongestionThreshold = nullopt;
   return *this;
 }
 
@@ -318,7 +332,7 @@ FaceStatus&
 FaceStatus::unsetMtu()
 {
   m_wire.reset();
-  m_mtu = std::nullopt;
+  m_mtu = nullopt;
   return *this;
 }
 
@@ -459,4 +473,5 @@ operator<<(std::ostream& os, const FaceStatus& status)
   return os << "     )";
 }
 
-} // namespace ndn::nfd
+} // namespace nfd
+} // namespace ndn

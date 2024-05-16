@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2021 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -27,7 +27,10 @@
 
 #include <cstdlib>
 
-namespace ndn::tests {
+namespace ndn {
+namespace security {
+namespace tpm {
+namespace tests {
 
 /**
  * @brief A wrapper of tpm::BackEndOsx for unit test template.
@@ -49,7 +52,7 @@ public:
     else
       unsetenv("HOME");
 
-    m_impl = make_unique<security::tpm::BackEndOsx>();
+    m_impl = make_unique<BackEndOsx>();
   }
 
   ~BackEndWrapperOsx()
@@ -60,7 +63,7 @@ public:
       unsetenv("HOME");
   }
 
-  security::tpm::BackEnd&
+  BackEnd&
   getTpm()
   {
     return *m_impl;
@@ -74,9 +77,12 @@ public:
 
 private:
   std::string m_HOME;
-  unique_ptr<security::tpm::BackEnd> m_impl;
+  unique_ptr<BackEnd> m_impl;
 };
 
-} // namespace ndn::tests
+} // namespace tests
+} // namespace tpm
+} // namespace security
+} // namespace ndn
 
 #endif // NDN_CXX_TESTS_UNIT_SECURITY_TPM_BACK_END_WRAPPER_OSX_HPP

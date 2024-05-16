@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2021 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -28,9 +28,10 @@
 
 #include "tests/boost-test.hpp"
 
-namespace ndn::tests {
-
-using namespace ndn::security::transform;
+namespace ndn {
+namespace security {
+namespace transform {
+namespace tests {
 
 BOOST_AUTO_TEST_SUITE(Security)
 BOOST_AUTO_TEST_SUITE(Transform)
@@ -261,11 +262,11 @@ BOOST_AUTO_TEST_CASE(OddByte)
 {
   const std::string in1 = "0001020304050";
   OBufferStream os1;
-  BOOST_CHECK_THROW(bufferSource(in1) >> hexDecode() >> streamSink(os1), Error);
+  BOOST_CHECK_THROW(bufferSource(in1) >> hexDecode() >> streamSink(os1), transform::Error);
 
   const std::string in2 = "0001020304xy";
   OBufferStream os2;
-  BOOST_CHECK_THROW(bufferSource(in2) >> hexDecode() >> streamSink(os2), Error);
+  BOOST_CHECK_THROW(bufferSource(in2) >> hexDecode() >> streamSink(os2), transform::Error);
 }
 
 BOOST_AUTO_TEST_CASE(EmptyInput)
@@ -282,4 +283,7 @@ BOOST_AUTO_TEST_SUITE_END() // TestHexDecode
 BOOST_AUTO_TEST_SUITE_END() // Transform
 BOOST_AUTO_TEST_SUITE_END() // Security
 
-} // namespace ndn::tests
+} // namespace tests
+} // namespace transform
+} // namespace security
+} // namespace ndn

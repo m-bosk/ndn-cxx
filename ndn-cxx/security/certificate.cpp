@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -24,13 +24,27 @@
 
 #include "ndn-cxx/security/certificate.hpp"
 #include "ndn-cxx/security/additional-description.hpp"
-#include "ndn-cxx/security/transform/base64-encode.hpp"
-#include "ndn-cxx/security/transform/buffer-source.hpp"
-#include "ndn-cxx/security/transform/public-key.hpp"
-#include "ndn-cxx/security/transform/stream-sink.hpp"
+#include "ndn-cxx/security/transform.hpp"
 #include "ndn-cxx/util/indented-stream.hpp"
 
-namespace ndn::security {
+namespace ndn {
+namespace security {
+inline namespace v2 {
+
+BOOST_CONCEPT_ASSERT((WireEncodable<Certificate>));
+BOOST_CONCEPT_ASSERT((WireDecodable<Certificate>));
+static_assert(std::is_base_of<Data::Error, Certificate::Error>::value,
+              "Certificate::Error must inherit from Data::Error");
+
+// /<IdentityName>/KEY/<KeyId>/<IssuerId>/<Version>
+const ssize_t Certificate::VERSION_OFFSET = -1;
+const ssize_t Certificate::ISSUER_ID_OFFSET = -2;
+const ssize_t Certificate::KEY_ID_OFFSET = -3;
+const ssize_t Certificate::KEY_COMPONENT_OFFSET = -4;
+const size_t Certificate::MIN_CERT_NAME_LENGTH = 4;
+const size_t Certificate::MIN_KEY_NAME_LENGTH = 2;
+const name::Component Certificate::KEY_COMPONENT("KEY");
+const name::Component Certificate::DEFAULT_ISSUER_ID("NA");
 
 Certificate::Certificate()
 {
@@ -93,7 +107,7 @@ Certificate::getValidityPeriod() const
 }
 
 bool
-Certificate::isValid(const time::system_clock::time_point& ts) const
+Certificate::isValid(const time::system_clock::TimePoint& ts) const
 {
   return getSignatureInfo().getValidityPeriod().isValid(ts);
 }
@@ -205,4 +219,6 @@ extractKeyNameFromCertName(const Name& certName)
   return certName.getPrefix(Certificate::KEY_ID_OFFSET + 1); // trim everything after key id
 }
 
-} // namespace ndn::security
+} // inline namespace v2
+} // namespace security
+} // namespace ndn

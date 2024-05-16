@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2018 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -23,7 +23,9 @@
 
 NDN_LOG_INIT(fm.FilterModule);
 
-namespace ndn::tests {
+namespace ndn {
+namespace util {
+namespace tests {
 
 void
 logFromFilterModule()
@@ -36,5 +38,7 @@ logFromFilterModule()
   NDN_LOG_FATAL("fatalFM");
 }
 
-} // namespace ndn::tests
+} // namespace tests
+} // namespace util
+} // namespace ndn
 

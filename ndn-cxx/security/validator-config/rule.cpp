@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2021 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -25,9 +25,12 @@
 
 #include <boost/algorithm/string/predicate.hpp>
 
-namespace ndn::security::validator_config {
-
 NDN_LOG_INIT(ndn.security.validator_config.Rule);
+
+namespace ndn {
+namespace security {
+inline namespace v2 {
+namespace validator_config {
 
 Rule::Rule(const std::string& id, uint32_t pktType)
   : m_id(id)
@@ -168,4 +171,7 @@ Rule::create(const ConfigSection& configSection, const std::string& configFilena
   return rule;
 }
 
-} // namespace ndn::security::validator_config
+} // namespace validator_config
+} // inline namespace v2
+} // namespace security
+} // namespace ndn

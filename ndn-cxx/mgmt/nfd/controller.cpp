@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -25,7 +25,16 @@
 
 #include <boost/lexical_cast.hpp>
 
-namespace ndn::nfd {
+namespace ndn {
+namespace nfd {
+
+using ndn::util::SegmentFetcher;
+
+const uint32_t Controller::ERROR_TIMEOUT = 10060; // WinSock ESAETIMEDOUT
+const uint32_t Controller::ERROR_NACK = 10800; // 10000 + TLV-TYPE of Nack header
+const uint32_t Controller::ERROR_VALIDATION = 10021; // 10000 + TLS1_ALERT_DECRYPTION_FAILED
+const uint32_t Controller::ERROR_SERVER = 500;
+const uint32_t Controller::ERROR_LBOUND = 400;
 
 Controller::Controller(Face& face, KeyChain& keyChain, security::Validator& validator)
   : m_face(face)
@@ -45,8 +54,8 @@ Controller::~Controller()
 void
 Controller::startCommand(const shared_ptr<ControlCommand>& command,
                          const ControlParameters& parameters,
-                         const CommandSuccessCallback& onSuccess,
-                         const CommandFailureCallback& onFailure,
+                         const CommandSucceedCallback& onSuccess,
+                         const CommandFailCallback& onFailure,
                          const CommandOptions& options)
 {
   Interest interest;
@@ -72,12 +81,12 @@ Controller::startCommand(const shared_ptr<ControlCommand>& command,
 void
 Controller::processCommandResponse(const Data& data,
                                    const shared_ptr<ControlCommand>& command,
-                                   const CommandSuccessCallback& onSuccess,
-                                   const CommandFailureCallback& onFailure)
+                                   const CommandSucceedCallback& onSuccess,
+                                   const CommandFailCallback& onFailure)
 {
   m_validator.validate(data,
-    [=] (const Data& d) {
-      processValidatedCommandResponse(d, command, onSuccess, onFailure);
+    [=] (const Data& data) {
+      processValidatedCommandResponse(data, command, onSuccess, onFailure);
     },
     [=] (const Data&, const auto& error) {
       if (onFailure)
@@ -89,8 +98,8 @@ Controller::processCommandResponse(const Data& data,
 void
 Controller::processValidatedCommandResponse(const Data& data,
                                             const shared_ptr<ControlCommand>& command,
-                                            const CommandSuccessCallback& onSuccess,
-                                            const CommandFailureCallback& onFailure)
+                                            const CommandSucceedCallback& onSuccess,
+                                            const CommandFailCallback& onFailure)
 {
   ControlResponse response;
   try {
@@ -98,11 +107,12 @@ Controller::processValidatedCommandResponse(const Data& data,
   }
   catch (const tlv::Error& e) {
     if (onFailure)
-      onFailure(ControlResponse(ERROR_SERVER, "ControlResponse decoding failure: "s + e.what()));
+      onFailure(ControlResponse(ERROR_SERVER, e.what()));
     return;
   }
 
-  if (response.getCode() >= ERROR_LBOUND) {
+  uint32_t code = response.getCode();
+  if (code >= ERROR_LBOUND) {
     if (onFailure)
       onFailure(response);
     return;
@@ -114,7 +124,7 @@ Controller::processValidatedCommandResponse(const Data& data,
   }
   catch (const tlv::Error& e) {
     if (onFailure)
-      onFailure(ControlResponse(ERROR_SERVER, "ControlParameters decoding failure: "s + e.what()));
+      onFailure(ControlResponse(ERROR_SERVER, e.what()));
     return;
   }
 
@@ -123,7 +133,7 @@ Controller::processValidatedCommandResponse(const Data& data,
   }
   catch (const ControlCommand::ArgumentError& e) {
     if (onFailure)
-      onFailure(ControlResponse(ERROR_SERVER, "Invalid response: "s + e.what()));
+      onFailure(ControlResponse(ERROR_SERVER, e.what()));
     return;
   }
 
@@ -134,16 +144,18 @@ Controller::processValidatedCommandResponse(const Data& data,
 void
 Controller::fetchDataset(const Name& prefix,
                          const std::function<void(ConstBufferPtr)>& processResponse,
-                         const DatasetFailureCallback& onFailure,
+                         const DatasetFailCallback& onFailure,
                          const CommandOptions& options)
 {
   SegmentFetcher::Options fetcherOptions;
   fetcherOptions.maxTimeout = options.getTimeout();
 
   auto fetcher = SegmentFetcher::start(m_face, Interest(prefix), m_validator, fetcherOptions);
-  fetcher->onComplete.connect(processResponse);
+  if (processResponse) {
+    fetcher->onComplete.connect(processResponse);
+  }
   if (onFailure) {
-    fetcher->onError.connect([onFailure] (uint32_t code, const std::string& msg) {
+    fetcher->onError.connect([=] (uint32_t code, const std::string& msg) {
       processDatasetFetchError(onFailure, code, msg);
     });
   }
@@ -154,7 +166,7 @@ Controller::fetchDataset(const Name& prefix,
 }
 
 void
-Controller::processDatasetFetchError(const DatasetFailureCallback& onFailure,
+Controller::processDatasetFetchError(const DatasetFailCallback& onFailure,
                                      uint32_t code, std::string msg)
 {
   BOOST_ASSERT(onFailure);
@@ -181,4 +193,5 @@ Controller::processDatasetFetchError(const DatasetFailureCallback& onFailure,
   }
 }
 
-} // namespace ndn::nfd
+} // namespace nfd
+} // namespace ndn

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -40,7 +40,7 @@ class Data;
 /**
  * @brief Default value of `InterestLifetime`.
  */
-inline constexpr time::milliseconds DEFAULT_INTEREST_LIFETIME = 4_s;
+const time::milliseconds DEFAULT_INTEREST_LIFETIME = 4_s;
 
 /**
  * @brief Represents an %Interest packet.
@@ -55,8 +55,10 @@ public:
     using tlv::Error::Error;
   };
 
-  class Nonce final : public std::array<uint8_t, 4>, private boost::equality_comparable<Nonce>
+  class Nonce final : public std::array<uint8_t, 4>
   {
+    using Base = std::array<uint8_t, 4>;
+
   public:
     Nonce() = default;
 
@@ -69,21 +71,26 @@ public:
 
     Nonce(uint8_t n1, uint8_t n2, uint8_t n3, uint8_t n4) noexcept
     {
-      (*this)[0] = n1;
-      (*this)[1] = n2;
-      (*this)[2] = n3;
-      (*this)[3] = n4;
+      data()[0] = n1;
+      data()[1] = n2;
+      data()[2] = n3;
+      data()[3] = n4;
     }
 
   private: // non-member operators
     // NOTE: the following "hidden friend" operators are available via
     //       argument-dependent lookup only and must be defined inline.
-    // boost::equality_comparable provides != operator.
 
     friend bool
     operator==(const Nonce& lhs, const Nonce& rhs) noexcept
     {
-      return std::equal(lhs.begin(), lhs.end(), rhs.begin());
+      return static_cast<const Base&>(lhs) == static_cast<const Base&>(rhs);
+    }
+
+    friend bool
+    operator!=(const Nonce& lhs, const Nonce& rhs) noexcept
+    {
+      return static_cast<const Base&>(lhs) != static_cast<const Base&>(rhs);
     }
 
     friend std::ostream&
@@ -94,46 +101,40 @@ public:
     }
   };
 
-  /**
-   * @brief Construct an Interest with given @p name and @p lifetime.
+  /** @brief Construct an Interest with given @p name and @p lifetime.
    *
-   * @throw std::invalid_argument @p name is invalid or @p lifetime is negative.
-   * @warning In certain contexts that use `Interest::shared_from_this()`, the Interest must be created
-   *          using `std::make_shared`. Otherwise, `shared_from_this()` will throw `std::bad_weak_ptr`.
+   *  @throw std::invalid_argument @p name is invalid or @p lifetime is negative
+   *  @warning In certain contexts that use `Interest::shared_from_this()`, Interest must be created
+   *           using `make_shared`. Otherwise, `shared_from_this()` will trigger undefined behavior.
    */
   explicit
   Interest(const Name& name = {}, time::milliseconds lifetime = DEFAULT_INTEREST_LIFETIME);
 
-  /**
-   * @brief Construct an Interest by decoding from @p wire.
+  /** @brief Construct an Interest by decoding from @p wire.
    *
-   * @warning In certain contexts that use `Interest::shared_from_this()`, the Interest must be created
-   *          using `std::make_shared`. Otherwise, `shared_from_this()` will throw `std::bad_weak_ptr`.
+   *  @warning In certain contexts that use `Interest::shared_from_this()`, Interest must be created
+   *           using `make_shared`. Otherwise, `shared_from_this()` will trigger undefined behavior.
    */
   explicit
   Interest(const Block& wire);
 
-  /**
-   * @brief Prepend wire encoding to @p encoder.
+  /** @brief Prepend wire encoding to @p encoder.
    */
   template<encoding::Tag TAG>
   size_t
   wireEncode(EncodingImpl<TAG>& encoder) const;
 
-  /**
-   * @brief Encode into a Block.
+  /** @brief Encode into a Block.
    */
   const Block&
   wireEncode() const;
 
-  /**
-   * @brief Decode from @p wire.
+  /** @brief Decode from @p wire.
    */
   void
   wireDecode(const Block& wire);
 
-  /**
-   * @brief Check if this instance has cached wire encoding.
+  /** @brief Check if this instance has cached wire encoding.
    */
   bool
   hasWire() const noexcept
@@ -141,40 +142,33 @@ public:
     return m_wire.hasWire();
   }
 
-  /**
-   * @brief Return a URI-like string that represents the Interest.
+  /** @brief Return a URI-like string that represents the Interest.
    *
-   * The string always starts with the Interest's name in URI format. After the name, if any
-   * of the Interest's CanBePrefix, MustBeFresh, Nonce, InterestLifetime, or HopLimit fields
-   * are present, their textual representation is appended as a query string.
-   *
-   * Example: `"/test/name?MustBeFresh&Nonce=123456"`
+   *  The string always starts with `getName().toUri()`. After the name, if any of the
+   *  Interest's CanBePrefix, MustBeFresh, Nonce, InterestLifetime, or HopLimit fields
+   *  are present, their textual representation is appended as a query string.
+   *  Example: "/test/name?MustBeFresh&Nonce=123456"
    */
   std::string
   toUri() const;
 
 public: // matching
-  /**
-   * @brief Check if this Interest can be satisfied by @p data.
+  /** @brief Check if Interest can be satisfied by @p data.
    *
-   * This method considers `Name`, `CanBePrefix`, and `MustBeFresh`. However, `MustBeFresh`
-   * evaluation is limited to rejecting Data with zero/omitted `FreshnessPeriod`.
+   *  This method considers Name, CanBePrefix, and MustBeFresh. However, MustBeFresh processing
+   *  is limited to rejecting Data with zero/omitted FreshnessPeriod.
    */
-  [[nodiscard]] bool
+  bool
   matchesData(const Data& data) const;
 
-  /**
-   * @brief Check if this Interest matches @p other.
+  /** @brief Check if this Interest matches @p other
    *
-   * Two Interests match if they have the same `Name`, `CanBePrefix`, and `MustBeFresh`.
+   *  Two Interests match if both have the same Name, CanBePrefix, and MustBeFresh.
    */
-  [[nodiscard]] bool
+  bool
   matchesInterest(const Interest& other) const;
 
-public: // Interest fields
-  /**
-   * @brief Get the %Interest name.
-   */
+public: // element access
   const Name&
   getName() const noexcept
   {
@@ -182,8 +176,8 @@ public: // Interest fields
   }
 
   /**
-   * @brief Set the %Interest name.
-   * @throw std::invalid_argument @p name is not a valid %Interest name
+   * @brief Set the %Interest's name.
+   * @throw std::invalid_argument @p name is invalid
    */
   Interest&
   setName(const Name& name);
@@ -202,7 +196,12 @@ public: // Interest fields
    * @param canBePrefix Whether the element should be present.
    */
   Interest&
-  setCanBePrefix(bool canBePrefix);
+  setCanBePrefix(bool canBePrefix)
+  {
+    m_canBePrefix = canBePrefix;
+    m_wire.reset();
+    return *this;
+  }
 
   /**
    * @brief Check whether the `MustBeFresh` element is present.
@@ -218,22 +217,40 @@ public: // Interest fields
    * @param mustBeFresh Whether the element should be present.
    */
   Interest&
-  setMustBeFresh(bool mustBeFresh);
+  setMustBeFresh(bool mustBeFresh)
+  {
+    m_mustBeFresh = mustBeFresh;
+    m_wire.reset();
+    return *this;
+  }
 
   /**
-   * @brief Get the delegations (names) in the `ForwardingHint`.
+   * @brief Check whether the `IsSoftState` element is present.
    */
+  bool
+  getIsSoftState() const noexcept
+  {
+    return m_isSoftState;
+  }
+
+  /**
+   * @brief Add or remove `MustBeFresh` element.
+   * @param mustBeFresh Whether the element should be present.
+   */
+  Interest&
+  setIsSoftState(bool isSoftState)
+  {
+    m_isSoftState = isSoftState;
+    m_wire.reset();
+    return *this;
+  }
+
   span<const Name>
   getForwardingHint() const noexcept
   {
     return m_forwardingHint;
   }
 
-  /**
-   * @brief Set the `ForwardingHint` delegations (names).
-   *
-   * To completely remove the `ForwardingHint` element from the Interest, pass an empty vector.
-   */
   Interest&
   setForwardingHint(std::vector<Name> value);
 
@@ -257,10 +274,10 @@ public: // Interest fields
   /**
    * @brief Set the %Interest's nonce.
    *
-   * Use `setNonce(std::nullopt)` to remove any nonce from the Interest.
+   * Use `setNonce(nullopt)` to remove any nonce from the Interest.
    */
   Interest&
-  setNonce(std::optional<Nonce> nonce);
+  setNonce(optional<Nonce> nonce);
 
   /**
    * @brief Change nonce value.
@@ -273,13 +290,12 @@ public: // Interest fields
 
   /**
    * @brief Get the %Interest's lifetime.
-   *
-   * If the `InterestLifetime` element is not present, returns #DEFAULT_INTEREST_LIFETIME.
-   * If the `InterestLifetime` value is not representable in the return type, it's clamped to
-   * the nearest representable value.
    */
   time::milliseconds
-  getInterestLifetime() const noexcept;
+  getInterestLifetime() const noexcept
+  {
+    return m_interestLifetime;
+  }
 
   /**
    * @brief Set the %Interest's lifetime.
@@ -291,7 +307,7 @@ public: // Interest fields
   /**
    * @brief Get the %Interest's hop limit.
    */
-  std::optional<uint8_t>
+  optional<uint8_t>
   getHopLimit() const noexcept
   {
     return m_hopLimit;
@@ -300,10 +316,10 @@ public: // Interest fields
   /**
    * @brief Set the %Interest's hop limit.
    *
-   * Use `setHopLimit(std::nullopt)` to remove any hop limit from the Interest.
+   * Use `setHopLimit(nullopt)` to remove any hop limit from the Interest.
    */
   Interest&
-  setHopLimit(std::optional<uint8_t> hopLimit);
+  setHopLimit(optional<uint8_t> hopLimit);
 
   /**
    * @brief Return whether this Interest has any `ApplicationParameters` element.
@@ -332,7 +348,7 @@ public: // Interest fields
 
   /**
    * @brief Set `ApplicationParameters` from a Block.
-   * @param block TLV element to be used as ApplicationParameters; must be valid
+   * @param block TLV block to be used as ApplicationParameters; must be valid
    * @return A reference to this Interest.
    *
    * If the block's TLV-TYPE is tlv::ApplicationParameters, it will be used directly as
@@ -359,20 +375,8 @@ public: // Interest fields
   setApplicationParameters(span<const uint8_t> value);
 
   /**
-   * @brief Set `ApplicationParameters` by copying from a string.
-   * @param value string from which the TLV-VALUE of the parameters will be copied
-   * @return A reference to this Interest.
-   *
-   * This function will also recompute the value of the ParametersSha256DigestComponent in the
-   * Interest's name. If the name does not contain a ParametersSha256DigestComponent, one will
-   * be appended to it.
-   */
-  Interest&
-  setApplicationParameters(std::string_view value);
-
-  /**
    * @brief Set `ApplicationParameters` from a shared buffer.
-   * @param value buffer containing the TLV-VALUE of the parameters; must not be null
+   * @param value buffer containing the TLV-VALUE of the parameters; must not be nullptr
    * @return A reference to this Interest.
    *
    * This function will also recompute the value of the ParametersSha256DigestComponent in the
@@ -381,9 +385,6 @@ public: // Interest fields
    */
   Interest&
   setApplicationParameters(ConstBufferPtr value);
-
-  Interest&
-  setApplicationParameters(std::nullptr_t) = delete;
 
   /**
    * @brief Remove the `ApplicationParameters` element from this Interest.
@@ -406,8 +407,9 @@ public: // Interest fields
 
   /**
    * @brief Get the `InterestSignatureInfo` element.
+   * @retval nullopt The element is not present.
    */
-  std::optional<SignatureInfo>
+  optional<SignatureInfo>
   getSignatureInfo() const;
 
   /**
@@ -437,7 +439,7 @@ public: // Interest fields
 
   /**
    * @brief Set `InterestSignatureValue` from a shared buffer.
-   * @param value buffer containing the TLV-VALUE of the InterestSignatureValue; must not be null
+   * @param value buffer containing the TLV-VALUE of the InterestSignatureValue; must not be nullptr
    * @return A reference to this Interest.
    * @throw Error InterestSignatureInfo is unset
    *
@@ -446,15 +448,11 @@ public: // Interest fields
   Interest&
   setSignatureValue(ConstBufferPtr value);
 
-  Interest&
-  setSignatureValue(std::nullptr_t) = delete;
-
-  /**
-   * @brief Extract ranges of Interest covered by the signature.
-   * @throw Error Interest cannot be encoded or is missing ranges necessary for signing
-   * @warning The returned pointers will be invalidated if wireDecode() or wireEncode() are called.
+  /** @brief Extract ranges of Interest covered by the signature in Packet Specification v0.3
+   *  @throw Error Interest cannot be encoded or is missing ranges necessary for signing
+   *  @warning The returned pointers will be invalidated if wireDecode() or wireEncode() are called.
    */
-  [[nodiscard]] InputBuffers
+  InputBuffers
   extractSignedRanges() const;
 
 public: // ParametersSha256DigestComponent support
@@ -470,13 +468,12 @@ public: // ParametersSha256DigestComponent support
     s_autoCheckParametersDigest = b;
   }
 
-  /**
-   * @brief Check if the ParametersSha256DigestComponent in the name is valid.
+  /** @brief Check if the ParametersSha256DigestComponent in the name is valid.
    *
-   * Returns true if there is a single ParametersSha256DigestComponent in the name and the digest
-   * value is correct, or if there is no ParametersSha256DigestComponent in the name and the
-   * Interest does not contain any parameters.
-   * Returns false otherwise.
+   *  Returns true if there is a single ParametersSha256DigestComponent in the name and the digest
+   *  value is correct, or if there is no ParametersSha256DigestComponent in the name and the
+   *  Interest does not contain any parameters.
+   *  Returns false otherwise.
    */
   bool
   isParametersDigestValid() const;
@@ -488,7 +485,7 @@ private:
   Interest&
   setSignatureValueInternal(Block sigValue);
 
-  [[nodiscard]] shared_ptr<Buffer>
+  NDN_CXX_NODISCARD shared_ptr<Buffer>
   computeParametersDigest() const;
 
   /** @brief Append a ParametersSha256DigestComponent to the Interest's name
@@ -514,13 +511,18 @@ private:
   findFirstParameter(uint32_t type) const;
 
 private:
+  static bool s_autoCheckParametersDigest;
+
   Name m_name;
   std::vector<Name> m_forwardingHint;
-  mutable std::optional<Nonce> m_nonce;
-  uint64_t m_interestLifetime = DEFAULT_INTEREST_LIFETIME.count();
-  std::optional<uint8_t> m_hopLimit;
+  mutable optional<Nonce> m_nonce;
+  time::milliseconds m_interestLifetime = DEFAULT_INTEREST_LIFETIME;
+  optional<uint8_t> m_hopLimit;
   bool m_canBePrefix = false;
   bool m_mustBeFresh = false;
+
+  // Defines if soft state interest processign should be applied
+  bool m_isSoftState = false;
 
   // Stores the "Interest parameters", i.e., all maybe-unrecognized non-critical TLV
   // elements that appear at the end of the Interest, starting from ApplicationParameters.
@@ -531,8 +533,6 @@ private:
   std::vector<Block> m_parameters;
 
   mutable Block m_wire;
-
-  static inline bool s_autoCheckParametersDigest = true;
 };
 
 NDN_CXX_DECLARE_WIRE_ENCODE_INSTANTIATIONS(Interest);

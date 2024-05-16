@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2019 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -23,17 +23,17 @@
 
 namespace ndn {
 
-Transport::Error::Error(const boost::system::error_code& ec, const std::string& msg)
-  : std::runtime_error(msg + (ec ? " (" + ec.message() + ")" : ""))
+Transport::Error::Error(const boost::system::error_code& code, const std::string& msg)
+  : std::runtime_error(msg + (code.value() ? " (" + code.message() + ")" : ""))
 {
 }
 
 void
-Transport::connect(boost::asio::io_context& ioCtx, ReceiveCallback receiveCallback)
+Transport::connect(boost::asio::io_service& ioService, ReceiveCallback receiveCallback)
 {
   BOOST_ASSERT(receiveCallback != nullptr);
 
-  m_ioCtx = &ioCtx;
+  m_ioService = &ioService;
   m_receiveCallback = std::move(receiveCallback);
 }
 

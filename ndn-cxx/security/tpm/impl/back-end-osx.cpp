@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -33,10 +33,12 @@
 
 #include <boost/lexical_cast.hpp>
 
-namespace ndn::security::tpm {
+namespace ndn {
+namespace security {
+namespace tpm {
 
-namespace cfstring = ndn::detail::cfstring;
-using ndn::detail::CFReleaser;
+namespace cfstring = detail::cfstring;
+using detail::CFReleaser;
 
 class BackEndOsx::Impl
 {
@@ -520,4 +522,6 @@ BackEndOsx::doImportKey(const Name& keyName, shared_ptr<transform::PrivateKey> k
   NDN_THROW(Error("macOS-based TPM does not support importing a transform::PrivateKey"));
 }
 
-} // namespace ndn::security::tpm
+} // namespace tpm
+} // namespace security
+} // namespace ndn

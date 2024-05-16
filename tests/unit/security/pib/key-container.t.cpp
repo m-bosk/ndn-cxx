@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -21,18 +21,17 @@
 
 #include "ndn-cxx/security/pib/key-container.hpp"
 #include "ndn-cxx/security/pib/impl/pib-memory.hpp"
-#include "ndn-cxx/util/concepts.hpp"
 
 #include "tests/boost-test.hpp"
 #include "tests/unit/security/pib/pib-data-fixture.hpp"
 
-namespace ndn::tests {
-
-using namespace ndn::security::pib;
-
-NDN_CXX_ASSERT_FORWARD_ITERATOR(KeyContainer::const_iterator);
+namespace ndn {
+namespace security {
+namespace pib {
+namespace tests {
 
 BOOST_AUTO_TEST_SUITE(Security)
+BOOST_AUTO_TEST_SUITE(Pib)
 BOOST_FIXTURE_TEST_SUITE(TestKeyContainer, PibDataFixture)
 
 BOOST_AUTO_TEST_CASE(AddGetRemove)
@@ -77,8 +76,8 @@ BOOST_AUTO_TEST_CASE(AddGetRemove)
     BOOST_TEST(key1.getPublicKey() == id1Key1, boost::test_tools::per_element());
     BOOST_CHECK_EQUAL(key2.getName(), id1Key2Name);
     BOOST_TEST(key2.getPublicKey() == id1Key2, boost::test_tools::per_element());
-    Name id1Key3Name = security::constructKeyName(id1, name::Component("non-existing-id"));
-    BOOST_CHECK_THROW(container.get(id1Key3Name), Pib::Error);
+    Name id1Key3Name = constructKeyName(id1, name::Component("non-existing-id"));
+    BOOST_CHECK_THROW(container.get(id1Key3Name), pib::Pib::Error);
   }
 
   {
@@ -165,6 +164,10 @@ BOOST_AUTO_TEST_CASE(Iterator)
 }
 
 BOOST_AUTO_TEST_SUITE_END() // TestKeyContainer
+BOOST_AUTO_TEST_SUITE_END() // Pib
 BOOST_AUTO_TEST_SUITE_END() // Security
 
-} // namespace ndn::tests
+} // namespace tests
+} // namespace pib
+} // namespace security
+} // namespace ndn

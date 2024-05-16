@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -24,7 +24,8 @@
 
 #include "ndn-cxx/mgmt/nfd/face-traits.hpp"
 
-namespace ndn::nfd {
+namespace ndn {
+namespace nfd {
 
 /**
  * \ingroup management
@@ -66,7 +67,7 @@ public: // getters & setters
   setKind(FaceEventKind kind);
 
 private:
-  FaceEventKind m_kind = FACE_EVENT_NONE;
+  FaceEventKind m_kind;
 };
 
 NDN_CXX_DECLARE_WIRE_ENCODE_INSTANTIATIONS(FaceEventNotification);
@@ -83,6 +84,7 @@ operator!=(const FaceEventNotification& a, const FaceEventNotification& b)
 std::ostream&
 operator<<(std::ostream& os, const FaceEventNotification& notification);
 
-} // namespace ndn::nfd
+} // namespace nfd
+} // namespace ndn
 
 #endif // NDN_CXX_MGMT_NFD_FACE_EVENT_NOTIFICATION_HPP

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2018 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -25,7 +25,8 @@
 #include <chrono>
 #include <thread>
 
-namespace ndn::time {
+namespace ndn {
+namespace time {
 
 template<class BaseClock, class ClockTraits>
 UnitTestClock<BaseClock, ClockTraits>::UnitTestClock(nanoseconds startTime)
@@ -96,4 +97,5 @@ class UnitTestClock<system_clock>;
 template
 class UnitTestClock<steady_clock>;
 
-} // namespace ndn::time
+} // namespace time
+} // namespace ndn

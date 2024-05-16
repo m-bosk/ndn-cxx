@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2019 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -29,9 +29,10 @@
 #include <boost/range/adaptor/map.hpp>
 #include <boost/range/algorithm/copy.hpp>
 
-namespace ndn::net {
+namespace ndn {
+namespace net {
 
-class NetworkMonitorImplStub final : public NetworkMonitorImpl
+class NetworkMonitorImplStub : public NetworkMonitorImpl
 {
 public:
   explicit
@@ -68,7 +69,7 @@ public: // internal
   addInterface(shared_ptr<NetworkInterface> netif)
   {
     BOOST_ASSERT(netif != nullptr);
-    bool isNew = m_interfaces.try_emplace(netif->getName(), netif).second;
+    bool isNew = m_interfaces.emplace(netif->getName(), netif).second;
     if (!isNew) {
       NDN_THROW(std::invalid_argument("duplicate ifname"));
     }
@@ -133,4 +134,5 @@ NetworkMonitorStub::emitEnumerationCompleted()
   this->getImpl().emitEnumerationCompleted();
 }
 
-} // namespace ndn::net
+} // namespace net
+} // namespace ndn

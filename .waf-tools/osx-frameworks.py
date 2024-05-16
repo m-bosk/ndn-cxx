@@ -1,3 +1,6 @@
+#! /usr/bin/env python
+# encoding: utf-8
+
 from waflib import Logs, Utils, TaskGen
 from waflib.Configure import conf
 

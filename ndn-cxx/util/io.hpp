@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -24,10 +24,12 @@
 
 #include "ndn-cxx/encoding/block.hpp"
 #include "ndn-cxx/util/concepts.hpp"
+#include "ndn-cxx/util/optional.hpp"
 
 #include <fstream>
 
-namespace ndn::io {
+namespace ndn {
+namespace io {
 
 class Error : public std::runtime_error
 {
@@ -62,7 +64,7 @@ template<typename T>
 static void
 checkNestedError(typename T::Error*)
 {
-  static_assert(std::is_convertible_v<typename T::Error*, tlv::Error*>,
+  static_assert(std::is_convertible<typename T::Error*, tlv::Error*>::value,
                 "T::Error, if defined, must be a subclass of ndn::tlv::Error");
 }
 
@@ -200,6 +202,7 @@ save(const T& obj, const std::string& filename, IoEncoding encoding = BASE64)
   save(obj, os, encoding);
 }
 
-} // namespace ndn::io
+} // namespace io
+} // namespace ndn
 
 #endif // NDN_CXX_UTIL_IO_HPP

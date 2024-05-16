@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -24,7 +24,8 @@
 
 #include "ndn-cxx/prefix-announcement.hpp"
 
-namespace ndn::lp {
+namespace ndn {
+namespace lp {
 
 /** \brief Represents a PrefixAnnouncement header field in NDNLP.
  */
@@ -60,18 +61,19 @@ public:
   void
   wireDecode(const Block& wire);
 
-  const std::optional<PrefixAnnouncement>&
+  const optional<PrefixAnnouncement>&
   getPrefixAnn() const
   {
     return m_prefixAnn;
   }
 
 private:
-  std::optional<PrefixAnnouncement> m_prefixAnn;
+  optional<PrefixAnnouncement> m_prefixAnn;
 };
 
 NDN_CXX_DECLARE_WIRE_ENCODE_INSTANTIATIONS(PrefixAnnouncementHeader);
 
-} // namespace ndn::lp
+} // namespace lp
+} // namespace ndn
 
 #endif // NDN_CXX_LP_PREFIX_ANNOUNCEMENT_HEADER_HPP

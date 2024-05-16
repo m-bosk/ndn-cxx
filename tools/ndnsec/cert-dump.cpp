@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -23,8 +23,12 @@
 #include "util.hpp"
 
 #include <boost/asio/ip/tcp.hpp>
+#if BOOST_VERSION < 106700
+#include <boost/date_time/posix_time/posix_time_duration.hpp>
+#endif // BOOST_VERSION < 106700
 
-namespace ndn::ndnsec {
+namespace ndn {
+namespace ndnsec {
 
 int
 ndnsec_cert_dump(int argc, char** argv)
@@ -118,7 +122,11 @@ ndnsec_cert_dump(int argc, char** argv)
 
   if (isRepoOut) {
     boost::asio::ip::tcp::iostream requestStream;
+#if BOOST_VERSION >= 106700
     requestStream.expires_after(std::chrono::seconds(10));
+#else
+    requestStream.expires_from_now(boost::posix_time::seconds(10));
+#endif // BOOST_VERSION >= 106700
     requestStream.connect(repoHost, repoPort);
     if (!requestStream) {
       std::cerr << "ERROR: Failed to connect to repo instance" << std::endl;
@@ -134,4 +142,5 @@ ndnsec_cert_dump(int argc, char** argv)
   return 0;
 }
 
-} // namespace ndn::ndnsec
+} // namespace ndnsec
+} // namespace ndn

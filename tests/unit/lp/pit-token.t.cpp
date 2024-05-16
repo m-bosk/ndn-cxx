@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2019 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -20,16 +20,14 @@
  */
 
 #include "ndn-cxx/lp/pit-token.hpp"
-#include "ndn-cxx/lp/fields.hpp"
 #include "ndn-cxx/lp/packet.hpp"
 
 #include "tests/boost-test.hpp"
-
 #include <boost/lexical_cast.hpp>
 
-namespace ndn::tests {
-
-using namespace ndn::lp;
+namespace ndn {
+namespace lp {
+namespace tests {
 
 BOOST_AUTO_TEST_SUITE(Lp)
 BOOST_AUTO_TEST_SUITE(TestPitToken)
@@ -77,4 +75,6 @@ BOOST_AUTO_TEST_CASE(Decode)
 BOOST_AUTO_TEST_SUITE_END() // TestPitToken
 BOOST_AUTO_TEST_SUITE_END() // Lp
 
-} // namespace ndn::tests
+} // namespace tests
+} // namespace lp
+} // namespace ndn

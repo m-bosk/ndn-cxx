@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -22,11 +22,13 @@
 #include "ndn-cxx/security/pib/identity.hpp"
 #include "ndn-cxx/security/pib/impl/identity-impl.hpp"
 
-namespace ndn::security::pib {
+namespace ndn {
+namespace security {
+namespace pib {
 
 Identity::Identity() noexcept = default;
 
-Identity::Identity(weak_ptr<IdentityImpl> impl) noexcept
+Identity::Identity(weak_ptr<detail::IdentityImpl> impl) noexcept
   : m_impl(std::move(impl))
 {
 }
@@ -84,7 +86,7 @@ Identity::operator bool() const noexcept
   return !m_impl.expired();
 }
 
-shared_ptr<IdentityImpl>
+shared_ptr<detail::IdentityImpl>
 Identity::lock() const
 {
   auto impl = m_impl.lock();
@@ -101,4 +103,6 @@ Identity::equals(const Identity& other) const noexcept
          !other.m_impl.owner_before(this->m_impl);
 }
 
-} // namespace ndn::security::pib
+} // namespace pib
+} // namespace security
+} // namespace ndn

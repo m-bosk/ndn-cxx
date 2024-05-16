@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2021 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -28,11 +28,15 @@
 #error "This file should not be compiled ..."
 #endif
 
-namespace ndn::util::detail {
+namespace ndn {
+namespace util {
+namespace detail {
 
 boost::shared_ptr<boost::log::sinks::sink>
 makeAndroidLogger();
 
-} // namespace ndn::util::detail
+} // namespace detail
+} // namespace util
+} // namespace ndn
 
 #endif // NDN_CXX_UTIL_IMPL_LOGGER_ANDROID_HPP

@@ -19,7 +19,7 @@ ndn-cxx: NDN C++ library with eXperimental eXtensions
    release-notes
    releases
 
-**ndn-cxx** is a C++17 library implementing Named Data Networking (NDN) primitives
+**ndn-cxx** is a C++14 library implementing Named Data Networking (NDN) primitives
 that can be used to write various NDN applications. The library is currently being
 used by the following projects:
 
@@ -72,5 +72,4 @@ License
 -------
 
 ndn-cxx is an open source project licensed under the LGPL version 3. For more information about
-the license, refer to `COPYING.md <https://github.com/named-data/ndn-cxx/blob/master/COPYING.md>`__
-and `COPYING.lesser <https://github.com/named-data/ndn-cxx/blob/master/COPYING.lesser>`__.
+the license, refer to `COPYING.md <https://github.com/named-data/ndn-cxx/blob/master/COPYING.md>`__.

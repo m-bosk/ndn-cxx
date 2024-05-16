@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2020 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -23,7 +23,8 @@
 
 #include "tests/boost-test.hpp"
 
-namespace ndn::tests {
+namespace ndn {
+namespace tests {
 
 BOOST_AUTO_TEST_SUITE(Transport)
 BOOST_AUTO_TEST_SUITE(TestTcpTransport)
@@ -84,4 +85,5 @@ BOOST_AUTO_TEST_CASE(GetDefaultSocketHostAndPortBadMalformedUri)
 BOOST_AUTO_TEST_SUITE_END() // TestTcpTransport
 BOOST_AUTO_TEST_SUITE_END() // Transport
 
-} // namespace ndn::tests
+} // namespace tests
+} // namespace ndn

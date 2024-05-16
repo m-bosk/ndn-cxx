@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -26,13 +26,15 @@
 #include "ndn-cxx/security/certificate.hpp"
 #include "ndn-cxx/security/signing-info.hpp"
 #include "ndn-cxx/security/validation-callback.hpp"
-#include "ndn-cxx/util/signal/signal.hpp"
+#include "ndn-cxx/util/signal.hpp"
 
 #include <list>
 #include <unordered_set>
 #include <boost/logic/tribool.hpp>
 
-namespace ndn::security {
+namespace ndn {
+namespace security {
+inline namespace v2 {
 
 class Validator;
 
@@ -104,12 +106,12 @@ private: // Interface intended to be used only by Validator class
   /**
    * @brief Verify signature of the original packet
    *
-   * @param trustedCert The certificate that signs the original packet, nullopt if certificate
-   *                    is not needed for verification (e.g., sha256 digest or attribute based
-   *                    signature)
+   * @param trustCert The certificate that signs the original packet, nullopt if certificate is
+   *                  not needed for verification (e.g., sha256 digest or attribute based
+   *                  signature)
    */
   virtual void
-  verifyOriginalPacket(const std::optional<Certificate>& trustedCert) = 0;
+  verifyOriginalPacket(const optional<Certificate>& trustedCert) = 0;
 
   /**
    * @brief Call success callback of the original packet without signature validation
@@ -189,7 +191,7 @@ public:
 
 private:
   void
-  verifyOriginalPacket(const std::optional<Certificate>& trustedCert) final;
+  verifyOriginalPacket(const optional<Certificate>& trustedCert) final;
 
   void
   bypassValidation() final;
@@ -237,11 +239,11 @@ public:
   }
 
 public:
-  signal::Signal<InterestValidationState, Interest> afterSuccess;
+  util::Signal<InterestValidationState, Interest> afterSuccess;
 
 private:
   void
-  verifyOriginalPacket(const std::optional<Certificate>& trustedCert) final;
+  verifyOriginalPacket(const optional<Certificate>& trustedCert) final;
 
   void
   bypassValidation() final;
@@ -254,6 +256,8 @@ private:
 
 using SignedInterestFormatTag = SimpleTag<SignedInterestFormat, 1002>;
 
-} // namespace ndn::security
+} // inline namespace v2
+} // namespace security
+} // namespace ndn
 
 #endif // NDN_CXX_SECURITY_VALIDATION_STATE_HPP

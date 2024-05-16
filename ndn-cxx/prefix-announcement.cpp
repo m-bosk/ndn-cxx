@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -23,6 +23,9 @@
 #include "ndn-cxx/encoding/tlv-nfd.hpp"
 
 namespace ndn {
+
+static_assert(std::is_base_of<tlv::Error, PrefixAnnouncement::Error>::value,
+              "PrefixAnnouncement::Error must inherit from tlv::Error");
 
 PrefixAnnouncement::PrefixAnnouncement() = default;
 
@@ -65,7 +68,7 @@ PrefixAnnouncement::PrefixAnnouncement(Data data)
 
 const Data&
 PrefixAnnouncement::toData(KeyChain& keyChain, const ndn::security::SigningInfo& si,
-                           std::optional<uint64_t> version) const
+                           optional<uint64_t> version) const
 {
   if (!m_data) {
     Name dataName = m_announcedName;
@@ -109,7 +112,7 @@ PrefixAnnouncement::setExpiration(time::milliseconds expiration)
 }
 
 PrefixAnnouncement&
-PrefixAnnouncement::setValidityPeriod(std::optional<security::ValidityPeriod> validity)
+PrefixAnnouncement::setValidityPeriod(optional<security::ValidityPeriod> validity)
 {
   m_data.reset();
   m_validity = std::move(validity);
@@ -121,6 +124,14 @@ PrefixAnnouncement::getKeywordComponent()
 {
   static const name::Component nc(tlv::KeywordNameComponent, {'P', 'A'});
   return nc;
+}
+
+bool
+operator==(const PrefixAnnouncement& lhs, const PrefixAnnouncement& rhs)
+{
+  return lhs.getAnnouncedName() == rhs.getAnnouncedName() &&
+         lhs.getExpiration() == rhs.getExpiration() &&
+         lhs.getValidityPeriod() == rhs.getValidityPeriod();
 }
 
 std::ostream&

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -27,7 +27,8 @@
 #include "ndn-cxx/security/transform/buffer-source.hpp"
 #include "ndn-cxx/security/transform/stream-sink.hpp"
 
-namespace ndn::ndnsec {
+namespace ndn {
+namespace ndnsec {
 
 int
 ndnsec_cert_gen(int argc, char** argv)
@@ -99,8 +100,8 @@ ndnsec_cert_gen(int argc, char** argv)
     additionalDescription.set(key, value);
   }
 
-  time::system_clock::time_point notBefore;
-  time::system_clock::time_point notAfter;
+  time::system_clock::TimePoint notBefore;
+  time::system_clock::TimePoint notAfter;
 
   if (vm.count("not-before") == 0) {
     notBefore = time::system_clock::now();
@@ -121,7 +122,7 @@ ndnsec_cert_gen(int argc, char** argv)
     }
   }
 
-  auto issuerId = name::Component::fromUri(issuer);
+  auto issuerId = name::Component::fromEscapedString(issuer);
   if (issuerId.isImplicitSha256Digest() ||
       issuerId.isParametersSha256Digest() ||
       issuerId.isKeyword()) {
@@ -156,4 +157,5 @@ ndnsec_cert_gen(int argc, char** argv)
   return 0;
 }
 
-} // namespace ndn::ndnsec
+} // namespace ndnsec
+} // namespace ndn

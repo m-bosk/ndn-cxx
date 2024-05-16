@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2021 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -33,7 +33,7 @@ namespace ndn {
  *
  * \sa https://redmine.named-data.net/projects/nfd/wiki/PrefixAnnouncement
  */
-class PrefixAnnouncement : private boost::equality_comparable<PrefixAnnouncement>
+class PrefixAnnouncement
 {
 public:
   class Error : public tlv::Error
@@ -58,7 +58,7 @@ public:
 
   /** \brief Get the Data representing the prefix announcement, if available.
    */
-  const std::optional<Data>&
+  const optional<Data>&
   getData() const
   {
     return m_data;
@@ -74,7 +74,7 @@ public:
   const Data&
   toData(KeyChain& keyChain,
          const ndn::security::SigningInfo& si = security::SigningInfo(),
-         std::optional<uint64_t> version = std::nullopt) const;
+         optional<uint64_t> version = nullopt) const;
 
   /** \brief Return announced name.
    */
@@ -107,7 +107,7 @@ public:
 
   /** \brief Return absolute validity period.
    */
-  std::optional<security::ValidityPeriod>
+  optional<security::ValidityPeriod>
   getValidityPeriod() const
   {
     return m_validity;
@@ -117,7 +117,7 @@ public:
    *  \post getData() == nullopt
    */
   PrefixAnnouncement&
-  setValidityPeriod(std::optional<security::ValidityPeriod> validity);
+  setValidityPeriod(optional<security::ValidityPeriod> validity);
 
 public: // static methods
   /**
@@ -126,30 +126,25 @@ public: // static methods
   static const name::Component&
   getKeywordComponent();
 
-private: // non-member operators
-  // NOTE: the following "hidden friend" operators are available via
-  //       argument-dependent lookup only and must be defined inline.
-  // boost::equality_comparable provides != operator.
-
-  /**
-   * \brief Test whether two prefix announcements have the same name, expiration period,
-   *        and validity period.
-   */
-  friend bool
-  operator==(const PrefixAnnouncement& lhs, const PrefixAnnouncement& rhs)
-  {
-    return lhs.m_announcedName == rhs.m_announcedName &&
-           lhs.m_expiration == rhs.m_expiration &&
-           lhs.m_validity == rhs.m_validity;
-  }
-
 private:
+  mutable optional<Data> m_data;
   Name m_announcedName;
   time::milliseconds m_expiration = 0_ms;
-  std::optional<security::ValidityPeriod> m_validity;
-
-  mutable std::optional<Data> m_data;
+  optional<security::ValidityPeriod> m_validity;
 };
+
+/**
+ * \brief Test whether two prefix announcements have the same name, expiration period,
+ *        and validity period.
+ */
+bool
+operator==(const PrefixAnnouncement& lhs, const PrefixAnnouncement& rhs);
+
+inline bool
+operator!=(const PrefixAnnouncement& lhs, const PrefixAnnouncement& rhs)
+{
+  return !(lhs == rhs);
+}
 
 /**
  * \brief Print prefix announcement to a stream.

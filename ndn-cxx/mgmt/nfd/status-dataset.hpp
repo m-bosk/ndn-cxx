@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -32,29 +32,31 @@
 #include "ndn-cxx/mgmt/nfd/strategy-choice.hpp"
 #include "ndn-cxx/mgmt/nfd/rib-entry.hpp"
 
-namespace ndn::nfd {
-
-/**
- * \brief Exception raised when the fetched payload cannot be parsed as a StatusDataset.
- * \sa StatusDatasetBase::parseResult()
- */
-class StatusDatasetParseError : public tlv::Error
-{
-public:
-  using tlv::Error::Error;
-};
+namespace ndn {
+namespace nfd {
 
 /**
  * \ingroup management
- * \brief Base class of NFD `StatusDataset`.
+ * \brief Base class of NFD `%StatusDataset`.
  * \sa https://redmine.named-data.net/projects/nfd/wiki/StatusDataset
  */
-class StatusDatasetBase
+class StatusDataset : noncopyable
 {
 public:
+  virtual
+  ~StatusDataset();
+
+#ifdef DOXYGEN
+  /**
+   * \brief If defined, specifies constructor argument type;
+   *        otherwise, the constructor has no arguments.
+   */
+  using ParamType = int;
+#endif
+
   /**
    * \brief Constructs a name prefix for the dataset.
-   * \param prefix Top-level prefix, such as `/localhost/nfd`.
+   * \param prefix top-level prefix, such as ndn:/localhost/nfd
    * \return %Name prefix without version and segment components.
    */
   Name
@@ -62,11 +64,25 @@ public:
 
 #ifdef DOXYGEN
   /**
-   * \brief Parses a result from a reassembled payload.
-   * \param payload The reassembled payload.
-   * \return The parsed result, usually a vector.
-   * \throw tlv::Error Cannot parse the payload.
-   * \sa StatusDatasetParseError
+   * \brief Specifies the result type, usually a vector.
+   */
+  using ResultType = std::vector<int>;
+#endif
+
+  /**
+   * \brief Indicates reassembled payload cannot be parsed as ResultType.
+   */
+  class ParseResultError : public tlv::Error
+  {
+  public:
+    using tlv::Error::Error;
+  };
+
+#ifdef DOXYGEN
+  /**
+   * \brief Parses a result from reassembled payload.
+   * \param payload reassembled payload
+   * \throw tlv::Error cannot parse payload
    */
   ResultType
   parseResult(ConstBufferPtr payload) const;
@@ -74,18 +90,21 @@ public:
 
 protected:
   /**
-   * \brief Protected constructor.
-   * \param datasetName Dataset name after top-level prefix, such as `faces/list`.
+   * \brief Constructs a StatusDataset instance with given sub-prefix.
+   * \param datasetName dataset name after top-level prefix, such as faces/list
    */
   explicit
-  StatusDatasetBase(PartialName datasetName)
-    : m_datasetName(std::move(datasetName))
-  {
-  }
+  StatusDataset(const PartialName& datasetName);
 
-  ~StatusDatasetBase() = default;
+private:
+  /**
+   * \brief Appends parameters to the dataset name prefix.
+   * \param[in,out] the dataset name prefix onto which parameter components can be appended
+   */
+  virtual void
+  addParameters(Name& name) const;
 
-protected:
+private:
   PartialName m_datasetName;
 };
 
@@ -94,13 +113,32 @@ protected:
  * \brief Represents a `status/general` dataset.
  * \sa https://redmine.named-data.net/projects/nfd/wiki/ForwarderStatus#General-Status-Dataset
  */
-class ForwarderGeneralStatusDataset : public StatusDatasetBase
+class ForwarderGeneralStatusDataset : public StatusDataset
 {
 public:
   ForwarderGeneralStatusDataset();
 
-  ForwarderStatus
+  using ResultType = ForwarderStatus;
+
+  ResultType
   parseResult(ConstBufferPtr payload) const;
+};
+
+/**
+ * \ingroup management
+ * \brief Provides common functionality among FaceDataset and FaceQueryDataset.
+ */
+class FaceDatasetBase : public StatusDataset
+{
+public:
+  using ResultType = std::vector<FaceStatus>;
+
+  ResultType
+  parseResult(ConstBufferPtr payload) const;
+
+protected:
+  explicit
+  FaceDatasetBase(const PartialName& datasetName);
 };
 
 /**
@@ -108,13 +146,10 @@ public:
  * \brief Represents a `faces/list` dataset.
  * \sa https://redmine.named-data.net/projects/nfd/wiki/FaceMgmt#Face-Dataset
  */
-class FaceDataset : public StatusDatasetBase
+class FaceDataset : public FaceDatasetBase
 {
 public:
   FaceDataset();
-
-  std::vector<FaceStatus>
-  parseResult(ConstBufferPtr payload) const;
 };
 
 /**
@@ -122,17 +157,17 @@ public:
  * \brief Represents a `faces/query` dataset.
  * \sa https://redmine.named-data.net/projects/nfd/wiki/FaceMgmt#Query-Operation
  */
-class FaceQueryDataset : public StatusDatasetBase
+class FaceQueryDataset : public FaceDatasetBase
 {
 public:
+  using ParamType = FaceQueryFilter;
+
   explicit
   FaceQueryDataset(const FaceQueryFilter& filter);
 
-  Name
-  getDatasetPrefix(const Name& prefix) const;
-
-  std::vector<FaceStatus>
-  parseResult(ConstBufferPtr payload) const;
+private:
+  void
+  addParameters(Name& name) const override;
 
 private:
   FaceQueryFilter m_filter;
@@ -143,12 +178,14 @@ private:
  * \brief Represents a `faces/channels` dataset.
  * \sa https://redmine.named-data.net/projects/nfd/wiki/FaceMgmt#Channel-Dataset
  */
-class ChannelDataset : public StatusDatasetBase
+class ChannelDataset : public StatusDataset
 {
 public:
   ChannelDataset();
 
-  std::vector<ChannelStatus>
+  using ResultType = std::vector<ChannelStatus>;
+
+  ResultType
   parseResult(ConstBufferPtr payload) const;
 };
 
@@ -157,12 +194,14 @@ public:
  * \brief Represents a `fib/list` dataset.
  * \sa https://redmine.named-data.net/projects/nfd/wiki/FibMgmt#FIB-Dataset
  */
-class FibDataset : public StatusDatasetBase
+class FibDataset : public StatusDataset
 {
 public:
   FibDataset();
 
-  std::vector<FibEntry>
+  using ResultType = std::vector<FibEntry>;
+
+  ResultType
   parseResult(ConstBufferPtr payload) const;
 };
 
@@ -171,12 +210,14 @@ public:
  * \brief Represents a `cs/info` dataset.
  * \sa https://redmine.named-data.net/projects/nfd/wiki/CsMgmt#CS-Information-Dataset
  */
-class CsInfoDataset : public StatusDatasetBase
+class CsInfoDataset : public StatusDataset
 {
 public:
   CsInfoDataset();
 
-  CsInfo
+  using ResultType = CsInfo;
+
+  ResultType
   parseResult(ConstBufferPtr payload) const;
 };
 
@@ -185,12 +226,14 @@ public:
  * \brief Represents a `strategy-choice/list` dataset.
  * \sa https://redmine.named-data.net/projects/nfd/wiki/StrategyChoice#Strategy-Choice-Dataset
  */
-class StrategyChoiceDataset : public StatusDatasetBase
+class StrategyChoiceDataset : public StatusDataset
 {
 public:
   StrategyChoiceDataset();
 
-  std::vector<StrategyChoice>
+  using ResultType = std::vector<StrategyChoice>;
+
+  ResultType
   parseResult(ConstBufferPtr payload) const;
 };
 
@@ -199,15 +242,18 @@ public:
  * \brief Represents a `rib/list` dataset.
  * \sa https://redmine.named-data.net/projects/nfd/wiki/RibMgmt#RIB-Dataset
  */
-class RibDataset : public StatusDatasetBase
+class RibDataset : public StatusDataset
 {
 public:
   RibDataset();
 
-  std::vector<RibEntry>
+  using ResultType = std::vector<RibEntry>;
+
+  ResultType
   parseResult(ConstBufferPtr payload) const;
 };
 
-} // namespace ndn::nfd
+} // namespace nfd
+} // namespace ndn
 
 #endif // NDN_CXX_MGMT_NFD_STATUS_DATASET_HPP

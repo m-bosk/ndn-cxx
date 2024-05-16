@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -26,6 +26,7 @@
 #include "ndn-cxx/util/span.hpp"
 
 namespace ndn {
+namespace util {
 
 /**
  * @brief Utility class to segment an object into multiple Data packets.
@@ -49,7 +50,7 @@ public:
    * @param contentType The `ContentType` of created Data packets.
    * @note A minimum of one Data packet is always returned, even if @p buffer is empty.
    */
-  [[nodiscard]] std::vector<std::shared_ptr<Data>>
+  NDN_CXX_NODISCARD std::vector<std::shared_ptr<Data>>
   segment(span<const uint8_t> buffer,
           const Name& dataName,
           size_t maxSegmentSize,
@@ -65,7 +66,7 @@ public:
    * @param contentType The `ContentType` of created Data packets.
    * @note A minimum of one Data packet is always returned, even if @p input is empty.
    */
-  [[nodiscard]] std::vector<std::shared_ptr<Data>>
+  NDN_CXX_NODISCARD std::vector<std::shared_ptr<Data>>
   segment(std::istream& input,
           const Name& dataName,
           size_t maxSegmentSize,
@@ -77,6 +78,7 @@ private:
   security::SigningInfo m_signingInfo;
 };
 
+} // namespace util
 } // namespace ndn
 
 #endif // NDN_CXX_UTIL_SEGMENTER_HPP

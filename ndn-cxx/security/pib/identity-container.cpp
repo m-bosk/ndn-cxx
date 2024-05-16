@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -22,14 +22,33 @@
 #include "ndn-cxx/security/pib/identity-container.hpp"
 #include "ndn-cxx/security/pib/impl/identity-impl.hpp"
 #include "ndn-cxx/security/pib/pib-impl.hpp"
+#include "ndn-cxx/util/concepts.hpp"
 #include "ndn-cxx/util/logger.hpp"
 
-namespace ndn::security::pib {
+namespace ndn {
+namespace security {
+namespace pib {
 
 NDN_LOG_INIT(ndn.security.IdentityContainer);
 
+NDN_CXX_ASSERT_FORWARD_ITERATOR(IdentityContainer::const_iterator);
+
+IdentityContainer::const_iterator::const_iterator(NameSet::const_iterator it,
+                                                  const IdentityContainer& container) noexcept
+  : m_it(it)
+  , m_container(&container)
+{
+}
+
+Identity
+IdentityContainer::const_iterator::operator*()
+{
+  BOOST_ASSERT(m_container != nullptr);
+  return m_container->get(*m_it);
+}
+
 bool
-IdentityContainer::const_iterator::equals(const const_iterator& other) const noexcept
+IdentityContainer::const_iterator::operator==(const const_iterator& other) const
 {
   bool isThisEnd = m_container == nullptr || m_it == m_container->m_identityNames.end();
   bool isOtherEnd = other.m_container == nullptr || other.m_it == other.m_container->m_identityNames.end();
@@ -63,7 +82,7 @@ IdentityContainer::add(const Name& identityName)
   NDN_LOG_DEBUG("Adding " << identityName);
   m_pib->addIdentity(identityName);
   auto ret = m_identities.emplace(identityName,
-                                  std::make_shared<IdentityImpl>(identityName, m_pib));
+                                  std::make_shared<detail::IdentityImpl>(identityName, m_pib));
   // consistency check
   BOOST_ASSERT(ret.second);
 
@@ -87,7 +106,8 @@ IdentityContainer::remove(const Name& identityName)
 Identity
 IdentityContainer::get(const Name& identityName) const
 {
-  if (auto it = m_identities.find(identityName); it != m_identities.end()) {
+  auto it = m_identities.find(identityName);
+  if (it != m_identities.end()) {
     return Identity(it->second);
   }
 
@@ -96,7 +116,7 @@ IdentityContainer::get(const Name& identityName) const
     NDN_THROW(Pib::Error("Identity `" + identityName.toUri() + "` does not exist"));
   }
 
-  auto id = std::make_shared<IdentityImpl>(identityName, m_pib);
+  auto id = std::make_shared<detail::IdentityImpl>(identityName, m_pib);
   m_identities[identityName] = id;
   return Identity(id);
 }
@@ -115,4 +135,6 @@ IdentityContainer::isConsistent() const
   return m_identityNames == m_pib->getIdentities();
 }
 
-} // namespace ndn::security::pib
+} // namespace pib
+} // namespace security
+} // namespace ndn

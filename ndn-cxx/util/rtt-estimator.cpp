@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (C) 2016-2024, Arizona Board of Regents.
+ * Copyright (C) 2016-2019, Arizona Board of Regents.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -26,10 +26,11 @@
 
 #include "ndn-cxx/util/rtt-estimator.hpp"
 
-namespace ndn::util {
+namespace ndn {
+namespace util {
 
-RttEstimator::RttEstimator(std::shared_ptr<const Options> options)
-  : m_options(options ? std::move(options) : std::make_shared<const Options>())
+RttEstimator::RttEstimator(shared_ptr<const Options> options)
+  : m_options(options ? std::move(options) : make_shared<const Options>())
   , m_rto(m_options->initialRto)
 {
   BOOST_ASSERT(m_options->alpha >= 0 && m_options->alpha <= 1);
@@ -58,15 +59,15 @@ RttEstimator::addMeasurement(time::nanoseconds rtt, size_t nExpectedSamples)
                                                       beta * time::abs(m_sRtt - rtt));
     m_sRtt = time::duration_cast<time::nanoseconds>((1 - alpha) * m_sRtt + alpha * rtt);
   }
-  m_rto = std::clamp(m_sRtt + m_options->k * m_rttVar,
-                     m_options->minRto, m_options->maxRto);
+  m_rto = clamp(m_sRtt + m_options->k * m_rttVar,
+                m_options->minRto, m_options->maxRto);
 }
 
 void
 RttEstimator::backoffRto()
 {
-  m_rto = std::clamp(m_rto * m_options->rtoBackoffMultiplier,
-                     m_options->minRto, m_options->maxRto);
+  m_rto = clamp(m_rto * m_options->rtoBackoffMultiplier,
+                m_options->minRto, m_options->maxRto);
 }
 
 void
@@ -80,4 +81,5 @@ RttEstimatorWithStats::addMeasurement(time::nanoseconds rtt, size_t nExpectedSam
   m_nRttSamples++;
 }
 
-} // namespace ndn::util
+} // namespace util
+} // namespace ndn

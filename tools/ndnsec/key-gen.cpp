@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -22,7 +22,8 @@
 #include "ndnsec.hpp"
 #include "util.hpp"
 
-namespace ndn::ndnsec {
+namespace ndn {
+namespace ndnsec {
 
 int
 ndnsec_key_gen(int argc, char** argv)
@@ -86,7 +87,7 @@ ndnsec_key_gen(int argc, char** argv)
     }
 
     keyIdType = KeyIdType::USER_SPECIFIED;
-    userKeyIdComponent = name::Component::fromUri(userKeyId);
+    userKeyIdComponent = name::Component::fromEscapedString(userKeyId);
     if (userKeyIdComponent.empty() ||
         userKeyIdComponent.isImplicitSha256Digest() ||
         userKeyIdComponent.isParametersSha256Digest() ||
@@ -157,4 +158,5 @@ ndnsec_key_gen(int argc, char** argv)
   return 0;
 }
 
-} // namespace ndn::ndnsec
+} // namespace ndnsec
+} // namespace ndn

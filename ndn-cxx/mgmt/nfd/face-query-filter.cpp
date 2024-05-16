@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2019 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -22,8 +22,16 @@
 #include "ndn-cxx/mgmt/nfd/face-query-filter.hpp"
 #include "ndn-cxx/encoding/block-helpers.hpp"
 #include "ndn-cxx/encoding/tlv-nfd.hpp"
+#include "ndn-cxx/util/concepts.hpp"
 
-namespace ndn::nfd {
+namespace ndn {
+namespace nfd {
+
+BOOST_CONCEPT_ASSERT((boost::EqualityComparable<FaceQueryFilter>));
+BOOST_CONCEPT_ASSERT((WireEncodable<FaceQueryFilter>));
+BOOST_CONCEPT_ASSERT((WireDecodable<FaceQueryFilter>));
+static_assert(std::is_base_of<tlv::Error, FaceQueryFilter::Error>::value,
+              "FaceQueryFilter::Error must inherit from tlv::Error");
 
 FaceQueryFilter::FaceQueryFilter() = default;
 
@@ -111,7 +119,7 @@ FaceQueryFilter::wireDecode(const Block& block)
     ++val;
   }
   else {
-    m_faceId = std::nullopt;
+    m_faceId = nullopt;
   }
 
   if (val != m_wire.elements_end() && val->type() == tlv::nfd::UriScheme) {
@@ -143,7 +151,7 @@ FaceQueryFilter::wireDecode(const Block& block)
     ++val;
   }
   else {
-    m_faceScope = std::nullopt;
+    m_faceScope = nullopt;
   }
 
   if (val != m_wire.elements_end() && val->type() == tlv::nfd::FacePersistency) {
@@ -151,7 +159,7 @@ FaceQueryFilter::wireDecode(const Block& block)
     ++val;
   }
   else {
-    m_facePersistency = std::nullopt;
+    m_facePersistency = nullopt;
   }
 
   if (val != m_wire.elements_end() && val->type() == tlv::nfd::LinkType) {
@@ -159,7 +167,7 @@ FaceQueryFilter::wireDecode(const Block& block)
     ++val;
   }
   else {
-    m_linkType = std::nullopt;
+    m_linkType = nullopt;
   }
 }
 
@@ -187,7 +195,7 @@ FaceQueryFilter&
 FaceQueryFilter::unsetFaceId()
 {
   m_wire.reset();
-  m_faceId = std::nullopt;
+  m_faceId = nullopt;
   return *this;
 }
 
@@ -245,7 +253,7 @@ FaceQueryFilter&
 FaceQueryFilter::unsetFaceScope()
 {
   m_wire.reset();
-  m_faceScope = std::nullopt;
+  m_faceScope = nullopt;
   return *this;
 }
 
@@ -261,7 +269,7 @@ FaceQueryFilter&
 FaceQueryFilter::unsetFacePersistency()
 {
   m_wire.reset();
-  m_facePersistency = std::nullopt;
+  m_facePersistency = nullopt;
   return *this;
 }
 
@@ -277,7 +285,7 @@ FaceQueryFilter&
 FaceQueryFilter::unsetLinkType()
 {
   m_wire.reset();
-  m_linkType = std::nullopt;
+  m_linkType = nullopt;
   return *this;
 }
 
@@ -335,4 +343,5 @@ operator<<(std::ostream& os, const FaceQueryFilter& filter)
   return os;
 }
 
-} // namespace ndn::nfd
+} // namespace nfd
+} // namespace ndn

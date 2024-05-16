@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2020 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -29,7 +29,10 @@
 
 #include <boost/algorithm/string/predicate.hpp>
 
-namespace ndn::security::validator_config {
+namespace ndn {
+namespace security {
+inline namespace v2 {
+namespace validator_config {
 
 bool
 Filter::match(uint32_t pktType, const Name& pktName, const shared_ptr<ValidationState>& state)
@@ -153,4 +156,7 @@ Filter::createNameFilter(const ConfigSection& configSection, const std::string& 
   }
 }
 
-} // namespace ndn::security::validator_config
+} // namespace validator_config
+} // inline namespace v2
+} // namespace security
+} // namespace ndn

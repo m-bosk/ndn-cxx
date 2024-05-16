@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2023 Regents of the University of California,
+ * Copyright (c) 2014-2021 Regents of the University of California,
  *                         Arizona Board of Regents,
  *                         Colorado State University,
  *                         University Pierre & Marie Curie, Sorbonne University,
@@ -32,12 +32,12 @@
 #include "tests/unit/io-key-chain-fixture.hpp"
 #include "tests/unit/util/simple-notification.hpp"
 
-namespace ndn::tests {
-
-using ndn::util::NotificationStream;
+namespace ndn {
+namespace util {
+namespace tests {
 
 BOOST_AUTO_TEST_SUITE(Util)
-BOOST_FIXTURE_TEST_SUITE(TestNotificationStream, IoKeyChainFixture)
+BOOST_FIXTURE_TEST_SUITE(TestNotificationStream, ndn::tests::IoKeyChainFixture)
 
 BOOST_AUTO_TEST_CASE(Post)
 {
@@ -72,4 +72,6 @@ BOOST_AUTO_TEST_CASE(Post)
 BOOST_AUTO_TEST_SUITE_END() // TestNotificationStream
 BOOST_AUTO_TEST_SUITE_END() // Util
 
-} // namespace ndn::tests
+} // namespace tests
+} // namespace util
+} // namespace ndn

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -22,61 +22,66 @@
 #include "ndn-cxx/security/validation-policy-signed-interest.hpp"
 
 #include "ndn-cxx/security/interest-signer.hpp"
+#include "ndn-cxx/security/validation-policy-accept-all.hpp"
 #include "ndn-cxx/security/validation-policy-simple-hierarchy.hpp"
 
 #include "tests/test-common.hpp"
 #include "tests/unit/security/validator-fixture.hpp"
 
-#include <boost/mp11/list.hpp>
+#include <boost/mpl/vector.hpp>
 
-namespace ndn::tests {
+namespace ndn {
+namespace security {
+inline namespace v2 {
+namespace tests {
 
-using namespace ndn::security;
+using namespace ndn::tests;
 
 BOOST_AUTO_TEST_SUITE(Security)
 
 struct SignedInterestDefaultOptions
 {
-  static auto
+  static ValidationPolicySignedInterest::Options
   getOptions()
   {
-    return ValidationPolicySignedInterest::Options{};
+    return {};
   }
 };
 
-template<class ValidationOptions, class InnerPolicy>
+template<class T, class InnerPolicy>
 class SignedInterestPolicyWrapper : public ValidationPolicySignedInterest
 {
 public:
   SignedInterestPolicyWrapper()
-    : ValidationPolicySignedInterest(make_unique<InnerPolicy>(), ValidationOptions::getOptions())
+    : ValidationPolicySignedInterest(make_unique<InnerPolicy>(), T::getOptions())
   {
   }
 };
 
-template<class ValidationOptions = SignedInterestDefaultOptions,
-         class InnerPolicy = ValidationPolicySimpleHierarchy>
+template<class T, class InnerPolicy = ValidationPolicySimpleHierarchy>
 class ValidationPolicySignedInterestFixture
-  : public HierarchicalValidatorFixture<SignedInterestPolicyWrapper<ValidationOptions, InnerPolicy>>
+  : public HierarchicalValidatorFixture<SignedInterestPolicyWrapper<T, InnerPolicy>>
 {
 protected:
   Interest
-  makeSignedInterest(const Identity& id,
+  makeSignedInterest(const Identity& identity,
                      uint32_t signingFlags = InterestSigner::WantNonce | InterestSigner::WantTime)
   {
-    Interest interest(Name(id.getName()).append("CMD"));
-    m_signer.makeSignedInterest(interest, signingByIdentity(id), signingFlags);
-    return interest;
+    Interest i(Name(identity.getName()).append("CMD"));
+    m_signer.makeSignedInterest(i, signingByIdentity(identity), signingFlags);
+    return i;
   }
 
 protected:
   InterestSigner m_signer{this->m_keyChain};
+
   static constexpr uint32_t WantAll = InterestSigner::WantNonce |
-                                      InterestSigner::WantTime |
-                                      InterestSigner::WantSeqNum;
+                                        InterestSigner::WantTime |
+                                        InterestSigner::WantSeqNum;
 };
 
-BOOST_FIXTURE_TEST_SUITE(TestValidationPolicySignedInterest, ValidationPolicySignedInterestFixture<>)
+BOOST_FIXTURE_TEST_SUITE(TestValidationPolicySignedInterest,
+                         ValidationPolicySignedInterestFixture<SignedInterestDefaultOptions>)
 
 BOOST_AUTO_TEST_CASE(Basic)
 {
@@ -112,7 +117,7 @@ BOOST_AUTO_TEST_CASE(InnerPolicyReject)
 template<ssize_t count>
 struct MaxRecordCount
 {
-  static auto
+  static ValidationPolicySignedInterest::Options
   getOptions()
   {
     ValidationPolicySignedInterest::Options options;
@@ -192,29 +197,6 @@ BOOST_FIXTURE_TEST_CASE(ZeroRecords, ValidationPolicySignedInterestFixture<MaxRe
   VALIDATE_SUCCESS(i1, "Should succeed despite timestamp reordering, as records aren't kept");
 }
 
-struct DisabledTimestampValidation
-{
-  static auto
-  getOptions()
-  {
-    ValidationPolicySignedInterest::Options options;
-    options.shouldValidateTimestamps = false;
-    return options;
-  }
-};
-
-template<int secs>
-struct GracePeriodSeconds
-{
-  static auto
-  getOptions()
-  {
-    ValidationPolicySignedInterest::Options options;
-    options.timestampGracePeriod = time::seconds(secs);
-    return options;
-  }
-};
-
 BOOST_AUTO_TEST_SUITE(TimestampValidation)
 
 BOOST_AUTO_TEST_CASE(MissingTimestamp)
@@ -224,7 +206,19 @@ BOOST_AUTO_TEST_CASE(MissingTimestamp)
   BOOST_TEST(lastError.getCode() == ValidationError::POLICY_ERROR);
 }
 
-BOOST_FIXTURE_TEST_CASE(Disabled, ValidationPolicySignedInterestFixture<DisabledTimestampValidation>)
+struct DisabledTimestampValidationOptions
+{
+  static ValidationPolicySignedInterest::Options
+  getOptions()
+  {
+    ValidationPolicySignedInterest::Options options;
+    options.shouldValidateTimestamps = false;
+    return options;
+  }
+};
+
+BOOST_FIXTURE_TEST_CASE(Disabled,
+                        ValidationPolicySignedInterestFixture<DisabledTimestampValidationOptions>)
 {
   auto i1 = makeSignedInterest(identity); // signed at 0ms
   advanceClocks(100_ms);
@@ -237,6 +231,18 @@ BOOST_FIXTURE_TEST_CASE(Disabled, ValidationPolicySignedInterestFixture<Disabled
   i2.setSignatureInfo(*si2);
   VALIDATE_SUCCESS(i2, "Should succeed");
 }
+
+template<int secs>
+struct GracePeriodSeconds
+{
+  static ValidationPolicySignedInterest::Options
+  getOptions()
+  {
+    ValidationPolicySignedInterest::Options options;
+    options.timestampGracePeriod = time::seconds(secs);
+    return options;
+  }
+};
 
 BOOST_FIXTURE_TEST_CASE(TimestampTooOld, ValidationPolicySignedInterestFixture<GracePeriodSeconds<15>>)
 {
@@ -319,7 +325,10 @@ BOOST_AUTO_TEST_CASE(TimestampReorderNegative)
   VALIDATE_SUCCESS(i4, "Should succeed");
 }
 
-using NonPositiveGracePeriods = boost::mp11::mp_list<GracePeriodSeconds<0>, GracePeriodSeconds<-1>>;
+using NonPositiveGracePeriods = boost::mpl::vector<
+  GracePeriodSeconds<0>,
+  GracePeriodSeconds<-1>
+>;
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(GraceNonPositive, GracePeriod, NonPositiveGracePeriods,
                                  ValidationPolicySignedInterestFixture<GracePeriod>)
@@ -343,17 +352,6 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(GraceNonPositive, GracePeriod, NonPositiveGrace
 
 BOOST_AUTO_TEST_SUITE_END() // TimestampValidation
 
-struct EnabledSeqNumValidation
-{
-  static auto
-  getOptions()
-  {
-    ValidationPolicySignedInterest::Options options;
-    options.shouldValidateSeqNums = true;
-    return options;
-  }
-};
-
 BOOST_AUTO_TEST_SUITE(SeqNumValidation)
 
 // By default, sequence number validation is disabled
@@ -370,14 +368,27 @@ BOOST_AUTO_TEST_CASE(Disabled)
   VALIDATE_SUCCESS(i2, "Should succeed");
 }
 
-BOOST_FIXTURE_TEST_CASE(MissingSeqNum, ValidationPolicySignedInterestFixture<EnabledSeqNumValidation>)
+struct SeqNumValidationOptions
+{
+  static ValidationPolicySignedInterest::Options
+  getOptions()
+  {
+    ValidationPolicySignedInterest::Options options;
+    options.shouldValidateSeqNums = true;
+    return options;
+  }
+};
+
+BOOST_FIXTURE_TEST_CASE(MissingSeqNum,
+                        ValidationPolicySignedInterestFixture<SeqNumValidationOptions>)
 {
   auto i1 = makeSignedInterest(identity, InterestSigner::WantTime);
   VALIDATE_FAILURE(i1, "Should fail (sequence number missing");
   BOOST_TEST(lastError.getCode() == ValidationError::POLICY_ERROR);
 }
 
-BOOST_FIXTURE_TEST_CASE(SeqNumReorder, ValidationPolicySignedInterestFixture<EnabledSeqNumValidation>)
+BOOST_FIXTURE_TEST_CASE(SeqNumReorder,
+                        ValidationPolicySignedInterestFixture<SeqNumValidationOptions>)
 {
   auto i1 = makeSignedInterest(identity, WantAll); // seq num is i
   VALIDATE_SUCCESS(i1, "Should succeed");
@@ -394,31 +405,6 @@ BOOST_FIXTURE_TEST_CASE(SeqNumReorder, ValidationPolicySignedInterestFixture<Ena
 }
 
 BOOST_AUTO_TEST_SUITE_END() // SeqNumValidation
-
-struct DisabledNonceValidation
-{
-  static auto
-  getOptions()
-  {
-    ValidationPolicySignedInterest::Options options;
-    options.shouldValidateNonces = false;
-    return options;
-  }
-};
-
-template<ssize_t count>
-struct MaxNonceRecordCount
-{
-  static auto
-  getOptions()
-  {
-    ValidationPolicySignedInterest::Options options;
-    options.shouldValidateTimestamps = false;
-    options.shouldValidateSeqNums = false;
-    options.maxNonceRecordCount = count;
-    return options;
-  }
-};
 
 BOOST_AUTO_TEST_SUITE(NonceValidation)
 
@@ -449,7 +435,19 @@ BOOST_AUTO_TEST_CASE(DuplicateNonce)
   VALIDATE_SUCCESS(i3, "Should succeed");
 }
 
-BOOST_FIXTURE_TEST_CASE(Disabled, ValidationPolicySignedInterestFixture<DisabledNonceValidation>)
+struct DisabledNonceValidationOptions
+{
+  static ValidationPolicySignedInterest::Options
+  getOptions()
+  {
+    ValidationPolicySignedInterest::Options options;
+    options.shouldValidateNonces = false;
+    return options;
+  }
+};
+
+BOOST_FIXTURE_TEST_CASE(Disabled,
+                        ValidationPolicySignedInterestFixture<DisabledNonceValidationOptions>)
 {
   auto i1 = makeSignedInterest(identity, WantAll ^ InterestSigner::WantNonce);
   VALIDATE_SUCCESS(i1, "Should succeed");
@@ -468,7 +466,21 @@ BOOST_FIXTURE_TEST_CASE(Disabled, ValidationPolicySignedInterestFixture<Disabled
   VALIDATE_SUCCESS(i3, "Should succeed");
 }
 
-BOOST_FIXTURE_TEST_CASE(NonceRecordLimit, ValidationPolicySignedInterestFixture<MaxNonceRecordCount<2>>)
+struct NonceLimit2Options
+{
+  static ValidationPolicySignedInterest::Options
+  getOptions()
+  {
+    ValidationPolicySignedInterest::Options options;
+    options.shouldValidateTimestamps = false;
+    options.shouldValidateSeqNums = false;
+    options.maxNonceRecordCount = 2;
+    return options;
+  }
+};
+
+BOOST_FIXTURE_TEST_CASE(NonceRecordLimit,
+                        ValidationPolicySignedInterestFixture<NonceLimit2Options>)
 {
   auto i1 = makeSignedInterest(identity, WantAll);
   VALIDATE_SUCCESS(i1, "Should succeed");
@@ -513,4 +525,7 @@ BOOST_AUTO_TEST_SUITE_END() // NonceValidation
 BOOST_AUTO_TEST_SUITE_END() // TestValidationPolicySignedInterest
 BOOST_AUTO_TEST_SUITE_END() // Security
 
-} // namespace ndn::tests
+} // namespace tests
+} // inline namespace v2
+} // namespace security
+} // namespace ndn

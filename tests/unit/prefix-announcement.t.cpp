@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2021 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -25,11 +25,8 @@
 #include "tests/key-chain-fixture.hpp"
 #include "tests/test-common.hpp"
 
-namespace ndn::tests {
-
-BOOST_CONCEPT_ASSERT((boost::EqualityComparable<PrefixAnnouncement>));
-static_assert(std::is_convertible_v<PrefixAnnouncement::Error*, tlv::Error*>,
-              "PrefixAnnouncement::Error must inherit from tlv::Error");
+namespace ndn {
+namespace tests {
 
 BOOST_AUTO_TEST_SUITE(TestPrefixAnnouncement)
 
@@ -100,7 +97,7 @@ BOOST_AUTO_TEST_CASE(DecodeBad)
 
   // Name has no "32=PA" keyword
   Data data1 = makePrefixAnnData();
-  setNameComponent(data1, -3, name::Component::fromUri("32=not-PA"));
+  setNameComponent(data1, -3, name::Component::fromEscapedString("32=not-PA"));
   BOOST_CHECK_EXCEPTION(PrefixAnnouncement{data1}, tlv::Error, [] (const auto& e) {
     return e.what() == "Data is not a prefix announcement: wrong name structure"s;
   });
@@ -268,4 +265,5 @@ BOOST_AUTO_TEST_CASE(KeywordComponent)
 
 BOOST_AUTO_TEST_SUITE_END() // TestPrefixAnnouncement
 
-} // namespace ndn::tests
+} // namespace tests
+} // namespace ndn

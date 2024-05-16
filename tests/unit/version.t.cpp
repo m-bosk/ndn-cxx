@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -25,7 +25,8 @@
 
 #include <cstdio>
 
-namespace ndn::tests {
+namespace ndn {
+namespace tests {
 
 BOOST_AUTO_TEST_SUITE(TestVersion)
 
@@ -37,9 +38,9 @@ BOOST_AUTO_TEST_CASE(VersionNumber)
                                 NDN_CXX_VERSION_MINOR * 1000 +
                                 NDN_CXX_VERSION_PATCH);
 
-  static_assert(NDN_CXX_VERSION_MAJOR < 1000);
-  static_assert(NDN_CXX_VERSION_MINOR < 1000);
-  static_assert(NDN_CXX_VERSION_PATCH < 1000);
+  static_assert(NDN_CXX_VERSION_MAJOR < 1000, "");
+  static_assert(NDN_CXX_VERSION_MINOR < 1000, "");
+  static_assert(NDN_CXX_VERSION_PATCH < 1000, "");
 }
 
 BOOST_AUTO_TEST_CASE(VersionString)
@@ -57,4 +58,5 @@ BOOST_AUTO_TEST_CASE(VersionString)
 
 BOOST_AUTO_TEST_SUITE_END() // TestVersion
 
-} // namespace ndn::tests
+} // namespace tests
+} // namespace ndn

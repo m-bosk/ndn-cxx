@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -27,11 +27,11 @@
 #include "ndn-cxx/security/key-chain.hpp"
 #include "ndn-cxx/util/concepts.hpp"
 
-namespace ndn::util {
+namespace ndn {
+namespace util {
 
-/**
- * \brief A facility to publish notifications.
- * \sa https://redmine.named-data.net/projects/nfd/wiki/Notification
+/** \brief Provides a publisher of Notification Stream.
+ *  \sa https://redmine.named-data.net/projects/nfd/wiki/Notification
  */
 template<typename Notification>
 class NotificationStream : noncopyable
@@ -43,6 +43,7 @@ public:
     : m_face(face)
     , m_prefix(prefix)
     , m_keyChain(keyChain)
+    , m_sequenceNo(0)
   {
   }
 
@@ -55,7 +56,7 @@ public:
     Name dataName = m_prefix;
     dataName.appendSequenceNumber(m_sequenceNo);
 
-    auto data = make_shared<Data>(dataName);
+    shared_ptr<Data> data = make_shared<Data>(dataName);
     data->setContent(notification.wireEncode());
     data->setFreshnessPeriod(1_s);
 
@@ -69,9 +70,10 @@ private:
   Face& m_face;
   const Name m_prefix;
   KeyChain& m_keyChain;
-  uint64_t m_sequenceNo = 0;
+  uint64_t m_sequenceNo;
 };
 
-} // namespace ndn::util
+} // namespace util
+} // namespace ndn
 
 #endif // NDN_CXX_UTIL_NOTIFICATION_STREAM_HPP

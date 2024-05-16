@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2021 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -23,11 +23,12 @@
 #define NDN_CXX_IMPL_RECORD_CONTAINER_HPP
 
 #include "ndn-cxx/detail/common.hpp"
-#include "ndn-cxx/util/signal/signal.hpp"
+#include "ndn-cxx/util/signal.hpp"
 
 #include <atomic>
 
-namespace ndn::detail {
+namespace ndn {
+namespace detail {
 
 using RecordId = uint64_t;
 
@@ -76,30 +77,30 @@ public:
   using Record = T;
   using Container = std::map<RecordId, Record>;
 
-  /**
-   * \brief Retrieve record by ID.
+  /** \brief Retrieve record by ID.
    */
   Record*
   get(RecordId id)
   {
-    if (auto it = m_container.find(id); it != m_container.end()) {
-      return &it->second;
+    auto i = m_container.find(id);
+    if (i == m_container.end()) {
+      return nullptr;
     }
-    return nullptr;
+    return &i->second;
   }
 
-  /**
-   * \brief Insert a record with given ID.
+  /** \brief Insert a record with given ID.
    */
-  template<typename... TArgs>
+  template<typename ...TArgs>
   Record&
   put(RecordId id, TArgs&&... args)
   {
     BOOST_ASSERT(id != 0);
-    auto [it, isNew] = m_container.try_emplace(id, std::forward<decltype(args)>(args)...);
-    BOOST_VERIFY(isNew);
+    auto it = m_container.emplace(std::piecewise_construct, std::forward_as_tuple(id),
+                                  std::forward_as_tuple(std::forward<decltype(args)>(args)...));
+    BOOST_ASSERT(it.second);
 
-    Record& record = it->second;
+    Record& record = it.first->second;
     record.m_container = this;
     record.m_id = id;
     return record;
@@ -111,10 +112,9 @@ public:
     return ++m_lastId;
   }
 
-  /**
-   * \brief Insert a record with newly assigned ID.
+  /** \brief Insert a record with newly assigned ID.
    */
-  template<typename... TArgs>
+  template<typename ...TArgs>
   Record&
   insert(TArgs&&... args)
   {
@@ -173,7 +173,7 @@ public:
     });
   }
 
-  [[nodiscard]] bool
+  NDN_CXX_NODISCARD bool
   empty() const noexcept
   {
     return m_container.empty();
@@ -188,13 +188,14 @@ public:
 public:
   /** \brief Signals when container becomes empty
    */
-  signal::Signal<RecordContainer<T>> onEmpty;
+  util::Signal<RecordContainer<T>> onEmpty;
 
 private:
   Container m_container;
   std::atomic<RecordId> m_lastId{0};
 };
 
-} // namespace ndn::detail
+} // namespace detail
+} // namespace ndn
 
 #endif // NDN_CXX_IMPL_RECORD_CONTAINER_HPP

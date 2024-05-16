@@ -6,13 +6,12 @@
 
 </div>
 
-![Latest version](https://img.shields.io/github/v/tag/named-data/ndn-cxx?label=Latest%20version)
-![Language](https://img.shields.io/badge/C%2B%2B-17-blue)
 [![CI](https://github.com/named-data/ndn-cxx/actions/workflows/ci.yml/badge.svg)](https://github.com/named-data/ndn-cxx/actions/workflows/ci.yml)
-[![Docker](https://github.com/named-data/ndn-cxx/actions/workflows/docker.yml/badge.svg)](https://github.com/named-data/ndn-cxx/actions/workflows/docker.yml)
 [![Docs](https://github.com/named-data/ndn-cxx/actions/workflows/docs.yml/badge.svg)](https://github.com/named-data/ndn-cxx/actions/workflows/docs.yml)
+![Language](https://img.shields.io/badge/C%2B%2B-14-blue)
+![Latest version](https://img.shields.io/github/v/tag/named-data/ndn-cxx?label=Latest%20version)
 
-**ndn-cxx** is a C++17 library implementing Named Data Networking (NDN) primitives
+**ndn-cxx** is a C++14 library implementing Named Data Networking (NDN) primitives
 that can be used to write various NDN applications. The library is currently being
 used by the following projects:
 
@@ -49,12 +48,4 @@ and [`README-dev.md`](README-dev.md) to get started.
 ## License
 
 ndn-cxx is free software distributed under the GNU Lesser General Public License version 3.
-See [`COPYING.md`](COPYING.md) and [`COPYING.lesser`](COPYING.lesser) for details.
-
-ndn-cxx contains third-party software, licensed under the following licenses:
-
-* *scope-lite* by Martin Moene is licensed under the
-  [Boost Software License 1.0](https://github.com/martinmoene/scope-lite/blob/master/LICENSE.txt)
-* *span-lite* by Martin Moene is licensed under the
-  [Boost Software License 1.0](https://github.com/martinmoene/span-lite/blob/master/LICENSE.txt)
-* The *waf* build system is licensed under the [3-clause BSD license](waf)
+See [`COPYING.md`](COPYING.md) for details.

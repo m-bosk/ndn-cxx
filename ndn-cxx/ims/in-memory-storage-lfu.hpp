@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2021 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -32,9 +32,9 @@
 
 namespace ndn {
 
-/**
- * @brief Provides an in-memory storage with Least Frequently Used (LFU) replacement policy.
- * @note The frequency right now is usage count.
+/** @brief Provides an in-memory storage with Least Frequently Used (LFU) replacement policy.
+ *  @note The frequency right now is usage count.
+ *  @sa https://en.wikipedia.org/w/index.php?title=Least_frequently_used&oldid=604542656
  */
 class InMemoryStorageLfu : public InMemoryStorage
 {
@@ -43,7 +43,7 @@ public:
   InMemoryStorageLfu(size_t limit = 16);
 
   explicit
-  InMemoryStorageLfu(boost::asio::io_context& ioCtx, size_t limit = 16);
+  InMemoryStorageLfu(boost::asio::io_service& ioService, size_t limit = 16);
 
 NDN_CXX_PUBLIC_WITH_TESTS_ELSE_PROTECTED:
   /** @brief Removes one Data packet from in-memory storage based on LFU, i.e. evict the least
@@ -91,22 +91,25 @@ private:
   class byFrequency;
   class byEntity;
 
-  using CleanupIndex = boost::multi_index_container<
+  typedef boost::multi_index_container<
     CleanupEntry,
     boost::multi_index::indexed_by<
+
       // by Entry itself
       boost::multi_index::hashed_unique<
         boost::multi_index::tag<byEntity>,
         boost::multi_index::member<CleanupEntry, InMemoryStorageEntry*, &CleanupEntry::entry>
       >,
+
       // by frequency (LFU)
       boost::multi_index::ordered_non_unique<
         boost::multi_index::tag<byFrequency>,
         boost::multi_index::member<CleanupEntry, uint64_t, &CleanupEntry::frequency>,
         std::less<uint64_t>
       >
+
     >
-  >;
+  > CleanupIndex;
 
   CleanupIndex m_cleanupIndex;
 };

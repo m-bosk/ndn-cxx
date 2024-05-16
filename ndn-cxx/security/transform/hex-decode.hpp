@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2021 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -24,7 +24,9 @@
 
 #include "ndn-cxx/security/transform/transform-base.hpp"
 
-namespace ndn::security::transform {
+namespace ndn {
+namespace security {
+namespace transform {
 
 /**
  * @brief The module to perform hexadecimal decoding transformation.
@@ -36,6 +38,12 @@ namespace ndn::security::transform {
  */
 class HexDecode final : public Transform
 {
+public:
+  /**
+   * @brief Create a hex decoding module
+   */
+  HexDecode();
+
 private:
   /**
    * @brief Decode data @p buf, and write the result into output buffer directly.
@@ -58,13 +66,15 @@ private:
   toBytes(const uint8_t* hex, size_t hexLen);
 
 private:
-  bool m_hasOddByte = false;
-  uint8_t m_oddByte = 0;
+  bool m_hasOddByte;
+  uint8_t m_oddByte;
 };
 
 unique_ptr<Transform>
 hexDecode();
 
-} // namespace ndn::security::transform
+} // namespace transform
+} // namespace security
+} // namespace ndn
 
 #endif // NDN_CXX_SECURITY_TRANSFORM_HEX_DECODE_HPP

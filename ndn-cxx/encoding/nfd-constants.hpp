@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -22,13 +22,12 @@
 #ifndef NDN_CXX_ENCODING_NFD_CONSTANTS_HPP
 #define NDN_CXX_ENCODING_NFD_CONSTANTS_HPP
 
-#include <cstdint>
-#include <iosfwd>
-#include <limits>
+#include "ndn-cxx/detail/common.hpp"
 
-namespace ndn::nfd {
+namespace ndn {
+namespace nfd {
 
-inline constexpr uint64_t INVALID_FACE_ID = 0;
+const uint64_t INVALID_FACE_ID = 0;
 
 /** \ingroup management
  */
@@ -130,6 +129,7 @@ enum RouteFlags : uint64_t {
 std::ostream&
 operator<<(std::ostream& os, RouteFlags routeFlags);
 
-} // namespace ndn::nfd
+} // namespace nfd
+} // namespace ndn
 
 #endif // NDN_CXX_ENCODING_NFD_CONSTANTS_HPP

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2021 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -24,10 +24,11 @@
 
 #include "ndn-cxx/util/time-custom-clock.hpp"
 
-namespace ndn::time {
+namespace ndn {
+namespace time {
 
 /**
- * @brief Traits for UnitTestClock, defining default behavior for different clocks.
+ * @brief Traits for UnitTestClock, defining default behavior for different clocks
  *
  * The only behavior that is currently controlled by the traits is default start
  * time.  The generic implementation assumes start time to be zero.
@@ -39,12 +40,12 @@ public:
   static nanoseconds
   getDefaultStartTime()
   {
-    return 0_ns;
+    return nanoseconds::zero();
   }
 };
 
 /**
- * @brief Specialization of UnitTestClockTraits for system_clock.
+ * @brief Specialization of UnitTestClockTraits for system_clock
  *
  * This specialization sets the default start time to 1415684132 seconds
  * (equivalent to Tue 11 Nov 2014 05:35:32 UTC, if Unix epoch is assumed).
@@ -56,17 +57,17 @@ public:
   static nanoseconds
   getDefaultStartTime()
   {
-    return 1415684132_s;
+    return seconds(1415684132);
   }
 };
 
 /**
- * @brief Clock that can be used in unit tests for time-dependent tests independent of wall clock.
+ * @brief Clock that can be used in unit tests for time-dependent tests independent of wall clock
  *
  * This clock should be explicitly advanced with UnitTestClock<BaseClock>::advance() or set
  * with UnitTestClock<BaseClock>::setNow() methods.
  *
- * @note Default start time is determined by UnitTestClockTraits.
+ * @note Default start time is determined by UnitTestClockTraits
  */
 template<class BaseClock, class ClockTraits = UnitTestClockTraits<BaseClock>>
 class UnitTestClock : public CustomClock<BaseClock>
@@ -107,6 +108,7 @@ extern template class UnitTestClock<steady_clock>;
 using UnitTestSystemClock = UnitTestClock<system_clock>;
 using UnitTestSteadyClock = UnitTestClock<steady_clock>;
 
-} // namespace ndn::time
+} // namespace time
+} // namespace ndn
 
 #endif // NDN_CXX_UTIL_TIME_UNIT_TEST_CLOCK_HPP

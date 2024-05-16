@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -24,14 +24,20 @@
 
 #include "ndn-cxx/security/pib/key-container.hpp"
 
-namespace ndn::security {
+namespace ndn {
+namespace security {
 
+inline namespace v2 {
 class KeyChain;
+} // inline namespace v2
 
 namespace pib {
 
 class IdentityContainer;
+
+namespace detail {
 class IdentityImpl;
+} // namespace detail
 
 /**
  * @brief Frontend handle for an identity in the PIB.
@@ -40,7 +46,7 @@ class IdentityImpl;
  * name, and contains zero or more keys, at most one of which is set as the default key of that
  * identity.  The properties of a key can be accessed after obtaining a Key object.
  */
-class Identity : private boost::equality_comparable<Identity>
+class Identity
 {
 public:
   /**
@@ -137,7 +143,7 @@ NDN_CXX_PUBLIC_WITH_TESTS_ELSE_PRIVATE: // write operations are accessible only 
 
 NDN_CXX_PUBLIC_WITH_TESTS_ELSE_PRIVATE: // private interface for IdentityContainer
   explicit
-  Identity(weak_ptr<IdentityImpl> impl) noexcept;
+  Identity(weak_ptr<detail::IdentityImpl> impl) noexcept;
 
 private:
   /**
@@ -145,7 +151,7 @@ private:
    * @return a shared_ptr when the instance is valid
    * @throw std::domain_error the instance is invalid
    */
-  shared_ptr<IdentityImpl>
+  shared_ptr<detail::IdentityImpl>
   lock() const;
 
   bool
@@ -154,25 +160,27 @@ private:
   // NOTE
   // The following "hidden friend" non-member operators are available
   // via argument-dependent lookup only and must be defined inline.
-  // boost::equality_comparable provides != operator.
 
   friend bool
-  operator==(const Identity& lhs, const Identity& rhs) noexcept
+  operator==(const Identity& lhs, const Identity& rhs)
   {
     return lhs.equals(rhs);
+  }
+
+  friend bool
+  operator!=(const Identity& lhs, const Identity& rhs)
+  {
+    return !lhs.equals(rhs);
   }
 
   friend std::ostream&
   operator<<(std::ostream& os, const Identity& id)
   {
-    if (id)
-      return os << id.getName();
-    else
-      return os << "(empty)";
+    return os << (id ? id.getName() : "(empty)");
   }
 
 private:
-  weak_ptr<IdentityImpl> m_impl;
+  weak_ptr<detail::IdentityImpl> m_impl;
 
   friend KeyChain;
   friend IdentityContainer;
@@ -182,6 +190,7 @@ private:
 
 using pib::Identity;
 
-} // namespace ndn::security
+} // namespace security
+} // namespace ndn
 
 #endif // NDN_CXX_SECURITY_PIB_IDENTITY_HPP

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2019 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -21,30 +21,42 @@
 
 #include "ndn-cxx/mgmt/nfd/command-options.hpp"
 
-namespace ndn::nfd {
+namespace ndn {
+namespace nfd {
+
+const time::milliseconds CommandOptions::DEFAULT_TIMEOUT(10000);
+const Name CommandOptions::DEFAULT_PREFIX("ndn:/localhost/nfd");
+
+CommandOptions::CommandOptions()
+  : m_timeout(DEFAULT_TIMEOUT)
+  , m_prefix(DEFAULT_PREFIX)
+{
+}
 
 CommandOptions&
-CommandOptions::setTimeout(time::milliseconds timeout)
+CommandOptions::setTimeout(const time::milliseconds& timeout)
 {
-  if (timeout <= 0_ms) {
+  if (timeout <= time::milliseconds::zero()) {
     NDN_THROW(std::out_of_range("Timeout must be positive"));
   }
+
   m_timeout = timeout;
   return *this;
 }
 
 CommandOptions&
-CommandOptions::setPrefix(Name prefix)
+CommandOptions::setPrefix(const Name& prefix)
 {
-  m_prefix = std::move(prefix);
+  m_prefix = prefix;
   return *this;
 }
 
 CommandOptions&
-CommandOptions::setSigningInfo(security::SigningInfo signingInfo)
+CommandOptions::setSigningInfo(const security::SigningInfo& signingInfo)
 {
-  m_signingInfo = std::move(signingInfo);
+  m_signingInfo = signingInfo;
   return *this;
 }
 
-} // namespace ndn::nfd
+} // namespace nfd
+} // namespace ndn

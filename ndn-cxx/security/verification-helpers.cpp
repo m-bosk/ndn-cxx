@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -36,7 +36,8 @@
 
 #include <openssl/crypto.h>
 
-namespace ndn::security {
+namespace ndn {
+namespace security {
 
 namespace {
 
@@ -215,7 +216,7 @@ verifySignature(const Interest& interest, const pib::Key& key)
 }
 
 bool
-verifySignature(const Data& data, const std::optional<Certificate>& cert)
+verifySignature(const Data& data, const optional<Certificate>& cert)
 {
   auto parsed = parse(data);
   if (cert) {
@@ -231,7 +232,7 @@ verifySignature(const Data& data, const std::optional<Certificate>& cert)
 }
 
 bool
-verifySignature(const Interest& interest, const std::optional<Certificate>& cert)
+verifySignature(const Interest& interest, const optional<Certificate>& cert)
 {
   auto parsed = parse(interest);
   if (cert) {
@@ -260,4 +261,5 @@ verifySignature(const Interest& interest, const tpm::Tpm& tpm,
   return verifySignature(parse(interest), tpm, keyName, digestAlgorithm);
 }
 
-} // namespace ndn::security
+} // namespace security
+} // namespace ndn

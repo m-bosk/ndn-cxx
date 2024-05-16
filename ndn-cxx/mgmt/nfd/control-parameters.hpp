@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -27,7 +27,8 @@
 #include "ndn-cxx/mgmt/control-parameters.hpp"
 #include "ndn-cxx/util/time.hpp"
 
-namespace ndn::nfd {
+namespace ndn {
+namespace nfd {
 
 /**
  * \ingroup management
@@ -49,26 +50,26 @@ enum ControlParameterField {
   CONTROL_PARAMETER_BASE_CONGESTION_MARKING_INTERVAL,
   CONTROL_PARAMETER_DEFAULT_CONGESTION_THRESHOLD,
   CONTROL_PARAMETER_MTU,
-  CONTROL_PARAMETER_UBOUND,
+  CONTROL_PARAMETER_UBOUND
 };
 
-inline constexpr std::string_view CONTROL_PARAMETER_FIELD[CONTROL_PARAMETER_UBOUND] = {
-  "Name"sv,
-  "FaceId"sv,
-  "Uri"sv,
-  "LocalUri"sv,
-  "Origin"sv,
-  "Cost"sv,
-  "Capacity"sv,
-  "Count"sv,
-  "Flags"sv,
-  "Mask"sv,
-  "Strategy"sv,
-  "ExpirationPeriod"sv,
-  "FacePersistency"sv,
-  "BaseCongestionMarkingInterval"sv,
-  "DefaultCongestionThreshold"sv,
-  "Mtu"sv,
+const std::string CONTROL_PARAMETER_FIELD[CONTROL_PARAMETER_UBOUND] = {
+  "Name",
+  "FaceId",
+  "Uri",
+  "LocalUri",
+  "Origin",
+  "Cost",
+  "Capacity",
+  "Count",
+  "Flags",
+  "Mask",
+  "Strategy",
+  "ExpirationPeriod",
+  "FacePersistency",
+  "BaseCongestionMarkingInterval",
+  "DefaultCongestionThreshold",
+  "Mtu"
 };
 
 /**
@@ -661,6 +662,7 @@ NDN_CXX_DECLARE_WIRE_ENCODE_INSTANTIATIONS(ControlParameters);
 std::ostream&
 operator<<(std::ostream& os, const ControlParameters& parameters);
 
-} // namespace ndn::nfd
+} // namespace nfd
+} // namespace ndn
 
 #endif // NDN_CXX_MGMT_NFD_CONTROL_PARAMETERS_HPP

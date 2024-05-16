@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -22,12 +22,13 @@
 #ifndef NDN_CXX_MGMT_NFD_RIB_ENTRY_HPP
 #define NDN_CXX_MGMT_NFD_RIB_ENTRY_HPP
 
-#include "ndn-cxx/encoding/nfd-constants.hpp"
-#include "ndn-cxx/mgmt/nfd/route-flags-traits.hpp"
 #include "ndn-cxx/name.hpp"
+#include "ndn-cxx/encoding/block.hpp"
+#include "ndn-cxx/mgmt/nfd/route-flags-traits.hpp"
 #include "ndn-cxx/util/time.hpp"
 
-namespace ndn::nfd {
+namespace ndn {
+namespace nfd {
 
 /**
  * \ingroup management
@@ -117,11 +118,11 @@ public:
   wireDecode(const Block& block);
 
 private:
-  uint64_t m_faceId = INVALID_FACE_ID;
-  RouteOrigin m_origin = ROUTE_ORIGIN_APP;
-  uint64_t m_cost = 0;
-  uint64_t m_flags = ROUTE_FLAG_CHILD_INHERIT;
-  std::optional<time::milliseconds> m_expirationPeriod;
+  uint64_t m_faceId;
+  RouteOrigin m_origin;
+  uint64_t m_cost;
+  uint64_t m_flags;
+  optional<time::milliseconds> m_expirationPeriod;
 
   mutable Block m_wire;
 };
@@ -224,6 +225,7 @@ operator!=(const RibEntry& a, const RibEntry& b)
 std::ostream&
 operator<<(std::ostream& os, const RibEntry& entry);
 
-} // namespace ndn::nfd
+} // namespace nfd
+} // namespace ndn
 
 #endif // NDN_CXX_MGMT_NFD_RIB_ENTRY_HPP

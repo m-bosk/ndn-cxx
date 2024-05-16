@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -31,59 +31,84 @@
 #include <sstream>
 #include <boost/functional/hash.hpp>
 #include <boost/range/adaptor/reversed.hpp>
+#include <boost/range/concepts.hpp>
 
 namespace ndn {
 
+BOOST_CONCEPT_ASSERT((boost::EqualityComparable<Name>));
+BOOST_CONCEPT_ASSERT((WireEncodable<Name>));
+BOOST_CONCEPT_ASSERT((WireEncodableWithEncodingBuffer<Name>));
+BOOST_CONCEPT_ASSERT((WireDecodable<Name>));
+BOOST_CONCEPT_ASSERT((boost::RandomAccessIterator<Name::iterator>));
+BOOST_CONCEPT_ASSERT((boost::RandomAccessIterator<Name::const_iterator>));
+BOOST_CONCEPT_ASSERT((boost::RandomAccessIterator<Name::reverse_iterator>));
+BOOST_CONCEPT_ASSERT((boost::RandomAccessIterator<Name::const_reverse_iterator>));
+BOOST_CONCEPT_ASSERT((boost::RandomAccessRangeConcept<Name>));
+static_assert(std::is_base_of<tlv::Error, Name::Error>::value,
+              "Name::Error must inherit from tlv::Error");
+
+const size_t Name::npos = std::numeric_limits<size_t>::max();
+
 // ---- constructors, encoding, decoding ----
 
-Name::Name() = default;
-
-Name::Name(const Block& wire)
+Name::Name()
+  : m_wire(tlv::Name)
 {
-  wireDecode(wire);
 }
 
-Name::Name(std::string_view uri)
+Name::Name(const Block& wire)
+  : m_wire(wire)
+{
+  m_wire.parse();
+}
+
+Name::Name(const char* uri)
+  : Name(std::string(uri))
+{
+}
+
+Name::Name(std::string uri)
 {
   if (uri.empty())
     return;
 
-  if (size_t iColon = uri.find(':'); iColon != std::string_view::npos) {
-    // Make sure the colon came before a '/', if any.
+  size_t iColon = uri.find(':');
+  if (iColon != std::string::npos) {
+    // Make sure the colon came before a '/'.
     size_t iFirstSlash = uri.find('/');
-    if (iFirstSlash == std::string_view::npos || iColon < iFirstSlash) {
-      // Strip the leading protocol such as "ndn:".
-      uri.remove_prefix(iColon + 1);
+    if (iFirstSlash == std::string::npos || iColon < iFirstSlash) {
+      // Omit the leading protocol such as ndn:
+      uri.erase(0, iColon + 1);
     }
   }
 
   // Trim the leading slash and possibly the authority.
-  if (uri.size() >= 1 && uri[0] == '/') {
+  if (uri[0] == '/') {
     if (uri.size() >= 2 && uri[1] == '/') {
       // Strip the authority following "//".
       size_t iAfterAuthority = uri.find('/', 2);
-      if (iAfterAuthority == std::string_view::npos) {
+      if (iAfterAuthority == std::string::npos)
         // Unusual case: there was only an authority.
         return;
-      }
       else {
-        uri.remove_prefix(iAfterAuthority + 1);
+        uri.erase(0, iAfterAuthority + 1);
       }
     }
     else {
-      uri.remove_prefix(1);
+      uri.erase(0, 1);
     }
   }
 
+  size_t iComponentStart = 0;
+
   // Unescape the components.
-  while (!uri.empty()) {
-    auto component = uri.substr(0, uri.find('/'));
-    append(Component::fromUri(component));
-    if (component.size() + 1 >= uri.size()) {
-      // We reached the end of the string.
-      return;
-    }
-    uri.remove_prefix(component.size() + 1);
+  while (iComponentStart < uri.size()) {
+    size_t iComponentEnd = uri.find('/', iComponentStart);
+    if (iComponentEnd == std::string::npos)
+      iComponentEnd = uri.size();
+
+    append(Component::fromEscapedString(&uri[0], iComponentStart, iComponentEnd));
+    iComponentStart = iComponentEnd + 1;
   }
 }
 
@@ -202,13 +227,13 @@ Name::set(ssize_t i, Component&& component)
 }
 
 Name&
-Name::appendVersion(const std::optional<uint64_t>& version)
+Name::appendVersion(const optional<uint64_t>& version)
 {
   return append(Component::fromVersion(version.value_or(time::toUnixTimestamp(time::system_clock::now()).count())));
 }
 
 Name&
-Name::appendTimestamp(const std::optional<time::system_clock::time_point>& timestamp)
+Name::appendTimestamp(const optional<time::system_clock::time_point>& timestamp)
 {
   return append(Component::fromTimestamp(timestamp.value_or(time::system_clock::now())));
 }

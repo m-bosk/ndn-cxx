@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -26,7 +26,9 @@
 #include <boost/exception/diagnostic_information.hpp>
 #include <boost/exception/get_error_info.hpp>
 
-namespace ndn::tests {
+namespace ndn {
+namespace exception {
+namespace tests {
 
 BOOST_AUTO_TEST_SUITE(Util)
 BOOST_AUTO_TEST_SUITE(TestException)
@@ -48,7 +50,7 @@ BOOST_AUTO_TEST_CASE(Throw)
     BOOST_CHECK(boost::get_error_info<boost::throw_function>(ex) != nullptr);
 
 #ifdef NDN_CXX_HAVE_STACKTRACE
-    auto stack = boost::get_error_info<ndn::exception::errinfo_stacktrace>(ex);
+    auto stack = boost::get_error_info<errinfo_stacktrace>(ex);
     BOOST_REQUIRE(stack != nullptr);
     auto info = boost::diagnostic_information(ex);
     BOOST_TEST_MESSAGE(info);
@@ -104,4 +106,6 @@ BOOST_AUTO_TEST_CASE(ThrowNested)
 BOOST_AUTO_TEST_SUITE_END() // TestException
 BOOST_AUTO_TEST_SUITE_END() // Util
 
-} // namespace ndn::tests
+} // namespace tests
+} // namespace exception
+} // namespace ndn

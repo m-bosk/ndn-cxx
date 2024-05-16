@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California,
+ * Copyright (c) 2013-2022 Regents of the University of California,
  *                         Arizona Board of Regents,
  *                         Colorado State University,
  *                         University Pierre & Marie Curie, Sorbonne University,
@@ -32,12 +32,8 @@
 #include "tests/boost-test.hpp"
 #include "tests/unit/net/network-configuration-detector.hpp"
 
-#include <boost/concept_check.hpp>
-
-namespace ndn::tests {
-
-BOOST_CONCEPT_ASSERT((boost::EqualityComparable<FaceUri>));
-BOOST_CONCEPT_ASSERT((boost::Comparable<FaceUri>));
+namespace ndn {
+namespace tests {
 
 BOOST_AUTO_TEST_SUITE(Net)
 BOOST_AUTO_TEST_SUITE(TestFaceUri)
@@ -52,7 +48,11 @@ protected:
       if (netmon.getCapabilities() & net::NetworkMonitor::CAP_ENUM) {
         netmon.onEnumerationCompleted.connect([this] { m_io.stop(); });
         m_io.run();
+#if BOOST_VERSION >= 106600
         m_io.restart();
+#else
+        m_io.reset();
+#endif
       }
       return netmon.listNetworkInterfaces();
     }();
@@ -65,36 +65,40 @@ protected:
   void
   runTest(const std::string& request, bool shouldSucceed, const std::string& expectedUri = "")
   {
-    BOOST_TEST_INFO_SCOPE(std::quoted(request) << " should " << (shouldSucceed ? "succeed" : "fail"));
+    BOOST_TEST_CONTEXT(std::quoted(request) << " should " << (shouldSucceed ? "succeed" : "fail")) {
+      bool didInvokeCb = false;
+      FaceUri uri(request);
+      uri.canonize(
+        [&] (const FaceUri& canonicalUri) {
+          BOOST_CHECK_EQUAL(didInvokeCb, false);
+          didInvokeCb = true;
+          BOOST_CHECK_EQUAL(shouldSucceed, true);
+          if (shouldSucceed) {
+            BOOST_CHECK_EQUAL(canonicalUri.toString(), expectedUri);
+          }
+        },
+        [&] (const std::string&) {
+          BOOST_CHECK_EQUAL(didInvokeCb, false);
+          didInvokeCb = true;
+          BOOST_CHECK_EQUAL(shouldSucceed, false);
+        },
+        m_io, 30_s);
 
-    bool didInvokeCb = false;
-    FaceUri uri(request);
-    uri.canonize(
-      [&] (const FaceUri& canonicalUri) {
-        BOOST_CHECK_EQUAL(didInvokeCb, false);
-        didInvokeCb = true;
-        BOOST_CHECK_EQUAL(shouldSucceed, true);
-        if (shouldSucceed) {
-          BOOST_CHECK_EQUAL(canonicalUri.toString(), expectedUri);
-        }
-      },
-      [&] (const std::string&) {
-        BOOST_CHECK_EQUAL(didInvokeCb, false);
-        didInvokeCb = true;
-        BOOST_CHECK_EQUAL(shouldSucceed, false);
-      },
-      m_io, 30_s);
-
-    m_io.run();
-    BOOST_CHECK_EQUAL(didInvokeCb, true);
-    m_io.restart();
+      m_io.run();
+      BOOST_CHECK_EQUAL(didInvokeCb, true);
+#if BOOST_VERSION >= 106600
+      m_io.restart();
+#else
+      m_io.reset();
+#endif
+    }
   }
 
 protected:
   shared_ptr<const net::NetworkInterface> m_netif;
 
 private:
-  boost::asio::io_context m_io;
+  boost::asio::io_service m_io;
 };
 
 BOOST_AUTO_TEST_CASE(ParseInternal)
@@ -147,11 +151,11 @@ BOOST_AUTO_TEST_CASE(ParseUdp)
 
   namespace ip = boost::asio::ip;
 
-  ip::udp::endpoint endpoint4(ip::make_address_v4("192.0.2.1"), 7777);
+  ip::udp::endpoint endpoint4(ip::address_v4::from_string("192.0.2.1"), 7777);
   uri = FaceUri(endpoint4);
   BOOST_CHECK_EQUAL(uri.toString(), "udp4://192.0.2.1:7777");
 
-  ip::udp::endpoint endpoint6(ip::make_address_v6("2001:DB8::1"), 7777);
+  ip::udp::endpoint endpoint6(ip::address_v6::from_string("2001:DB8::1"), 7777);
   uri = FaceUri(endpoint6);
   BOOST_CHECK_EQUAL(uri.toString(), "udp6://[2001:db8::1]:7777");
 
@@ -207,10 +211,11 @@ BOOST_FIXTURE_TEST_CASE(IsCanonicalUdp, CanonizeFixture)
   }
 }
 
-BOOST_FIXTURE_TEST_CASE(CanonizeUdpV4, CanonizeFixture,
-  * ut::precondition(NetworkConfigurationDetector::hasIpv4)
-  * ut::expected_failures(1))
+BOOST_AUTO_TEST_CASE_EXPECTED_FAILURES(CanonizeUdpV4, 1)
+BOOST_FIXTURE_TEST_CASE(CanonizeUdpV4, CanonizeFixture)
 {
+  SKIP_IF_IPV4_UNAVAILABLE();
+
   // IPv4 unicast
   runTest("udp4://192.0.2.1:6363", true, "udp4://192.0.2.1:6363");
   runTest("udp://192.0.2.2:6363", true, "udp4://192.0.2.2:6363");
@@ -234,10 +239,11 @@ BOOST_FIXTURE_TEST_CASE(CanonizeUdpV4, CanonizeFixture,
   runTest("udp4://[2001:db8::1]:6363", false);
 }
 
-BOOST_FIXTURE_TEST_CASE(CanonizeUdpV6, CanonizeFixture,
-  * ut::precondition(NetworkConfigurationDetector::hasIpv6)
-  * ut::expected_failures(1))
+BOOST_AUTO_TEST_CASE_EXPECTED_FAILURES(CanonizeUdpV6, 1)
+BOOST_FIXTURE_TEST_CASE(CanonizeUdpV6, CanonizeFixture)
 {
+  SKIP_IF_IPV6_UNAVAILABLE();
+
   // IPv6 unicast
   runTest("udp6://[2001:db8::1]:6363", true, "udp6://[2001:db8::1]:6363");
   runTest("udp6://[2001:db8::1]", true, "udp6://[2001:db8::1]:6363");
@@ -283,14 +289,14 @@ BOOST_AUTO_TEST_CASE(ParseTcp)
 
   namespace ip = boost::asio::ip;
 
-  ip::tcp::endpoint endpoint4(ip::make_address_v4("192.0.2.1"), 7777);
+  ip::tcp::endpoint endpoint4(ip::address_v4::from_string("192.0.2.1"), 7777);
   uri = FaceUri(endpoint4);
   BOOST_CHECK_EQUAL(uri.toString(), "tcp4://192.0.2.1:7777");
 
   uri = FaceUri(endpoint4, "wsclient");
   BOOST_CHECK_EQUAL(uri.toString(), "wsclient://192.0.2.1:7777");
 
-  ip::tcp::endpoint endpoint6(ip::make_address_v6("2001:DB8::1"), 7777);
+  ip::tcp::endpoint endpoint6(ip::address_v6::from_string("2001:DB8::1"), 7777);
   uri = FaceUri(endpoint6);
   BOOST_CHECK_EQUAL(uri.toString(), "tcp6://[2001:db8::1]:7777");
 
@@ -335,10 +341,11 @@ BOOST_FIXTURE_TEST_CASE(IsCanonicalTcp, CanonizeFixture)
   }
 }
 
-BOOST_FIXTURE_TEST_CASE(CanonizeTcpV4, CanonizeFixture,
-  * ut::precondition(NetworkConfigurationDetector::hasIpv4)
-  * ut::expected_failures(1))
+BOOST_AUTO_TEST_CASE_EXPECTED_FAILURES(CanonizeTcpV4, 1)
+BOOST_FIXTURE_TEST_CASE(CanonizeTcpV4, CanonizeFixture)
 {
+  SKIP_IF_IPV4_UNAVAILABLE();
+
   // IPv4 unicast
   runTest("tcp4://192.0.2.1:6363", true, "tcp4://192.0.2.1:6363");
   runTest("tcp://192.0.2.2:6363", true, "tcp4://192.0.2.2:6363");
@@ -373,10 +380,11 @@ BOOST_FIXTURE_TEST_CASE(CanonizeTcpV4, CanonizeFixture,
   }
 }
 
-BOOST_FIXTURE_TEST_CASE(CanonizeTcpV6, CanonizeFixture,
-  * ut::precondition(NetworkConfigurationDetector::hasIpv6)
-  * ut::expected_failures(1))
+BOOST_AUTO_TEST_CASE_EXPECTED_FAILURES(CanonizeTcpV6, 1)
+BOOST_FIXTURE_TEST_CASE(CanonizeTcpV6, CanonizeFixture)
 {
+  SKIP_IF_IPV6_UNAVAILABLE();
+
   // IPv6 unicast
   runTest("tcp6://[2001:db8::1]:6363", true, "tcp6://[2001:db8::1]:6363");
   runTest("tcp6://[2001:db8::1]", true, "tcp6://[2001:db8::1]:6363");
@@ -396,8 +404,8 @@ BOOST_FIXTURE_TEST_CASE(CanonizeTcpV6, CanonizeFixture,
   runTest("tcp6://192.0.2.1:6363", false);
 }
 
-BOOST_AUTO_TEST_CASE(ParseUnix,
-  * ut::expected_failures(1))
+BOOST_AUTO_TEST_CASE_EXPECTED_FAILURES(ParseUnix, 1)
+BOOST_AUTO_TEST_CASE(ParseUnix)
 {
   FaceUri uri;
 
@@ -465,8 +473,8 @@ BOOST_FIXTURE_TEST_CASE(CanonizeEther, CanonizeFixture)
   runTest("ether://[33:33:01:01:01:01]", true, "ether://[33:33:01:01:01:01]");
 }
 
-BOOST_AUTO_TEST_CASE(ParseDev,
-  * ut::expected_failures(1))
+BOOST_AUTO_TEST_CASE_EXPECTED_FAILURES(ParseDev, 1)
+BOOST_AUTO_TEST_CASE(ParseDev)
 {
   FaceUri uri;
 
@@ -549,7 +557,7 @@ BOOST_FIXTURE_TEST_CASE(CanonizeUdpDev, CanonizeFixture)
 
 BOOST_AUTO_TEST_CASE(CanonizeEmptyCallback)
 {
-  boost::asio::io_context io;
+  boost::asio::io_service io;
 
   // unsupported scheme
   FaceUri("null://").canonize(nullptr, nullptr, io, 1_ms);
@@ -578,17 +586,16 @@ BOOST_FIXTURE_TEST_CASE(CanonizeUnsupported, CanonizeFixture)
 
   BOOST_CHECK_EQUAL(FaceUri("internal://").isCanonical(), false);
   BOOST_CHECK_EQUAL(FaceUri("null://").isCanonical(), false);
-  BOOST_CHECK_EQUAL(FaceUri("unix:///run/nfd/nfd.sock").isCanonical(), false);
+  BOOST_CHECK_EQUAL(FaceUri("unix:///var/run/nfd.sock").isCanonical(), false);
   BOOST_CHECK_EQUAL(FaceUri("fd://0").isCanonical(), false);
 
   runTest("internal://", false);
   runTest("null://", false);
-  runTest("unix:///run/nfd/nfd.sock", false);
+  runTest("unix:///var/run/nfd.sock", false);
   runTest("fd://0", false);
 }
 
-BOOST_AUTO_TEST_CASE(Ipv4MappedIpv6Address,
-  * ut::description("test for bug #1635"))
+BOOST_AUTO_TEST_CASE(Bug1635)
 {
   FaceUri uri;
 
@@ -600,43 +607,8 @@ BOOST_AUTO_TEST_CASE(Ipv4MappedIpv6Address,
   BOOST_CHECK_EQUAL(uri.toString(), "wsclient://76.90.11.239:56366");
 }
 
-BOOST_AUTO_TEST_CASE(Compare)
-{
-  FaceUri uri0("udp://[::1]:6363");
-  FaceUri uri1("tcp://[::1]:6363");
-  FaceUri uri2("tcp://127.0.0.1:6363");
-  FaceUri uri3("unix:///run/nfd/nfd.sock");
-
-  BOOST_CHECK_EQUAL(uri0, uri0);
-  BOOST_CHECK_LE(uri0, uri0);
-  BOOST_CHECK_GE(uri0, uri0);
-
-  BOOST_CHECK_GT(uri0, uri1);
-  BOOST_CHECK_GE(uri0, uri1);
-  BOOST_CHECK_NE(uri0, uri1);
-
-  BOOST_CHECK_LT(uri1, uri0);
-  BOOST_CHECK_LE(uri1, uri0);
-  BOOST_CHECK_NE(uri1, uri0);
-
-  BOOST_CHECK_GT(uri0, uri2);
-  BOOST_CHECK_GE(uri0, uri2);
-  BOOST_CHECK_NE(uri0, uri2);
-
-  BOOST_CHECK_LT(uri2, uri0);
-  BOOST_CHECK_LE(uri2, uri0);
-  BOOST_CHECK_NE(uri2, uri0);
-
-  BOOST_CHECK_LT(uri0, uri3);
-  BOOST_CHECK_LE(uri0, uri3);
-  BOOST_CHECK_NE(uri0, uri3);
-
-  BOOST_CHECK_GT(uri3, uri0);
-  BOOST_CHECK_GE(uri3, uri0);
-  BOOST_CHECK_NE(uri3, uri0);
-}
-
 BOOST_AUTO_TEST_SUITE_END() // TestFaceUri
 BOOST_AUTO_TEST_SUITE_END() // Net
 
-} // namespace ndn::tests
+} // namespace tests
+} // namespace ndn

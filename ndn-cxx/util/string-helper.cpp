@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2021 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -20,13 +20,11 @@
  */
 
 #include "ndn-cxx/util/string-helper.hpp"
-
 #include "ndn-cxx/encoding/buffer-stream.hpp"
 #include "ndn-cxx/security/transform/buffer-source.hpp"
 #include "ndn-cxx/security/transform/hex-decode.hpp"
 #include "ndn-cxx/security/transform/hex-encode.hpp"
 #include "ndn-cxx/security/transform/stream-sink.hpp"
-#include "ndn-cxx/util/scope.hpp"
 
 #include <sstream>
 
@@ -35,15 +33,12 @@ namespace ndn {
 void
 printHex(std::ostream& os, uint64_t num, bool wantUpperCase)
 {
-  auto oldFlags = os.flags();
-  auto restoreFlags = make_scope_exit([&] {
-    os.flags(oldFlags);
-  });
-
+  auto osFlags = os.flags();
   // std::showbase doesn't work with number 0
   os << "0x" << std::noshowbase << std::noshowpos
      << (wantUpperCase ? std::uppercase : std::nouppercase)
      << std::hex << num;
+  os.flags(osFlags);
 }
 
 void
@@ -62,7 +57,7 @@ toHex(span<const uint8_t> buffer, bool wantUpperCase)
 }
 
 shared_ptr<Buffer>
-fromHex(std::string_view hexString)
+fromHex(const std::string& hexString)
 {
   namespace tr = security::transform;
 
@@ -78,17 +73,18 @@ fromHex(std::string_view hexString)
 }
 
 std::string
-escape(std::string_view str)
+escape(const std::string& str)
 {
   std::ostringstream os;
-  escape(os, str);
+  escape(os, str.data(), str.size());
   return os.str();
 }
 
 void
-escape(std::ostream& os, std::string_view str)
+escape(std::ostream& os, const char* str, size_t len)
 {
-  for (auto c : str) {
+  for (size_t i = 0; i < len; ++i) {
+    auto c = str[i];
     // Unreserved characters don't need to be escaped.
     if ((c >= 'a' && c <= 'z') ||
         (c >= 'A' && c <= 'Z') ||
@@ -106,18 +102,18 @@ escape(std::ostream& os, std::string_view str)
 }
 
 std::string
-unescape(std::string_view str)
+unescape(const std::string& str)
 {
   std::ostringstream os;
-  unescape(os, str);
+  unescape(os, str.data(), str.size());
   return os.str();
 }
 
 void
-unescape(std::ostream& os, std::string_view str)
+unescape(std::ostream& os, const char* str, size_t len)
 {
-  for (size_t i = 0; i < str.size(); ++i) {
-    if (str[i] == '%' && i + 2 < str.size()) {
+  for (size_t i = 0; i < len; ++i) {
+    if (str[i] == '%' && i + 2 < len) {
       int hi = fromHexChar(str[i + 1]);
       int lo = fromHexChar(str[i + 2]);
 

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2018 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -23,13 +23,14 @@
 
 #include "tests/boost-test.hpp"
 
-namespace ndn::tests {
+namespace ndn {
+namespace tests {
 
 BOOST_AUTO_TEST_SUITE(TestTag)
 
 BOOST_AUTO_TEST_CASE(SimpleTag)
 {
-  using MyTag = ndn::SimpleTag<int, 3>;
+  typedef ndn::SimpleTag<int, 3> MyTag;
 
   BOOST_CHECK_EQUAL(MyTag::getTypeId(), 3);
   MyTag tag(23361); // explicitly convertible from value type
@@ -40,4 +41,5 @@ BOOST_AUTO_TEST_CASE(SimpleTag)
 
 BOOST_AUTO_TEST_SUITE_END() // TestTag
 
-} // namespace ndn::tests
+} // namespace tests
+} // namespace ndn

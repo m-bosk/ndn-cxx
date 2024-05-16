@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2021 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -20,16 +20,21 @@
  */
 
 #include "ndn-cxx/security/validator-config/checker.hpp"
+#include "ndn-cxx/security/validation-policy.hpp"
+#include "ndn-cxx/security/validation-state.hpp"
 
 #include "tests/boost-test.hpp"
 #include "tests/unit/security/validator-fixture.hpp"
 #include "tests/unit/security/validator-config/common.hpp"
 
-#include <boost/mp11/algorithm.hpp>
+namespace ndn {
+namespace security {
+inline namespace v2 {
+namespace validator_config {
+namespace tests {
 
-namespace ndn::tests {
-
-using namespace ndn::security::validator_config;
+using namespace ndn::tests;
+using namespace ndn::security::tests;
 
 BOOST_AUTO_TEST_SUITE(Security)
 BOOST_AUTO_TEST_SUITE(ValidatorConfig)
@@ -40,10 +45,10 @@ class CheckerFixture : public KeyChainFixture
 public:
   CheckerFixture()
   {
-    names.emplace_back("/foo/bar");
-    names.emplace_back("/foo/bar/bar");
-    names.emplace_back("/foo");
-    names.emplace_back("/other/prefix");
+    names.push_back("/foo/bar");
+    names.push_back("/foo/bar/bar");
+    names.push_back("/foo");
+    names.push_back("/other/prefix");
   }
 
   static Name
@@ -58,6 +63,21 @@ public:
   {
     static PartialName suffix("KEY/keyid/issuer/v=1");
     return Name(name).append(suffix);
+  }
+
+  template<typename PktType, typename C>
+  static void
+  testChecker(C& checker, tlv::SignatureTypeValue sigType, const Name& pktName, const Name& klName, bool expectedOutcome)
+  {
+    BOOST_TEST_CONTEXT("pkt=" << pktName << " kl=" << klName) {
+      auto state = PktType::makeState();
+      auto result = checker.check(PktType::getType(), sigType, pktName, klName, *state);
+      BOOST_CHECK_EQUAL(bool(result), expectedOutcome);
+      BOOST_CHECK(boost::logic::indeterminate(state->getOutcome()));
+      if (!result) {
+        BOOST_CHECK_NE(result.getErrorMessage(), "");
+      }
+    }
   }
 
 public:
@@ -268,7 +288,7 @@ public:
                                              {false, false, false, true}};
 };
 
-using CheckerFixtures = boost::mp11::mp_list<
+using CheckerFixtures = boost::mpl::vector<
   NameRelationEqual,
   NameRelationIsPrefixOf,
   NameRelationIsStrictPrefixOf,
@@ -285,33 +305,19 @@ using CheckerFixtures = boost::mp11::mp_list<
 >;
 
 // Cartesian product of [DataPkt, InterestV02Pkt, InterestV03Pkt] and CheckerFixtures.
-// Each element is an mp_list<PktType, Fixture>.
-using Tests = boost::mp11::mp_product<
-  boost::mp11::mp_list,
-  boost::mp11::mp_list<DataPkt, InterestV02Pkt, InterestV03Pkt>,
-  CheckerFixtures
->;
+// Each element is a boost::mpl::pair<PktType, CheckerFixture>.
+using Tests = boost::mpl::fold<
+  CheckerFixtures,
+  boost::mpl::vector<>,
+  boost::mpl::push_back<boost::mpl::push_back<boost::mpl::push_back<boost::mpl::_1,
+    boost::mpl::pair<DataPkt, boost::mpl::_2>>,
+    boost::mpl::pair<InterestV02Pkt, boost::mpl::_2>>,
+    boost::mpl::pair<InterestV03Pkt, boost::mpl::_2>>
+>::type;
 
-template<typename PktType, typename C>
-static void
-testChecker(C& checker, tlv::SignatureTypeValue sigType, const Name& pktName, const Name& klName, bool expectedOutcome)
+BOOST_FIXTURE_TEST_CASE_TEMPLATE(Checks, T, Tests, T::second)
 {
-  BOOST_TEST_INFO_SCOPE("Packet = " << pktName);
-  BOOST_TEST_INFO_SCOPE("SignatureType = " << sigType);
-  BOOST_TEST_INFO_SCOPE("KeyLocator = " << klName);
-
-  auto state = PktType::makeState();
-  auto result = checker.check(PktType::getType(), sigType, pktName, klName, *state);
-  BOOST_TEST(bool(result) == expectedOutcome);
-  BOOST_TEST(boost::logic::indeterminate(state->getOutcome()));
-  if (!result) {
-    BOOST_TEST(!result.getErrorMessage().empty());
-  }
-}
-
-BOOST_FIXTURE_TEST_CASE_TEMPLATE(Checks, T, Tests, boost::mp11::mp_second<T>)
-{
-  using PktType = boost::mp11::mp_first<T>;
+  using PktType = typename T::first;
 
   BOOST_REQUIRE_EQUAL(this->outcomes.size(), this->names.size());
   for (size_t i = 0; i < this->names.size(); ++i) {
@@ -322,12 +328,13 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(Checks, T, Tests, boost::mp11::mp_second<T>)
       bool expectedOutcome = this->outcomes[i][j];
 
       auto klName = this->makeKeyLocatorKeyName(this->names[j]);
-      testChecker<PktType>(this->checker, tlv::SignatureSha256WithRsa, pktName, klName, expectedOutcome);
-      testChecker<PktType>(this->checker, tlv::SignatureSha256WithEcdsa, pktName, klName, false);
+      this->template testChecker<PktType>(this->checker, tlv::SignatureSha256WithRsa, pktName, klName, expectedOutcome);
+      this->template testChecker<PktType>(this->checker, tlv::SignatureSha256WithEcdsa, pktName, klName, false);
+
 
       klName = this->makeKeyLocatorCertName(this->names[j]);
-      testChecker<PktType>(this->checker, tlv::SignatureSha256WithRsa, pktName, klName, expectedOutcome);
-      testChecker<PktType>(this->checker, tlv::SignatureSha256WithEcdsa, pktName, klName, false);
+      this->template testChecker<PktType>(this->checker, tlv::SignatureSha256WithRsa, pktName, klName, expectedOutcome);
+      this->template testChecker<PktType>(this->checker, tlv::SignatureSha256WithEcdsa, pktName, klName, false);
     }
   }
 }
@@ -336,4 +343,8 @@ BOOST_AUTO_TEST_SUITE_END() // TestChecker
 BOOST_AUTO_TEST_SUITE_END() // ValidatorConfig
 BOOST_AUTO_TEST_SUITE_END() // Security
 
-} // namespace ndn::tests
+} // namespace tests
+} // namespace validator_config
+} // inline namespace v2
+} // namespace security
+} // namespace ndn

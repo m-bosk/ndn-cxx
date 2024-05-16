@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -24,15 +24,18 @@
 #include "tests/boost-test.hpp"
 #include "tests/unit/security/validator-fixture.hpp"
 
-#include <boost/mp11/list.hpp>
+#include <boost/mpl/vector.hpp>
 
-namespace ndn::tests {
+namespace ndn {
+namespace security {
+inline namespace v2 {
+namespace tests {
 
 BOOST_AUTO_TEST_SUITE(Security)
 BOOST_FIXTURE_TEST_SUITE(TestValidationPolicySimpleHierarchy,
-                         HierarchicalValidatorFixture<security::ValidationPolicySimpleHierarchy>)
+                         HierarchicalValidatorFixture<ValidationPolicySimpleHierarchy>)
 
-using Packets = boost::mp11::mp_list<InterestV03Pkt, DataPkt>;
+using Packets = boost::mpl::vector<InterestV03Pkt, DataPkt>;
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(Validate, Packet, Packets)
 {
@@ -122,4 +125,7 @@ BOOST_AUTO_TEST_CASE(CertNameInKeyLocator)
 BOOST_AUTO_TEST_SUITE_END() // TestValidationPolicySimpleHierarchy
 BOOST_AUTO_TEST_SUITE_END() // Security
 
-} // namespace ndn::tests
+} // namespace tests
+} // inline namespace v2
+} // namespace security
+} // namespace ndn

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -25,7 +25,9 @@
 #include "ndn-cxx/security/transform/transform-base.hpp"
 #include "ndn-cxx/security/security-common.hpp"
 
-namespace ndn::security::transform {
+namespace ndn {
+namespace security {
+namespace transform {
 
 class PrivateKey;
 class PublicKey;
@@ -81,6 +83,8 @@ verifierFilter(DigestAlgorithm algo, const PublicKey& key, span<const uint8_t> s
 unique_ptr<Transform>
 verifierFilter(DigestAlgorithm algo, const PrivateKey& key, span<const uint8_t> sig);
 
-} // namespace ndn::security::transform
+} // namespace transform
+} // namespace security
+} // namespace ndn
 
 #endif // NDN_CXX_SECURITY_TRANSFORM_VERIFIER_FILTER_HPP

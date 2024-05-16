@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -24,14 +24,8 @@
 
 #include "tests/test-common.hpp"
 
-namespace ndn::tests {
-
-BOOST_CONCEPT_ASSERT((WireEncodable<Interest>));
-BOOST_CONCEPT_ASSERT((WireEncodableWithEncodingBuffer<Interest>));
-BOOST_CONCEPT_ASSERT((WireDecodable<Interest>));
-static_assert(std::is_convertible_v<Interest::Error*, tlv::Error*>,
-              "Interest::Error must inherit from tlv::Error");
-BOOST_CONCEPT_ASSERT((boost::EqualityComparable<Interest::Nonce>));
+namespace ndn {
+namespace tests {
 
 BOOST_AUTO_TEST_SUITE(TestInterest)
 
@@ -63,11 +57,11 @@ BOOST_AUTO_TEST_CASE(DefaultConstructor)
   BOOST_CHECK_EQUAL(i.getForwardingHint().empty(), true);
   BOOST_CHECK_EQUAL(i.hasNonce(), false);
   BOOST_CHECK_EQUAL(i.getInterestLifetime(), DEFAULT_INTEREST_LIFETIME);
-  BOOST_CHECK(i.getHopLimit() == std::nullopt);
+  BOOST_CHECK(i.getHopLimit() == nullopt);
   BOOST_CHECK_EQUAL(i.hasApplicationParameters(), false);
   BOOST_CHECK_EQUAL(i.getApplicationParameters().isValid(), false);
   BOOST_CHECK_EQUAL(i.isParametersDigestValid(), true);
-  BOOST_CHECK(i.getSignatureInfo() == std::nullopt);
+  BOOST_CHECK(i.getSignatureInfo() == nullopt);
   BOOST_CHECK_EQUAL(i.getSignatureValue().isValid(), false);
   BOOST_CHECK_EQUAL(i.isSigned(), false);
 }
@@ -102,10 +96,10 @@ BOOST_AUTO_TEST_CASE(Basic)
   BOOST_CHECK_EQUAL(i2.hasNonce(), true);
   BOOST_CHECK_EQUAL(i2.getNonce(), 0x01020304);
   BOOST_CHECK_EQUAL(i2.getInterestLifetime(), DEFAULT_INTEREST_LIFETIME);
-  BOOST_CHECK(i2.getHopLimit() == std::nullopt);
+  BOOST_CHECK(i2.getHopLimit() == nullopt);
   BOOST_CHECK_EQUAL(i2.hasApplicationParameters(), false);
   BOOST_CHECK_EQUAL(i2.getApplicationParameters().isValid(), false);
-  BOOST_CHECK(i2.getSignatureInfo() == std::nullopt);
+  BOOST_CHECK(i2.getSignatureInfo() == nullopt);
   BOOST_CHECK_EQUAL(i2.getSignatureValue().isValid(), false);
   BOOST_CHECK_EQUAL(i2.isSigned(), false);
 }
@@ -146,10 +140,10 @@ BOOST_AUTO_TEST_CASE(WithParameters)
   BOOST_CHECK_EQUAL(i2.hasNonce(), true);
   BOOST_CHECK_EQUAL(i2.getNonce(), 0x1);
   BOOST_CHECK_EQUAL(i2.getInterestLifetime(), DEFAULT_INTEREST_LIFETIME);
-  BOOST_CHECK(i2.getHopLimit() == std::nullopt);
+  BOOST_CHECK(i2.getHopLimit() == nullopt);
   BOOST_CHECK_EQUAL(i2.hasApplicationParameters(), true);
   BOOST_CHECK_EQUAL(i2.getApplicationParameters(), "2404C0C1C2C3"_block);
-  BOOST_CHECK(i2.getSignatureInfo() == std::nullopt);
+  BOOST_CHECK(i2.getSignatureInfo() == nullopt);
   BOOST_CHECK_EQUAL(i2.getSignatureValue().isValid(), false);
   BOOST_CHECK_EQUAL(i2.isSigned(), false);
 }
@@ -347,7 +341,7 @@ BOOST_AUTO_TEST_CASE(MissingApplicationParameters)
   i.setName(Name("/A").appendParametersSha256DigestPlaceholder());
   BOOST_CHECK_EQUAL(i.isParametersDigestValid(), false);
   BOOST_CHECK_EXCEPTION(i.wireEncode(), tlv::Error, [] (const auto& e) {
-    return e.what() == "Interest without parameters must not have a ParametersSha256DigestComponent"sv;
+    return e.what() == "Interest without parameters must not have a ParametersSha256DigestComponent"s;
   });
 }
 
@@ -365,7 +359,7 @@ BOOST_AUTO_TEST_CASE(MissingParametersSha256DigestComponent)
   i.setNonce(42);
   // now the check fails while attempting to reencode
   BOOST_CHECK_EXCEPTION(i.wireEncode(), tlv::Error, [] (const auto& e) {
-    return e.what() == "Interest with parameters must have a ParametersSha256DigestComponent"sv;
+    return e.what() == "Interest with parameters must have a ParametersSha256DigestComponent"s;
   });
 }
 
@@ -394,7 +388,7 @@ BOOST_FIXTURE_TEST_SUITE(Decode, DecodeFixture)
 BOOST_AUTO_TEST_CASE(NotAnInterest)
 {
   BOOST_CHECK_EXCEPTION(i.wireDecode("4202CAFE"_block), tlv::Error, [] (const auto& e) {
-    return e.what() == "Expecting Interest element, but TLV has type 66"sv;
+    return e.what() == "Expecting Interest element, but TLV has type 66"s;
   });
 }
 
@@ -408,7 +402,7 @@ BOOST_AUTO_TEST_CASE(NameOnly)
   BOOST_CHECK_EQUAL(i.getForwardingHint().empty(), true);
   BOOST_CHECK_EQUAL(i.hasNonce(), false);
   BOOST_CHECK_EQUAL(i.getInterestLifetime(), DEFAULT_INTEREST_LIFETIME);
-  BOOST_CHECK(i.getHopLimit() == std::nullopt);
+  BOOST_CHECK(i.getHopLimit() == nullopt);
   BOOST_CHECK_EQUAL(i.hasApplicationParameters(), false);
   BOOST_CHECK_EQUAL(i.getApplicationParameters().isValid(), false);
 
@@ -428,7 +422,7 @@ BOOST_AUTO_TEST_CASE(NameCanBePrefix)
   BOOST_CHECK_EQUAL(i.getForwardingHint().empty(), true);
   BOOST_CHECK_EQUAL(i.hasNonce(), false);
   BOOST_CHECK_EQUAL(i.getInterestLifetime(), DEFAULT_INTEREST_LIFETIME);
-  BOOST_CHECK(i.getHopLimit() == std::nullopt);
+  BOOST_CHECK(i.getHopLimit() == nullopt);
   BOOST_CHECK_EQUAL(i.hasApplicationParameters(), false);
   BOOST_CHECK_EQUAL(i.getApplicationParameters().isValid(), false);
 }
@@ -503,39 +497,36 @@ BOOST_AUTO_TEST_CASE(FullWithParameters)
 
 BOOST_AUTO_TEST_CASE(CriticalElementOutOfOrder)
 {
-  BOOST_CHECK_EXCEPTION(i.wireDecode("0507 FC00 0703080149"_block),
-    tlv::Error,
-    [] (const auto& e) { return e.what() == "Name element is missing or out of order"sv; });
   BOOST_CHECK_EXCEPTION(i.wireDecode(
     "0529 2100 0703080149 1200 1E0B(1F09 1E023E15 0703080148) "
     "0A044ACB1E4C 0C0276A1 2201D6 2404C0C1C2C3"_block),
     tlv::Error,
-    [] (const auto& e) { return e.what() == "Name element is missing or out of order"sv; });
+    [] (const auto& e) { return e.what() == "Name element is missing or out of order"s; });
   BOOST_CHECK_EXCEPTION(i.wireDecode(
     "0529 0703080149 1200 2100 1E0B(1F09 1E023E15 0703080148) "
     "0A044ACB1E4C 0C0276A1 2201D6 2404C0C1C2C3"_block),
     tlv::Error,
-    [] (const auto& e) { return e.what() == "CanBePrefix element is out of order"sv; });
+    [] (const auto& e) { return e.what() == "CanBePrefix element is out of order"s; });
   BOOST_CHECK_EXCEPTION(i.wireDecode(
     "0529 0703080149 2100 1E0B(1F09 1E023E15 0703080148) 1200 "
     "0A044ACB1E4C 0C0276A1 2201D6 2404C0C1C2C3"_block),
     tlv::Error,
-    [] (const auto& e) { return e.what() == "MustBeFresh element is out of order"sv; });
+    [] (const auto& e) { return e.what() == "MustBeFresh element is out of order"s; });
   BOOST_CHECK_EXCEPTION(i.wireDecode(
     "0529 0703080149 2100 1200 0A044ACB1E4C "
     "1E0B(1F09 1E023E15 0703080148) 0C0276A1 2201D6 2404C0C1C2C3"_block),
     tlv::Error,
-    [] (const auto& e) { return e.what() == "ForwardingHint element is out of order"sv; });
+    [] (const auto& e) { return e.what() == "ForwardingHint element is out of order"s; });
   BOOST_CHECK_EXCEPTION(i.wireDecode(
     "0529 0703080149 2100 1200 1E0B(1F09 1E023E15 0703080148) "
     "0C0276A1 0A044ACB1E4C 2201D6 2404C0C1C2C3"_block),
     tlv::Error,
-    [] (const auto& e) { return e.what() == "Nonce element is out of order"sv; });
+    [] (const auto& e) { return e.what() == "Nonce element is out of order"s; });
   BOOST_CHECK_EXCEPTION(i.wireDecode(
     "0529 0703080149 2100 1200 1E0B(1F09 1E023E15 0703080148) "
     "0A044ACB1E4C 2201D6 0C0276A1 2404C0C1C2C3"_block),
     tlv::Error,
-    [] (const auto& e) { return e.what() == "InterestLifetime element is out of order"sv; });
+    [] (const auto& e) { return e.what() == "InterestLifetime element is out of order"s; });
 }
 
 BOOST_AUTO_TEST_CASE(NonCriticalElementOutOfOrder)
@@ -562,78 +553,51 @@ BOOST_AUTO_TEST_CASE(NonCriticalElementOutOfOrder)
 BOOST_AUTO_TEST_CASE(MissingName)
 {
   BOOST_CHECK_EXCEPTION(i.wireDecode("0500"_block), tlv::Error,
-                        [] (const auto& e) { return e.what() == "Name element is missing or out of order"sv; });
+                        [] (const auto& e) { return e.what() == "Name element is missing or out of order"s; });
   BOOST_CHECK_EXCEPTION(i.wireDecode("0502 1200"_block), tlv::Error,
-                        [] (const auto& e) { return e.what() == "Name element is missing or out of order"sv; });
+                        [] (const auto& e) { return e.what() == "Name element is missing or out of order"s; });
 }
 
 BOOST_AUTO_TEST_CASE(BadName)
 {
   BOOST_CHECK_EXCEPTION(i.wireDecode("0502 0700"_block), tlv::Error,
-                        [] (const auto& e) { return e.what() == "Name has zero name components"sv; });
+                        [] (const auto& e) { return e.what() == "Name has zero name components"s; });
   BOOST_CHECK_EXCEPTION(i.wireDecode("054C 074A(080149"
     "02200000000000000000000000000000000000000000000000000000000000000000"
     "080132"
     "02200000000000000000000000000000000000000000000000000000000000000000)"_block),
     tlv::Error,
-    [] (const auto& e) { return e.what() == "Name has more than one ParametersSha256DigestComponent"sv; });
+    [] (const auto& e) { return e.what() == "Name has more than one ParametersSha256DigestComponent"s; });
 }
 
 BOOST_AUTO_TEST_CASE(BadCanBePrefix)
 {
   BOOST_CHECK_EXCEPTION(i.wireDecode("0508 0703080149 210102"_block), tlv::Error,
-    [] (const auto& e) { return e.what() == "CanBePrefix element has non-zero TLV-LENGTH"sv; });
+                        [] (const auto& e) { return e.what() == "CanBePrefix element has non-zero TLV-LENGTH"s; });
 }
 
 BOOST_AUTO_TEST_CASE(BadMustBeFresh)
 {
   BOOST_CHECK_EXCEPTION(i.wireDecode("0508 0703080149 120102"_block), tlv::Error,
-    [] (const auto& e) { return e.what() == "MustBeFresh element has non-zero TLV-LENGTH"sv; });
-}
-
-BOOST_AUTO_TEST_CASE(BadForwardingHint)
-{
-  BOOST_CHECK_EXCEPTION(i.wireDecode("050C 0703080149 1E05(0703080248)"_block), tlv::Error,
-    [] (const auto& e) { return e.what() == "Invalid Name in ForwardingHint"sv; });
-  BOOST_CHECK_EXCEPTION(i.wireDecode("050E 0703080149 1E07(1F05(0703080248))"_block), tlv::Error,
-    [] (const auto& e) { return e.what() == "Invalid Name in ForwardingHint.Delegation"sv; });
-  BOOST_CHECK_EXCEPTION(i.wireDecode("0509 0703080149 1E02(2100)"_block), tlv::Error,
-    [] (const auto& e) { return e.what() == "Unexpected TLV-TYPE 33 while decoding ForwardingHint"sv; });
+                        [] (const auto& e) { return e.what() == "MustBeFresh element has non-zero TLV-LENGTH"s; });
 }
 
 BOOST_AUTO_TEST_CASE(BadNonce)
 {
   BOOST_CHECK_EXCEPTION(i.wireDecode("0507 0703080149 0A00"_block), tlv::Error,
-                        [] (const auto& e) { return e.what() == "Nonce element is malformed"sv; });
+                        [] (const auto& e) { return e.what() == "Nonce element is malformed"s; });
   BOOST_CHECK_EXCEPTION(i.wireDecode("050A 0703080149 0A0304C263"_block), tlv::Error,
-                        [] (const auto& e) { return e.what() == "Nonce element is malformed"sv; });
+                        [] (const auto& e) { return e.what() == "Nonce element is malformed"s; });
   BOOST_CHECK_EXCEPTION(i.wireDecode("050C 0703080149 0A05EFA420B262"_block), tlv::Error,
-                        [] (const auto& e) { return e.what() == "Nonce element is malformed"sv; });
-}
-
-BOOST_AUTO_TEST_CASE(LargeLifetime,
-  * ut::description("test for bug #4997"))
-{
-  i.wireDecode("050F 0703(080149) 0C087FFFFFFFFFFFFFFF"_block);
-  BOOST_CHECK_EQUAL(i.getInterestLifetime(), 0x7FFFFFFFFFFFFFFF_ms);
-
-  i.wireDecode("050F 0703(080149) 0C088000000000000000"_block);
-  BOOST_CHECK_EQUAL(i.getInterestLifetime(), time::milliseconds::max());
-
-  i.wireDecode("050F 0703(080149) 0C08FFFFFFFFFFFFFFFF"_block);
-  BOOST_CHECK_EQUAL(i.getInterestLifetime(), time::milliseconds::max());
-
-  // force re-encoding
-  i.setNonce(0x957c6554);
-  BOOST_CHECK_EQUAL(i.wireEncode(), "0515 0703(080149) 0A04957C6554 0C08FFFFFFFFFFFFFFFF"_block);
+                        [] (const auto& e) { return e.what() == "Nonce element is malformed"s; });
 }
 
 BOOST_AUTO_TEST_CASE(BadHopLimit)
 {
   BOOST_CHECK_EXCEPTION(i.wireDecode("0507 0703080149 2200"_block), tlv::Error,
-                        [] (const auto& e) { return e.what() == "HopLimit element is malformed"sv; });
+                        [] (const auto& e) { return e.what() == "HopLimit element is malformed"s; });
   BOOST_CHECK_EXCEPTION(i.wireDecode("0509 0703080149 22021356"_block), tlv::Error,
-                        [] (const auto& e) { return e.what() == "HopLimit element is malformed"sv; });
+                        [] (const auto& e) { return e.what() == "HopLimit element is malformed"s; });
 }
 
 BOOST_AUTO_TEST_CASE(BadParametersDigest)
@@ -659,13 +623,19 @@ BOOST_AUTO_TEST_CASE(BadParametersDigest)
   BOOST_CHECK_EQUAL(i.isParametersDigestValid(), false);
 }
 
+BOOST_AUTO_TEST_CASE(UnrecognizedNonCriticalElementBeforeName)
+{
+  BOOST_CHECK_EXCEPTION(i.wireDecode("0507 FC00 0703080149"_block), tlv::Error,
+                        [] (const auto& e) { return e.what() == "Name element is missing or out of order"s; });
+}
+
 BOOST_AUTO_TEST_CASE(UnrecognizedCriticalElement)
 {
   BOOST_CHECK_EXCEPTION(i.wireDecode("0507 0703080149 FB00"_block), tlv::Error,
-                        [] (const auto& e) { return e.what() == "Unrecognized element of critical type 251"sv; });
+                        [] (const auto& e) { return e.what() == "Unrecognized element of critical type 251"s; });
   // v0.2 packet with Selectors
   BOOST_CHECK_EXCEPTION(i.wireDecode("0510 0703080149 09030D0101 0A0401000000"_block), tlv::Error,
-                        [] (const auto& e) { return e.what() == "Unrecognized element of critical type 9"sv; });
+                        [] (const auto& e) { return e.what() == "Unrecognized element of critical type 9"s; });
 }
 
 BOOST_AUTO_TEST_SUITE_END() // Decode
@@ -684,7 +654,7 @@ BOOST_AUTO_TEST_CASE(MatchesData)
   BOOST_CHECK_EQUAL(interest->matchesData(*data), true);
 
   interest->setMustBeFresh(true);
-  BOOST_CHECK_EQUAL(interest->matchesData(*data), true);
+  BOOST_CHECK_EQUAL(interest->matchesData(*data), false); // violates MustBeFresh
 
   data->setFreshnessPeriod(1_s);
   BOOST_CHECK_EQUAL(interest->matchesData(*data), true);
@@ -696,13 +666,14 @@ BOOST_AUTO_TEST_CASE(MatchesData)
   interest = makeInterest(data->getFullName());
   BOOST_CHECK_EQUAL(interest->matchesData(*data), true);
 
-  setNameComponent(*interest, -1, name::Component::fromUri("sha256digest=00000000000000000000000000"
-                                                           "00000000000000000000000000000000000000"));
+  setNameComponent(*interest, -1,
+                   name::Component::fromEscapedString("sha256digest=00000000000000000000000000"
+                                                      "00000000000000000000000000000000000000"));
   BOOST_CHECK_EQUAL(interest->matchesData(*data), false); // violates implicit digest
 }
 
-BOOST_AUTO_TEST_CASE(MatchesInterest,
-  * ut::expected_failures(1))
+BOOST_AUTO_TEST_CASE_EXPECTED_FAILURES(MatchesInterest, 1)
+BOOST_AUTO_TEST_CASE(MatchesInterest)
 {
   Interest interest;
   interest.setName("/A")
@@ -818,7 +789,7 @@ BOOST_AUTO_TEST_CASE(SetNonce)
   BOOST_CHECK_EQUAL(i2.getNonce(), 2);
   BOOST_CHECK_EQUAL(i1.getNonce(), 1); // should not affect i1's Nonce (Bug #4168)
 
-  i2.setNonce(std::nullopt);
+  i2.setNonce(nullopt);
   BOOST_CHECK(!i2.hasNonce());
 }
 
@@ -881,11 +852,11 @@ BOOST_AUTO_TEST_CASE(SetInterestLifetime)
 BOOST_AUTO_TEST_CASE(SetHopLimit)
 {
   Interest i;
-  BOOST_CHECK(i.getHopLimit() == std::nullopt);
+  BOOST_CHECK(i.getHopLimit() == nullopt);
   i.setHopLimit(42);
   BOOST_CHECK(i.getHopLimit() == 42);
-  i.setHopLimit(std::nullopt);
-  BOOST_CHECK(i.getHopLimit() == std::nullopt);
+  i.setHopLimit(nullopt);
+  BOOST_CHECK(i.getHopLimit() == nullopt);
 }
 
 BOOST_AUTO_TEST_CASE(SetApplicationParameters)
@@ -905,11 +876,7 @@ BOOST_AUTO_TEST_CASE(SetApplicationParameters)
   BOOST_CHECK_EQUAL(i.getApplicationParameters(), "2401C0"_block);
   i.setApplicationParameters("8001C1"_block);
   BOOST_CHECK_EQUAL(i.getApplicationParameters(), "24038001C1"_block);
-
-  // Block overload, default constructed (invalid)
-  BOOST_CHECK_EXCEPTION(i.setApplicationParameters(Block{}), std::invalid_argument, [] (const auto& e) {
-    return e.what() == "ApplicationParameters block must be valid"sv;
-  });
+  BOOST_CHECK_THROW(i.setApplicationParameters(Block{}), std::invalid_argument);
 
   // span overload
   i.setApplicationParameters(PARAMETERS1);
@@ -917,22 +884,12 @@ BOOST_AUTO_TEST_CASE(SetApplicationParameters)
   i.setApplicationParameters(span<uint8_t>{});
   BOOST_CHECK_EQUAL(i.getApplicationParameters(), "2400"_block);
 
-  // string_view overload
-  i.setApplicationParameters("hi"sv);
-  BOOST_CHECK_EQUAL(i.getApplicationParameters(), "24026869"_block);
-  i.setApplicationParameters("");
-  BOOST_CHECK_EQUAL(i.getApplicationParameters(), "2400"_block);
-
   // ConstBufferPtr overload
   i.setApplicationParameters(make_shared<Buffer>(PARAMETERS2, sizeof(PARAMETERS2)));
   BOOST_CHECK_EQUAL(i.getApplicationParameters(), "2401C2"_block);
   i.setApplicationParameters(make_shared<Buffer>());
   BOOST_CHECK_EQUAL(i.getApplicationParameters(), "2400"_block);
-
-  // ConstBufferPtr overload, null/empty pointer (invalid)
-  BOOST_CHECK_EXCEPTION(i.setApplicationParameters(ConstBufferPtr{}), std::invalid_argument, [] (const auto& e) {
-    return e.what() == "ApplicationParameters buffer cannot be null"sv;
-  });
+  BOOST_CHECK_THROW(i.setApplicationParameters(nullptr), std::invalid_argument);
 }
 
 BOOST_AUTO_TEST_CASE(SetSignature)
@@ -941,10 +898,10 @@ BOOST_AUTO_TEST_CASE(SetSignature)
 
   Block sv1("2E04 01020304"_block);
   BOOST_CHECK_EXCEPTION(i.setSignatureValue(sv1.value_bytes()), tlv::Error, [] (const auto& e) {
-    return e.what() == "InterestSignatureInfo must be present to set InterestSignatureValue"sv;
+    return e.what() == "InterestSignatureInfo must be present to set InterestSignatureValue"s;
   });
 
-  BOOST_CHECK(i.getSignatureInfo() == std::nullopt);
+  BOOST_CHECK(i.getSignatureInfo() == nullopt);
   BOOST_CHECK_EQUAL(i.getSignatureValue().isValid(), false);
   BOOST_CHECK_EQUAL(i.isSigned(), false);
 
@@ -960,10 +917,8 @@ BOOST_AUTO_TEST_CASE(SetSignature)
   BOOST_CHECK_EQUAL(i.getSignatureValue(), sv1);
   BOOST_CHECK_EQUAL(i.isSigned(), true);
 
-  // Throws because attempting to set InterestSignatureValue to a null pointer
-  BOOST_CHECK_EXCEPTION(i.setSignatureValue(ConstBufferPtr{}), std::invalid_argument, [] (const auto& e) {
-    return e.what() == "InterestSignatureValue buffer cannot be null"sv;
-  });
+  // Throws because attempting to set InterestSignatureValue to nullptr
+  BOOST_CHECK_THROW(i.setSignatureValue(nullptr), std::invalid_argument);
   BOOST_CHECK_EQUAL(i.getSignatureValue(), sv1);
   BOOST_CHECK_EQUAL(i.isSigned(), true);
 
@@ -1055,7 +1010,7 @@ BOOST_AUTO_TEST_CASE(ParametersSha256DigestComponent)
   BOOST_CHECK(i.getSignatureInfo() == si);
 
   i.unsetApplicationParameters(); // removes ParametersSha256DigestComponent and InterestSignatureInfo
-  BOOST_CHECK(i.getSignatureInfo() == std::nullopt);
+  BOOST_CHECK(i.getSignatureInfo() == nullopt);
   BOOST_CHECK_EQUAL(i.getSignatureValue().isValid(), false);
   BOOST_CHECK_EQUAL(i.getName(), "/A/B/C");
 
@@ -1086,11 +1041,9 @@ BOOST_AUTO_TEST_CASE(ParametersSha256DigestComponent)
 
 BOOST_AUTO_TEST_CASE(ExtractSignedRanges)
 {
-  InputBuffers bufs;
-
   Interest i1;
-  BOOST_CHECK_EXCEPTION(bufs = i1.extractSignedRanges(), tlv::Error, [] (const auto& e) {
-    return e.what() == "Name has zero name components"sv;
+  BOOST_CHECK_EXCEPTION(i1.extractSignedRanges(), tlv::Error, [] (const auto& e) {
+    return e.what() == "Name has zero name components"s;
   });
   i1.setName("/test/prefix");
   i1.setNonce(0x01020304);
@@ -1166,16 +1119,16 @@ BOOST_AUTO_TEST_CASE(ExtractSignedRanges)
   // Ensure parameters range captured properly
   BOOST_CHECK_EQUAL_COLLECTIONS(ranges3.back().begin(), ranges3.back().end(), &WIRE[58], &WIRE[79]);
 
+  // Test failure with missing ParametersSha256DigestComponent
   Interest i3("/a");
-  // Failure due to missing ParametersSha256DigestComponent
-  BOOST_CHECK_EXCEPTION(bufs = i3.extractSignedRanges(), tlv::Error, [] (const auto& e) {
-    return e.what() == "Interest Name must end with a ParametersSha256DigestComponent"sv;
+  BOOST_CHECK_EXCEPTION(i3.extractSignedRanges(), tlv::Error, [] (const auto& e) {
+    return e.what() == "Interest Name must end with a ParametersSha256DigestComponent"s;
   });
 
-  i3.setApplicationParameters("");
-  // Failure due to missing InterestSignatureInfo
-  BOOST_CHECK_EXCEPTION(bufs = i3.extractSignedRanges(), tlv::Error, [] (const auto& e) {
-    return e.what() == "Interest missing InterestSignatureInfo"sv;
+  // Test failure with missing InterestSignatureInfo
+  i3.setApplicationParameters(span<uint8_t>{});
+  BOOST_CHECK_EXCEPTION(i3.extractSignedRanges(), tlv::Error, [] (const auto& e) {
+    return e.what() == "Interest missing InterestSignatureInfo"s;
   });
 }
 
@@ -1204,7 +1157,7 @@ BOOST_AUTO_TEST_CASE(ToUri)
 
   i.setCanBePrefix(false);
   i.setMustBeFresh(false);
-  i.setHopLimit(std::nullopt);
+  i.setHopLimit(nullopt);
   i.setApplicationParameters("2402CAFE"_block);
   BOOST_CHECK_EQUAL(i.toUri(),
                     "/foo/params-sha256=8621f5e8321f04104640c8d02877d7c5142cad6e203c5effda1783b1a0e476d6"
@@ -1213,4 +1166,5 @@ BOOST_AUTO_TEST_CASE(ToUri)
 
 BOOST_AUTO_TEST_SUITE_END() // TestInterest
 
-} // namespace ndn::tests
+} // namespace tests
+} // namespace ndn

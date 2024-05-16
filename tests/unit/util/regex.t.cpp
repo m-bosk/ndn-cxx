@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2021 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -32,7 +32,8 @@
 
 #include "tests/boost-test.hpp"
 
-namespace ndn::tests {
+namespace ndn {
+namespace tests {
 
 using std::string;
 
@@ -279,7 +280,7 @@ BOOST_AUTO_TEST_CASE(BackrefMatcher)
 {
   auto backRef = make_shared<RegexBackrefManager>();
   auto cm = make_shared<RegexBackrefMatcher>("(<a><b>)", backRef);
-  backRef->pushRef(std::static_pointer_cast<RegexMatcher>(cm));
+  backRef->pushRef(static_pointer_cast<RegexMatcher>(cm));
   cm->compile();
   bool res = cm->match(Name("/a/b/c"), 0, 2);
   BOOST_CHECK_EQUAL(res, true);
@@ -489,4 +490,5 @@ BOOST_AUTO_TEST_CASE(RegexBackrefManagerMemoryLeak)
 BOOST_AUTO_TEST_SUITE_END() // TestRegex
 BOOST_AUTO_TEST_SUITE_END() // Util
 
-} // namespace ndn::tests
+} // namespace tests
+} // namespace ndn

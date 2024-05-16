@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -30,15 +30,12 @@
 
 #include <boost/lexical_cast.hpp>
 
-namespace ndn::tests {
+namespace ndn {
+namespace security {
+inline namespace v2 {
+namespace tests {
 
-using ndn::security::Certificate;
-using ndn::security::ValidityPeriod;
-
-BOOST_CONCEPT_ASSERT((WireEncodable<Certificate>));
-BOOST_CONCEPT_ASSERT((WireDecodable<Certificate>));
-static_assert(std::is_convertible_v<Certificate::Error*, Data::Error*>,
-              "Certificate::Error must inherit from Data::Error");
+using namespace ndn::tests;
 
 BOOST_AUTO_TEST_SUITE(Security)
 BOOST_FIXTURE_TEST_SUITE(TestCertificate, ClockFixture)
@@ -315,8 +312,8 @@ IQCz3DHoRtKl7uZoJOgQsZP1/CGkNjlGZE3EQ+Ylwiprrw==)BASE64");
 R"TXT(Certificate Name:
   /ndn/test/identity/KEY/%C7G%3A%D6%12P%B5%F0/self/v=1650251820652
 Public Key:
-  Key Type: Unknown (22 bytes)
-  bm90IGEgdmFsaWQgcHVibGljIGtleQ==
+  Key Type: Unknown (23 bytes)
+  bm90IGEgdmFsaWQgcHVibGljIGtleQA=
 Validity:
   Not Before: 1970-01-01T00:00:00
   Not After: 2042-04-13T03:17:00
@@ -326,8 +323,9 @@ Signature Information:
   Self-Signed: yes
 )TXT");
 
+  const uint8_t notAKey[] = "not a valid public key";
   Certificate cert4(cert3);
-  cert4.setContent("not a valid public key"sv);
+  cert4.setContent(notAKey);
   BOOST_CHECK_EQUAL(boost::lexical_cast<std::string>(cert4), expected4);
 
   const std::string expected5(
@@ -368,7 +366,7 @@ Signature Information:
   sigInfo.removeCustomTlv(tlv::AdditionalDescription);
   sigInfo.addCustomTlv(makeStringBlock(tlv::ValidityPeriod, "malformed"));
   sigInfo.setSignatureType(tlv::DigestSha256);
-  sigInfo.setKeyLocator(std::nullopt);
+  sigInfo.setKeyLocator(nullopt);
   Certificate cert6(cert3);
   cert6.setSignatureInfo(sigInfo);
   BOOST_CHECK_EQUAL(boost::lexical_cast<std::string>(cert6), expected6);
@@ -376,9 +374,6 @@ Signature Information:
 
 BOOST_AUTO_TEST_CASE(Helpers)
 {
-  using ndn::security::extractIdentityFromCertName;
-  using ndn::security::extractKeyNameFromCertName;
-
   BOOST_CHECK_EQUAL(extractIdentityFromCertName("/KEY/hello/world/v=1"), "/");
   BOOST_CHECK_EQUAL(extractIdentityFromCertName("/hello/world/KEY/!/self/v=42"), "/hello/world");
 
@@ -399,4 +394,7 @@ BOOST_AUTO_TEST_CASE(Helpers)
 BOOST_AUTO_TEST_SUITE_END() // TestCertificate
 BOOST_AUTO_TEST_SUITE_END() // Security
 
-} // namespace ndn::tests
+} // namespace tests
+} // inline namespace v2
+} // namespace security
+} // namespace ndn

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -25,37 +25,42 @@
 #include "tests/key-chain-fixture.hpp"
 #include "tests/unit/clock-fixture.hpp"
 
-namespace ndn::tests {
+namespace ndn {
+namespace security {
+inline namespace v2 {
+namespace tests {
+
+using namespace ndn::tests;
 
 class CertificateCacheFixture : public ClockFixture, public KeyChainFixture
 {
 public:
   CertificateCacheFixture()
+    : certCache(10_s)
   {
     identity = m_keyChain.createIdentity("/TestCertificateCache");
     cert = identity.getDefaultKey().getDefaultCertificate();
   }
 
   void
-  checkFindByInterest(const Name& name, bool canBePrefix,
-                      const std::optional<Certificate>& expected) const
+  checkFindByInterest(const Name& name, bool canBePrefix, optional<Certificate> expected) const
   {
     Interest interest(name);
     interest.setCanBePrefix(canBePrefix);
-    BOOST_TEST_INFO_SCOPE("Interest = " << interest);
-
-    auto found = certCache.find(interest);
-    if (expected) {
-      BOOST_REQUIRE(found != nullptr);
-      BOOST_CHECK_EQUAL(found->getName(), expected->getName());
-    }
-    else {
-      BOOST_CHECK(found == nullptr);
+    BOOST_TEST_CONTEXT(interest) {
+      auto found = certCache.find(interest);
+      if (expected) {
+        BOOST_REQUIRE(found != nullptr);
+        BOOST_CHECK_EQUAL(found->getName(), expected->getName());
+      }
+      else {
+        BOOST_CHECK(found == nullptr);
+      }
     }
   }
 
 public:
-  security::CertificateCache certCache{10_s};
+  CertificateCache certCache;
   Identity identity;
   Certificate cert;
 };
@@ -90,13 +95,16 @@ BOOST_AUTO_TEST_CASE(FindByInterest)
   checkFindByInterest(cert.getIdentity(), true, cert);
   checkFindByInterest(cert.getKeyName(), true, cert);
   checkFindByInterest(cert.getName(), false, cert);
-  checkFindByInterest(Name(cert.getName()).appendVersion(), true, std::nullopt);
+  checkFindByInterest(Name(cert.getName()).appendVersion(), true, nullopt);
 
   advanceClocks(12_s);
-  checkFindByInterest(cert.getIdentity(), true, std::nullopt);
+  checkFindByInterest(cert.getIdentity(), true, nullopt);
 }
 
 BOOST_AUTO_TEST_SUITE_END() // TestCertificateCache
 BOOST_AUTO_TEST_SUITE_END() // Security
 
-} // namespace ndn::tests
+} // namespace tests
+} // inline namespace v2
+} // namespace security
+} // namespace ndn

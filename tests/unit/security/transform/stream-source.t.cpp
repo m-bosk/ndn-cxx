@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2018 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -24,11 +24,13 @@
 
 #include "tests/boost-test.hpp"
 
-#include <boost/mp11/list.hpp>
+#include <boost/mpl/integral_c.hpp>
+#include <boost/mpl/vector.hpp>
 
-namespace ndn::tests {
-
-using namespace ndn::security::transform;
+namespace ndn {
+namespace security {
+namespace transform {
+namespace tests {
 
 BOOST_AUTO_TEST_SUITE(Security)
 BOOST_AUTO_TEST_SUITE(Transform)
@@ -75,21 +77,24 @@ BOOST_AUTO_TEST_CASE(EmptyStream)
   BOOST_CHECK_EQUAL(os.str(), "");
 }
 
-using BadBits = boost::mp11::mp_list_c<std::ios_base::iostate,
-  std::ios_base::badbit,
-  std::ios_base::failbit
->;
+typedef boost::mpl::vector<
+  boost::mpl::integral_c<std::ios_base::iostate, std::ios_base::badbit>,
+  boost::mpl::integral_c<std::ios_base::iostate, std::ios_base::failbit>
+> BadBits;
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(BadStream, BadBit, BadBits)
 {
   std::stringstream is;
   is.setstate(BadBit::value);
   std::stringstream os;
-  BOOST_CHECK_THROW(streamSource(is) >> streamSink(os), Error);
+  BOOST_CHECK_THROW(streamSource(is) >> streamSink(os), transform::Error);
 }
 
 BOOST_AUTO_TEST_SUITE_END() // TestStreamSource
 BOOST_AUTO_TEST_SUITE_END() // Transform
 BOOST_AUTO_TEST_SUITE_END() // Security
 
-} // namespace ndn::tests
+} // namespace tests
+} // namespace transform
+} // namespace security
+} // namespace ndn

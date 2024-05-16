@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -28,9 +28,11 @@
 
 #include <boost/lexical_cast.hpp>
 
-namespace ndn::security::tpm {
+namespace ndn {
+namespace security {
+namespace tpm {
 
-using ndn::security::transform::PrivateKey;
+using transform::PrivateKey;
 
 class BackEndMem::Impl
 {
@@ -39,7 +41,7 @@ public:
 };
 
 BackEndMem::BackEndMem(const std::string&)
-  : m_impl(std::make_unique<Impl>())
+  : m_impl(make_unique<Impl>())
 {
 }
 
@@ -61,10 +63,10 @@ BackEndMem::doHasKey(const Name& keyName) const
 unique_ptr<KeyHandle>
 BackEndMem::doGetKeyHandle(const Name& keyName) const
 {
-  if (auto it = m_impl->keys.find(keyName); it != m_impl->keys.end()) {
-    return std::make_unique<KeyHandleMem>(it->second);
-  }
-  return nullptr;
+  auto it = m_impl->keys.find(keyName);
+  if (it == m_impl->keys.end())
+    return nullptr;
+  return make_unique<KeyHandleMem>(it->second);
 }
 
 unique_ptr<KeyHandle>
@@ -81,7 +83,7 @@ BackEndMem::doCreateKey(const Name& identityName, const KeyParams& params)
   }
 
   shared_ptr<PrivateKey> key(transform::generatePrivateKey(params).release());
-  unique_ptr<KeyHandle> keyHandle = std::make_unique<KeyHandleMem>(key);
+  unique_ptr<KeyHandle> keyHandle = make_unique<KeyHandleMem>(key);
 
   Name keyName;
   if (params.getKeyType() == KeyType::HMAC) {
@@ -113,7 +115,7 @@ BackEndMem::doExportKey(const Name& keyName, const char* pw, size_t pwLen)
 void
 BackEndMem::doImportKey(const Name& keyName, span<const uint8_t> pkcs8, const char* pw, size_t pwLen)
 {
-  auto key = std::make_shared<PrivateKey>();
+  auto key = make_shared<PrivateKey>();
   try {
     key->loadPkcs8(pkcs8, pw, pwLen);
   }
@@ -129,4 +131,6 @@ BackEndMem::doImportKey(const Name& keyName, shared_ptr<transform::PrivateKey> k
   m_impl->keys[keyName] = std::move(key);
 }
 
-} // namespace ndn::security::tpm
+} // namespace tpm
+} // namespace security
+} // namespace ndn

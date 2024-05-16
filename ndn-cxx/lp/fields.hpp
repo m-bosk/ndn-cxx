@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2019 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -22,33 +22,21 @@
 #ifndef NDN_CXX_LP_FIELDS_HPP
 #define NDN_CXX_LP_FIELDS_HPP
 
-#include "ndn-cxx/lp/cache-policy.hpp"
-#include "ndn-cxx/lp/empty-value.hpp"
-#include "ndn-cxx/lp/field.hpp"
 #include "ndn-cxx/lp/field-decl.hpp"
+
+#include "ndn-cxx/lp/cache-policy.hpp"
 #include "ndn-cxx/lp/nack-header.hpp"
 #include "ndn-cxx/lp/prefix-announcement-header.hpp"
-#include "ndn-cxx/lp/sequence.hpp"
-#include "ndn-cxx/lp/tlv.hpp"
 
-#include <boost/mp11/list.hpp>
-#include <boost/mp11/set.hpp>
+#include <boost/mpl/set.hpp>
 
-namespace ndn::lp {
-
-/**
- * \brief Declare the Fragment field.
- *
- * The fragment (i.e., payload) is the range of bytes between two provided iterators.
- * During encoding, these bytes are copied from the Buffer into the LpPacket.
- */
-typedef FieldDecl<field_location_tags::Fragment,
-                  std::pair<Buffer::const_iterator, Buffer::const_iterator>,
-                  tlv::Fragment> FragmentField;
+namespace ndn {
+namespace lp {
 
 typedef FieldDecl<field_location_tags::Header,
                   Sequence,
                   tlv::Sequence> SequenceField;
+BOOST_CONCEPT_ASSERT((Field<SequenceField>));
 
 typedef FieldDecl<field_location_tags::Header,
                   uint64_t,
@@ -56,6 +44,7 @@ typedef FieldDecl<field_location_tags::Header,
                   false,
                   NonNegativeIntegerTag,
                   NonNegativeIntegerTag> FragIndexField;
+BOOST_CONCEPT_ASSERT((Field<FragIndexField>));
 
 typedef FieldDecl<field_location_tags::Header,
                   uint64_t,
@@ -63,21 +52,17 @@ typedef FieldDecl<field_location_tags::Header,
                   false,
                   NonNegativeIntegerTag,
                   NonNegativeIntegerTag> FragCountField;
+BOOST_CONCEPT_ASSERT((Field<FragCountField>));
 
 typedef FieldDecl<field_location_tags::Header,
                   std::pair<Buffer::const_iterator, Buffer::const_iterator>,
                   tlv::PitToken> PitTokenField;
+BOOST_CONCEPT_ASSERT((Field<PitTokenField>));
 
 typedef FieldDecl<field_location_tags::Header,
                   NackHeader,
                   tlv::Nack> NackField;
-
-typedef FieldDecl<field_location_tags::Header,
-                  uint64_t,
-                  tlv::IncomingFaceId,
-                  false,
-                  NonNegativeIntegerTag,
-                  NonNegativeIntegerTag> IncomingFaceIdField;
+BOOST_CONCEPT_ASSERT((Field<NackField>));
 
 typedef FieldDecl<field_location_tags::Header,
                   uint64_t,
@@ -85,10 +70,20 @@ typedef FieldDecl<field_location_tags::Header,
                   false,
                   NonNegativeIntegerTag,
                   NonNegativeIntegerTag> NextHopFaceIdField;
+BOOST_CONCEPT_ASSERT((Field<NextHopFaceIdField>));
 
 typedef FieldDecl<field_location_tags::Header,
                   CachePolicy,
                   tlv::CachePolicy> CachePolicyField;
+BOOST_CONCEPT_ASSERT((Field<CachePolicyField>));
+
+typedef FieldDecl<field_location_tags::Header,
+                  uint64_t,
+                  tlv::IncomingFaceId,
+                  false,
+                  NonNegativeIntegerTag,
+                  NonNegativeIntegerTag> IncomingFaceIdField;
+BOOST_CONCEPT_ASSERT((Field<IncomingFaceIdField>));
 
 typedef FieldDecl<field_location_tags::Header,
                   uint64_t,
@@ -96,28 +91,42 @@ typedef FieldDecl<field_location_tags::Header,
                   false,
                   NonNegativeIntegerTag,
                   NonNegativeIntegerTag> CongestionMarkField;
+BOOST_CONCEPT_ASSERT((Field<CongestionMarkField>));
 
 typedef FieldDecl<field_location_tags::Header,
                   Sequence,
                   tlv::Ack,
                   true> AckField;
+BOOST_CONCEPT_ASSERT((Field<AckField>));
 
 typedef FieldDecl<field_location_tags::Header,
                   Sequence,
                   tlv::TxSequence> TxSequenceField;
+BOOST_CONCEPT_ASSERT((Field<TxSequenceField>));
 
 typedef FieldDecl<field_location_tags::Header,
                   EmptyValue,
                   tlv::NonDiscovery> NonDiscoveryField;
+BOOST_CONCEPT_ASSERT((Field<NonDiscoveryField>));
 
 typedef FieldDecl<field_location_tags::Header,
                   PrefixAnnouncementHeader,
                   tlv::PrefixAnnouncement> PrefixAnnouncementField;
+BOOST_CONCEPT_ASSERT((Field<PrefixAnnouncementField>));
 
-/**
- * \brief Set of all field declarations.
+/** \brief Declare the Fragment field.
+ *
+ *  The fragment (i.e. payload) is the bytes between two provided iterators. During encoding,
+ *  these bytes are copied from the Buffer into the LpPacket.
  */
-using FieldSet = boost::mp11::mp_list<
+typedef FieldDecl<field_location_tags::Fragment,
+                  std::pair<Buffer::const_iterator, Buffer::const_iterator>,
+                  tlv::Fragment> FragmentField;
+BOOST_CONCEPT_ASSERT((Field<FragmentField>));
+
+/** \brief Set of all field declarations.
+ */
+typedef boost::mpl::set<
   FragmentField,
   SequenceField,
   FragIndexField,
@@ -132,9 +141,9 @@ using FieldSet = boost::mp11::mp_list<
   TxSequenceField,
   NonDiscoveryField,
   PrefixAnnouncementField
->;
-static_assert(boost::mp11::mp_is_set<FieldSet>());
+  > FieldSet;
 
-} // namespace ndn::lp
+} // namespace lp
+} // namespace ndn
 
 #endif // NDN_CXX_LP_FIELDS_HPP

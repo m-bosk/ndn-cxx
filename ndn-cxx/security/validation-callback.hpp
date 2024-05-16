@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -26,7 +26,9 @@
 #include "ndn-cxx/interest.hpp"
 #include "ndn-cxx/security/validation-error.hpp"
 
-namespace ndn::security {
+namespace ndn {
+namespace security {
+inline namespace v2 {
 
 /**
  * @brief Callback to report a successful Data validation.
@@ -48,6 +50,8 @@ using InterestValidationSuccessCallback = std::function<void(const Interest&)>;
  */
 using InterestValidationFailureCallback = std::function<void(const Interest&, const ValidationError&)>;
 
-} // namespace ndn::security
+} // inline namespace v2
+} // namespace security
+} // namespace ndn
 
 #endif // NDN_CXX_SECURITY_VALIDATION_CALLBACK_HPP

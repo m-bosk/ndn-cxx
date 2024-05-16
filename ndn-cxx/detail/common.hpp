@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2021 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -19,11 +19,10 @@
  * See AUTHORS.md for complete list of ndn-cxx authors and contributors.
  */
 
-/**
- * \file
- * \brief Common includes and macros used throughout the library.
- * \warning This file is an implementation detail of the ndn-cxx library.
- *          Aliases imported in this file MUST NOT be used outside of ndn-cxx.
+/** \file
+ *  \brief Common includes and macros used throughout the library.
+ *  \warning This file is an implementation detail of the ndn-cxx library.
+ *           Aliases imported in this file MUST NOT be used outside of ndn-cxx.
  */
 
 #ifndef NDN_CXX_DETAIL_COMMON_HPP
@@ -31,14 +30,14 @@
 
 #include "ndn-cxx/detail/config.hpp"
 
-// require C++17
-#if __cplusplus < 201703L
-#error "ndn-cxx applications must be compiled using the C++17 standard (-std=c++17)"
+// require C++14
+#if __cplusplus < 201402L
+#error "ndn-cxx applications must be compiled using the C++14 standard (-std=c++14)"
 #endif
 
 // ndn-cxx specific macros declared in this and other headers must have NDN_CXX_ prefix
 // to avoid conflicts with other projects that include ndn-cxx headers.
-#ifdef NDN_CXX_WITH_TESTS
+#ifdef NDN_CXX_HAVE_TESTS
 #define NDN_CXX_VIRTUAL_WITH_TESTS virtual
 #define NDN_CXX_PUBLIC_WITH_TESTS_ELSE_PROTECTED public
 #define NDN_CXX_PUBLIC_WITH_TESTS_ELSE_PRIVATE public
@@ -50,14 +49,15 @@
 #define NDN_CXX_PROTECTED_WITH_TESTS_ELSE_PRIVATE private
 #endif
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <iosfwd>
+#include <limits>
 #include <memory>
 #include <stdexcept>
 #include <string>
-#include <string_view>
 #include <type_traits>
 #include <utility>
 
@@ -69,9 +69,13 @@ using std::weak_ptr;
 using std::make_shared;
 using std::make_unique;
 
-using std::to_string;
+using std::static_pointer_cast;
+using std::dynamic_pointer_cast;
+using std::const_pointer_cast;
+
+using std::function;
+
 using namespace std::string_literals;
-using namespace std::string_view_literals;
 
 } // namespace ndn
 
@@ -108,6 +112,7 @@ NDN_CXX_SPECIALIZE_BOOST_IS_PLACEHOLDER_FOR_STD_PLACEHOLDER(9)
 /// \endcond
 
 #include <boost/assert.hpp>
+#include <boost/concept_check.hpp>
 #include <boost/core/noncopyable.hpp>
 
 namespace ndn {

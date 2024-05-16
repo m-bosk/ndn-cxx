@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -25,7 +25,8 @@
 #include "ndn-cxx/encoding/block.hpp"
 #include "ndn-cxx/encoding/nfd-constants.hpp"
 
-namespace ndn::nfd {
+namespace ndn {
+namespace nfd {
 
 /**
  * \ingroup management
@@ -169,20 +170,28 @@ public:
   }
 
 protected:
-  FaceTraits() = default;
+  FaceTraits()
+    : m_faceId(INVALID_FACE_ID)
+    , m_faceScope(FACE_SCOPE_NON_LOCAL)
+    , m_facePersistency(FACE_PERSISTENCY_PERSISTENT)
+    , m_linkType(LINK_TYPE_POINT_TO_POINT)
+    , m_flags(0)
+  {
+  }
 
 protected:
-  uint64_t m_faceId = INVALID_FACE_ID;
+  uint64_t m_faceId;
   std::string m_remoteUri;
   std::string m_localUri;
-  FaceScope m_faceScope = FACE_SCOPE_NON_LOCAL;
-  FacePersistency  m_facePersistency = FACE_PERSISTENCY_PERSISTENT;
-  LinkType m_linkType = LINK_TYPE_POINT_TO_POINT;
-  uint64_t m_flags = 0;
+  FaceScope m_faceScope;
+  FacePersistency  m_facePersistency;
+  LinkType m_linkType;
+  uint64_t m_flags;
 
   mutable Block m_wire;
 };
 
-} // namespace ndn::nfd
+} // namespace nfd
+} // namespace ndn
 
 #endif // NDN_CXX_MGMT_NFD_FACE_TRAITS_HPP

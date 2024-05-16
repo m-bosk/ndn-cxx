@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -35,8 +35,7 @@ class StreamTransportImpl;
 
 } // namespace detail
 
-/**
- * \brief A transport that uses a Unix stream socket for communication.
+/** \brief A transport using Unix stream socket.
  */
 class UnixTransport : public Transport
 {
@@ -47,7 +46,7 @@ public:
   ~UnixTransport() override;
 
   void
-  connect(boost::asio::io_context& ioCtx, ReceiveCallback receiveCallback) override;
+  connect(boost::asio::io_service& ioService, ReceiveCallback receiveCallback) override;
 
   void
   close() override;
@@ -61,9 +60,8 @@ public:
   void
   send(const Block& wire) override;
 
-  /**
-   * \brief Create transport with parameters defined in URI.
-   * \throw Transport::Error incorrect URI or unsupported protocol is specified
+  /** \brief Create transport with parameters defined in URI.
+   *  \throw Transport::Error incorrect URI or unsupported protocol is specified
    */
   static shared_ptr<UnixTransport>
   create(const std::string& uri);

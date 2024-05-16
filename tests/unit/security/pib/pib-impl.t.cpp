@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -21,19 +21,24 @@
 
 #include "ndn-cxx/security/pib/impl/pib-memory.hpp"
 #include "ndn-cxx/security/pib/impl/pib-sqlite3.hpp"
+#include "ndn-cxx/security/security-common.hpp"
 
 #include "tests/boost-test.hpp"
 #include "tests/unit/security/pib/pib-data-fixture.hpp"
 
 #include <boost/filesystem.hpp>
-#include <boost/mp11/list.hpp>
+#include <boost/mpl/vector.hpp>
 
-namespace ndn::tests {
-
-using namespace ndn::security::pib;
+namespace ndn {
+namespace security {
+namespace pib {
+namespace tests {
 
 BOOST_AUTO_TEST_SUITE(Security)
+BOOST_AUTO_TEST_SUITE(Pib)
 BOOST_AUTO_TEST_SUITE(TestPibImpl)
+
+using pib::Pib;
 
 class PibMemoryFixture : public PibDataFixture
 {
@@ -56,7 +61,7 @@ public:
   PibSqlite3 pib{m_path.string()};
 };
 
-using PibImpls = boost::mp11::mp_list<PibMemoryFixture, PibSqlite3Fixture>;
+using PibImpls = boost::mpl::vector<PibMemoryFixture, PibSqlite3Fixture>;
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(TpmLocator, T, PibImpls, T)
 {
@@ -331,6 +336,10 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(Overwrite, T, PibImpls, T)
 }
 
 BOOST_AUTO_TEST_SUITE_END() // TestPibImpl
+BOOST_AUTO_TEST_SUITE_END() // Pib
 BOOST_AUTO_TEST_SUITE_END() // Security
 
-} // namespace ndn::tests
+} // namespace tests
+} // namespace pib
+} // namespace security
+} // namespace ndn

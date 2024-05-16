@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -34,9 +34,9 @@
 #include <boost/iostreams/device/array.hpp>
 #include <boost/lexical_cast.hpp>
 
-namespace ndn::tests {
-
-using namespace ndn::tlv;
+namespace ndn {
+namespace tlv {
+namespace tests {
 
 BOOST_AUTO_TEST_SUITE(Encoding)
 BOOST_AUTO_TEST_SUITE(TestTlv)
@@ -59,9 +59,11 @@ using ArrayStream = boost::iostreams::stream<boost::iostreams::array_source>;
 using StreamIterator = std::istream_iterator<uint8_t>;
 
 #define ASSERT_READ_NUMBER_IS_FAST(T) \
-  static_assert(ndn::tlv::detail::IsContiguousIterator<T>, #T " is not fast")
+  static_assert(std::is_base_of<detail::ReadNumberFast<T>, detail::ReadNumber<T>>::value, \
+                # T " should use ReadNumberFast")
 #define ASSERT_READ_NUMBER_IS_SLOW(T) \
-  static_assert(!ndn::tlv::detail::IsContiguousIterator<T>, #T " is not slow")
+  static_assert(std::is_base_of<detail::ReadNumberSlow<T>, detail::ReadNumber<T>>::value, \
+                # T " should use ReadNumberSlow")
 
 ASSERT_READ_NUMBER_IS_FAST(const uint8_t*);
 ASSERT_READ_NUMBER_IS_FAST(uint8_t*);
@@ -78,8 +80,6 @@ ASSERT_READ_NUMBER_IS_FAST(Uint8Array::const_iterator);
 ASSERT_READ_NUMBER_IS_FAST(Uint8Array::iterator);
 using CharArray = std::array<char, 87>;
 ASSERT_READ_NUMBER_IS_FAST(CharArray::iterator);
-ASSERT_READ_NUMBER_IS_FAST(span<const uint8_t>::iterator);
-ASSERT_READ_NUMBER_IS_FAST(span<uint8_t>::iterator);
 ASSERT_READ_NUMBER_IS_FAST(std::string::const_iterator);
 ASSERT_READ_NUMBER_IS_FAST(std::string::iterator);
 ASSERT_READ_NUMBER_IS_FAST(Buffer::const_iterator);
@@ -605,4 +605,6 @@ BOOST_AUTO_TEST_SUITE_END() // OutputOperators
 BOOST_AUTO_TEST_SUITE_END() // TestTlv
 BOOST_AUTO_TEST_SUITE_END() // Encoding
 
-} // namespace ndn::tests
+} // namespace tests
+} // namespace tlv
+} // namespace ndn

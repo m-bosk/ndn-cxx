@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -24,34 +24,31 @@
 
 #include "ndn-cxx/detail/common.hpp"
 
-#include <boost/operators.hpp>
-
-namespace ndn::signal {
+namespace ndn {
+namespace util {
+namespace signal {
 
 using DisconnectFunction = std::function<void()>;
 
-/**
- * \brief Represents a connection to a signal.
- * \note This type is copyable. Any copy can be used to disconnect.
+/** \brief Represents a connection to a signal.
+ *  \note This type is copyable. Any copy can be used to disconnect.
  */
-class Connection : private boost::equality_comparable<Connection>
+class Connection
 {
 public:
   constexpr
   Connection() noexcept = default;
 
-  /**
-   * \brief Disconnects from the signal.
-   * \note If the connection is already disconnected, or if the Signal has been destructed,
-   *       this operation has no effect.
-   * \warning During signal emission, attempting to disconnect a connection other than
-   *          the executing handler's own connection results in undefined behavior.
+  /** \brief Disconnects from the signal.
+   *  \note If the connection is already disconnected, or if the Signal has been destructed,
+   *        this operation has no effect.
+   *  \warning During signal emission, attempting to disconnect a connection other than
+   *           the executing handler's own connection results in undefined behavior.
    */
   void
   disconnect();
 
-  /**
-   * \brief Check if connected to the signal.
+  /** \brief Check if connected to the signal.
    */
   bool
   isConnected() const noexcept
@@ -60,22 +57,22 @@ public:
   }
 
 private:
+  /** \param disconnect weak_ptr to a function that disconnects the handler
+   */
   explicit
   Connection(weak_ptr<DisconnectFunction> disconnect) noexcept;
 
-  template<typename Owner, typename... TArgs>
+  template<typename Owner, typename ...TArgs>
   friend class Signal;
 
-private: // non-member operators
+private:
   // NOTE: the following "hidden friend" operators are available via
   //       argument-dependent lookup only and must be defined inline.
-  // boost::equality_comparable provides != operator.
 
-  /**
-   * \brief Compare for equality.
+  /** \brief Compare for equality.
    *
-   * Two connections are equal if they both refer to the same connection that isn't disconnected,
-   * or they are both disconnected.
+   *  Two connections are equal if they both refer to the same connection that isn't disconnected,
+   *  or they are both disconnected.
    */
   friend bool
   operator==(const Connection& lhs, const Connection& rhs) noexcept
@@ -83,6 +80,12 @@ private: // non-member operators
     return (!lhs.isConnected() && !rhs.isConnected()) ||
         (!lhs.m_disconnect.owner_before(rhs.m_disconnect) &&
          !rhs.m_disconnect.owner_before(lhs.m_disconnect));
+  }
+
+  friend bool
+  operator!=(const Connection& lhs, const Connection& rhs) noexcept
+  {
+    return !(lhs == rhs);
   }
 
 private:
@@ -96,6 +99,8 @@ private:
   weak_ptr<DisconnectFunction> m_disconnect;
 };
 
-} // namespace ndn::signal
+} // namespace signal
+} // namespace util
+} // namespace ndn
 
 #endif // NDN_CXX_UTIL_SIGNAL_CONNECTION_HPP

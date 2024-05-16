@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2020 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -24,7 +24,8 @@
 
 #include "ndn-cxx/util/time-unit-test-clock.hpp"
 
-namespace ndn::tests {
+namespace ndn {
+namespace tests {
 
 /** \brief A test fixture that overrides steady clock and system clock.
  */
@@ -74,10 +75,11 @@ private:
   }
 
 protected:
-  std::shared_ptr<time::UnitTestSteadyClock> m_steadyClock;
-  std::shared_ptr<time::UnitTestSystemClock> m_systemClock;
+  shared_ptr<time::UnitTestSteadyClock> m_steadyClock;
+  shared_ptr<time::UnitTestSystemClock> m_systemClock;
 };
 
-} // namespace ndn::tests
+} // namespace tests
+} // namespace ndn
 
 #endif // NDN_CXX_TESTS_UNIT_CLOCK_FIXTURE_HPP

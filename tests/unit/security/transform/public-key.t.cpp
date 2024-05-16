@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -28,13 +28,14 @@
 
 #include "tests/boost-test.hpp"
 
-#include <boost/mp11/list.hpp>
+#include <boost/mpl/vector.hpp>
 
 #include <sstream>
 
-namespace ndn::tests {
-
-using namespace ndn::security::transform;
+namespace ndn {
+namespace security {
+namespace transform {
+namespace tests {
 
 BOOST_AUTO_TEST_SUITE(Security)
 BOOST_AUTO_TEST_SUITE(Transform)
@@ -53,6 +54,8 @@ struct RsaKeyTestData
       "9rH58ynaAix0tcR/nBMRLUX+e3rURHg6UbSjJbdb9qmKM1fTGHKUzL/5pMG6uBU0\n"
       "ywIDAQAB\n";
 };
+constexpr KeyType RsaKeyTestData::type;
+constexpr size_t RsaKeyTestData::size;
 
 struct EcKeyTestData
 {
@@ -67,8 +70,10 @@ struct EcKeyTestData
       "//////////+85vqtpxeehPO5ysL8YyVRAgEBA0IABGhuFibgwLdEJBDOLdvSg1Hc\n"
       "5EJTDxq6ls5FoYLfThp8HOjuwGSz0qw8ocMqyku1y0V5peQ4rEPd0bwcpZd9svA=\n";
 };
+constexpr KeyType EcKeyTestData::type;
+constexpr size_t EcKeyTestData::size;
 
-using KeyTestDataSets = boost::mp11::mp_list<RsaKeyTestData, EcKeyTestData>;
+using KeyTestDataSets = boost::mpl::vector<RsaKeyTestData, EcKeyTestData>;
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(LoadAndSave, T, KeyTestDataSets)
 {
@@ -150,4 +155,7 @@ BOOST_AUTO_TEST_SUITE_END() // TestPublicKey
 BOOST_AUTO_TEST_SUITE_END() // Transform
 BOOST_AUTO_TEST_SUITE_END() // Security
 
-} // namespace ndn::tests
+} // namespace tests
+} // namespace transform
+} // namespace security
+} // namespace ndn

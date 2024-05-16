@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2021 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -24,7 +24,9 @@
 
 #include "ndn-cxx/security/transform/transform-base.hpp"
 
-namespace ndn::security::transform {
+namespace ndn {
+namespace security {
+namespace transform {
 
 /**
  * @brief A sink which outputs only one boolean value.
@@ -39,10 +41,7 @@ public:
    * @brief Create a bool sink whose output will be stored in @p value.
    */
   explicit
-  BoolSink(bool& value)
-    : m_value(value)
-  {
-  }
+  BoolSink(bool& value);
 
 private:
   /**
@@ -54,22 +53,21 @@ private:
   doWrite(span<const uint8_t> buf) final;
 
   /**
-   * @brief Finalize sink processing.
+   * @brief Finalize sink processing
    */
   void
-  doEnd() final
-  {
-    // nothing to do
-  }
+  doEnd() final;
 
 private:
-  bool m_hasValue = false;
+  bool m_hasValue;
   bool& m_value;
 };
 
 unique_ptr<Sink>
 boolSink(bool& value);
 
-} // namespace ndn::security::transform
+} // namespace transform
+} // namespace security
+} // namespace ndn
 
 #endif // NDN_CXX_SECURITY_TRANSFORM_BOOL_SINK_HPP

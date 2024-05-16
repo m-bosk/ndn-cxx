@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -28,50 +28,52 @@
 #include "tests/test-common.hpp"
 #include "tests/unit/security/validator-fixture.hpp"
 
-#include <boost/mp11/list.hpp>
+#include <boost/mpl/vector.hpp>
 
-namespace ndn::tests {
+namespace ndn {
+namespace security {
+inline namespace v2 {
+namespace tests {
 
-using namespace ndn::security;
+using namespace ndn::tests;
 
 BOOST_AUTO_TEST_SUITE(Security)
 
 struct CommandInterestDefaultOptions
 {
-  static auto
+  static ValidationPolicyCommandInterest::Options
   getOptions()
   {
-    return ValidationPolicyCommandInterest::Options{};
+    return {};
   }
 };
 
-template<class ValidationOptions, class InnerPolicy>
+template<class T, class InnerPolicy>
 class CommandInterestPolicyWrapper : public ValidationPolicyCommandInterest
 {
 public:
   CommandInterestPolicyWrapper()
-    : ValidationPolicyCommandInterest(make_unique<InnerPolicy>(), ValidationOptions::getOptions())
+    : ValidationPolicyCommandInterest(make_unique<InnerPolicy>(), T::getOptions())
   {
   }
 };
 
-template<class ValidationOptions = CommandInterestDefaultOptions,
-         class InnerPolicy = ValidationPolicySimpleHierarchy>
+template<class T, class InnerPolicy = ValidationPolicySimpleHierarchy>
 class ValidationPolicyCommandInterestFixture
-  : public HierarchicalValidatorFixture<CommandInterestPolicyWrapper<ValidationOptions, InnerPolicy>>
+  : public HierarchicalValidatorFixture<CommandInterestPolicyWrapper<T, InnerPolicy>>
 {
 protected:
   Interest
-  makeCommandInterest(const Identity& id, SignedInterestFormat format = SignedInterestFormat::V02)
+  makeCommandInterest(const Identity& identity, SignedInterestFormat format = SignedInterestFormat::V02)
   {
-    Name name = id.getName();
+    Name name = identity.getName();
     name.append("CMD");
     switch (format) {
       case SignedInterestFormat::V02:
-        return m_signer.makeCommandInterest(name, signingByIdentity(id));
+        return m_signer.makeCommandInterest(name, signingByIdentity(identity));
       case SignedInterestFormat::V03: {
         Interest interest(name);
-        m_signer.makeSignedInterest(interest, signingByIdentity(id));
+        m_signer.makeSignedInterest(interest, signingByIdentity(identity));
         return interest;
       }
     }
@@ -82,12 +84,13 @@ protected:
   InterestSigner m_signer{this->m_keyChain};
 };
 
-BOOST_FIXTURE_TEST_SUITE(TestValidationPolicyCommandInterest, ValidationPolicyCommandInterestFixture<>)
+BOOST_FIXTURE_TEST_SUITE(TestValidationPolicyCommandInterest,
+                         ValidationPolicyCommandInterestFixture<CommandInterestDefaultOptions>)
 
 template<int secs>
 struct GracePeriodSeconds
 {
-  static auto
+  static ValidationPolicyCommandInterest::Options
   getOptions()
   {
     ValidationPolicyCommandInterest::Options options;
@@ -141,8 +144,7 @@ BOOST_AUTO_TEST_CASE(DataPassthrough)
 using ValidationPolicyAcceptAllCommands = ValidationPolicyCommandInterestFixture<CommandInterestDefaultOptions,
                                                                                  ValidationPolicyAcceptAll>;
 
-BOOST_FIXTURE_TEST_CASE(SignedWithSha256, ValidationPolicyAcceptAllCommands,
-  * ut::description("test for bug #4635"))
+BOOST_FIXTURE_TEST_CASE(SignedWithSha256, ValidationPolicyAcceptAllCommands) // Bug 4635
 {
   auto i1 = m_signer.makeCommandInterest("/hello/world/CMD", signingWithSha256());
   VALIDATE_SUCCESS(i1, "Should succeed (within grace period)");
@@ -196,7 +198,7 @@ BOOST_AUTO_TEST_CASE(BadTimestampV03)
 {
   auto i1 = makeCommandInterest(identity, SignedInterestFormat::V03);
   auto si = i1.getSignatureInfo().value();
-  si.setTime(std::nullopt);
+  si.setTime(nullopt);
   i1.setSignatureInfo(si);
   VALIDATE_FAILURE(i1, "Should fail (timestamp is missing)");
   BOOST_TEST(lastError.getCode() == ValidationError::POLICY_ERROR);
@@ -216,7 +218,7 @@ BOOST_AUTO_TEST_CASE(MissingKeyLocatorV03)
 {
   auto i1 = makeCommandInterest(identity, SignedInterestFormat::V03);
   auto si = i1.getSignatureInfo().value();
-  si.setKeyLocator(std::nullopt);
+  si.setKeyLocator(nullopt);
   i1.setSignatureInfo(si);
   VALIDATE_FAILURE(i1, "Should fail (missing KeyLocator)");
   BOOST_TEST(lastError.getCode() == ValidationError::INVALID_KEY_LOCATOR);
@@ -338,22 +340,12 @@ BOOST_AUTO_TEST_CASE(TimestampReorderNegative)
 
 BOOST_AUTO_TEST_SUITE_END() // Rejects
 
-template<ssize_t count>
-struct MaxRecords
-{
-  static auto
-  getOptions()
-  {
-    ValidationPolicyCommandInterest::Options options;
-    options.gracePeriod = 15_s;
-    options.maxRecords = count;
-    return options;
-  }
-};
-
 BOOST_AUTO_TEST_SUITE(Options)
 
-using NonPositiveGracePeriods = boost::mp11::mp_list<GracePeriodSeconds<0>, GracePeriodSeconds<-1>>;
+using NonPositiveGracePeriods = boost::mpl::vector<
+  GracePeriodSeconds<0>,
+  GracePeriodSeconds<-1>
+>;
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(GraceNonPositive, GracePeriod, NonPositiveGracePeriods,
                                  ValidationPolicyCommandInterestFixture<GracePeriod>)
@@ -373,7 +365,20 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(GraceNonPositive, GracePeriod, NonPositiveGrace
   BOOST_TEST(this->lastError.getCode() == ValidationError::POLICY_ERROR);
 }
 
-BOOST_FIXTURE_TEST_CASE(LimitedRecords, ValidationPolicyCommandInterestFixture<MaxRecords<3>>)
+class LimitedRecordsOptions
+{
+public:
+  static ValidationPolicyCommandInterest::Options
+  getOptions()
+  {
+    ValidationPolicyCommandInterest::Options options;
+    options.gracePeriod = 15_s;
+    options.maxRecords = 3;
+    return options;
+  }
+};
+
+BOOST_FIXTURE_TEST_CASE(LimitedRecords, ValidationPolicyCommandInterestFixture<LimitedRecordsOptions>)
 {
   Identity id1 = this->addSubCertificate("/Security/ValidatorFixture/Sub1", identity);
   this->cache.insert(id1.getDefaultKey().getDefaultCertificate());
@@ -411,7 +416,20 @@ BOOST_FIXTURE_TEST_CASE(LimitedRecords, ValidationPolicyCommandInterestFixture<M
   VALIDATE_SUCCESS(i01, "Should succeed despite timestamp is reordered, because record has been evicted");
 }
 
-BOOST_FIXTURE_TEST_CASE(UnlimitedRecords, ValidationPolicyCommandInterestFixture<MaxRecords<-1>>)
+class UnlimitedRecordsOptions
+{
+public:
+  static ValidationPolicyCommandInterest::Options
+  getOptions()
+  {
+    ValidationPolicyCommandInterest::Options options;
+    options.gracePeriod = 15_s;
+    options.maxRecords = -1;
+    return options;
+  }
+};
+
+BOOST_FIXTURE_TEST_CASE(UnlimitedRecords, ValidationPolicyCommandInterestFixture<UnlimitedRecordsOptions>)
 {
   std::vector<Identity> identities;
   for (size_t i = 0; i < 20; ++i) {
@@ -432,7 +450,20 @@ BOOST_FIXTURE_TEST_CASE(UnlimitedRecords, ValidationPolicyCommandInterestFixture
   BOOST_TEST(lastError.getCode() == ValidationError::POLICY_ERROR);
 }
 
-BOOST_FIXTURE_TEST_CASE(ZeroRecords, ValidationPolicyCommandInterestFixture<MaxRecords<0>>)
+class ZeroRecordsOptions
+{
+public:
+  static ValidationPolicyCommandInterest::Options
+  getOptions()
+  {
+    ValidationPolicyCommandInterest::Options options;
+    options.gracePeriod = 15_s;
+    options.maxRecords = 0;
+    return options;
+  }
+};
+
+BOOST_FIXTURE_TEST_CASE(ZeroRecords, ValidationPolicyCommandInterestFixture<ZeroRecordsOptions>)
 {
   auto i1 = makeCommandInterest(identity); // signed at 0s
   advanceClocks(1_s);
@@ -443,9 +474,10 @@ BOOST_FIXTURE_TEST_CASE(ZeroRecords, ValidationPolicyCommandInterestFixture<MaxR
   VALIDATE_SUCCESS(i1, "Should succeed despite timestamp is reordered, because record isn't kept");
 }
 
-struct LimitedRecordLifetimeOptions
+class LimitedRecordLifetimeOptions
 {
-  static auto
+public:
+  static ValidationPolicyCommandInterest::Options
   getOptions()
   {
     ValidationPolicyCommandInterest::Options options;
@@ -474,14 +506,15 @@ BOOST_FIXTURE_TEST_CASE(LimitedRecordLifetime, ValidationPolicyCommandInterestFi
   VALIDATE_SUCCESS(i2, "Should succeed despite timestamp is reordered, because record has been expired");
 }
 
-struct ZeroRecordLifetimeOptions
+class ZeroRecordLifetimeOptions
 {
-  static auto
+public:
+  static ValidationPolicyCommandInterest::Options
   getOptions()
   {
     ValidationPolicyCommandInterest::Options options;
     options.gracePeriod = 15_s;
-    options.recordLifetime = 0_s;
+    options.recordLifetime = time::seconds::zero();
     return options;
   }
 };
@@ -502,4 +535,7 @@ BOOST_AUTO_TEST_SUITE_END() // Options
 BOOST_AUTO_TEST_SUITE_END() // TestValidationPolicyCommandInterest
 BOOST_AUTO_TEST_SUITE_END() // Security
 
-} // namespace ndn::tests
+} // namespace tests
+} // inline namespace v2
+} // namespace security
+} // namespace ndn

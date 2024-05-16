@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -23,7 +23,10 @@
 #include "ndn-cxx/security/pib/pib-impl.hpp"
 #include "ndn-cxx/util/logger.hpp"
 
-namespace ndn::security::pib {
+namespace ndn {
+namespace security {
+namespace pib {
+namespace detail {
 
 NDN_LOG_INIT(ndn.security.Identity);
 
@@ -83,4 +86,7 @@ IdentityImpl::getDefaultKey() const
   return m_defaultKey;
 }
 
-} // namespace ndn::security::pib
+} // namespace detail
+} // namespace pib
+} // namespace security
+} // namespace ndn

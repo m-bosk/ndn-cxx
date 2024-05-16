@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -23,9 +23,12 @@
 #define NDN_CXX_SECURITY_TRANSFORM_BUFFER_SOURCE_HPP
 
 #include "ndn-cxx/security/transform/transform-base.hpp"
+#include "ndn-cxx/encoding/buffer.hpp"
 #include "ndn-cxx/security/security-common.hpp"
 
-namespace ndn::security::transform {
+namespace ndn {
+namespace security {
+namespace transform {
 
 /**
  * @brief A source taking one or more memory buffers as input
@@ -47,7 +50,7 @@ public:
    * Caller must not destroy the string before the transformation is completed.
    */
   explicit
-  BufferSource(std::string_view string);
+  BufferSource(const std::string& string);
 
   /**
    * @brief Take @p buffers as input.
@@ -70,6 +73,8 @@ private:
 
 using bufferSource = BufferSource;
 
-} // namespace ndn::security::transform
+} // namespace transform
+} // namespace security
+} // namespace ndn
 
 #endif // NDN_CXX_SECURITY_TRANSFORM_BUFFER_SOURCE_HPP

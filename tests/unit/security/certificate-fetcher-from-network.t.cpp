@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -27,18 +27,27 @@
 #include "tests/boost-test.hpp"
 #include "tests/unit/security/validator-fixture.hpp"
 
-#include <boost/mp11/list.hpp>
+namespace ndn {
+namespace security {
+inline namespace v2 {
+namespace tests {
 
-namespace ndn::tests {
-
-using namespace ndn::security;
+using namespace ndn::tests;
 
 BOOST_AUTO_TEST_SUITE(Security)
 BOOST_AUTO_TEST_SUITE(TestCertificateFetcherFromNetwork)
 
-struct Cert {};
-struct Timeout {};
-struct Nack {};
+class Cert
+{
+};
+
+class Timeout
+{
+};
+
+class Nack
+{
+};
 
 template<class Response>
 class CertificateFetcherFromNetworkFixture : public HierarchicalValidatorFixture<ValidationPolicySimpleHierarchy,
@@ -93,7 +102,7 @@ CertificateFetcherFromNetworkFixture<Nack>::makeResponse(const Interest& interes
   face.receive(nack);
 }
 
-using Failures = boost::mp11::mp_list<Timeout, Nack>;
+using Failures = boost::mpl::vector<Timeout, Nack>;
 
 BOOST_FIXTURE_TEST_CASE(ValidateSuccess, CertificateFetcherFromNetworkFixture<Cert>)
 {
@@ -126,4 +135,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(ValidateFailure, T, Failures, CertificateFetche
 BOOST_AUTO_TEST_SUITE_END() // TestCertificateFetcherFromNetwork
 BOOST_AUTO_TEST_SUITE_END() // Security
 
-} // namespace ndn::tests
+} // namespace tests
+} // inline namespace v2
+} // namespace security
+} // namespace ndn

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -25,7 +25,8 @@
 
 #include "ndn-cxx/util/indented-stream.hpp"
 
-namespace ndn::ndnsec {
+namespace ndn {
+namespace ndnsec {
 namespace {
 
 // https://en.wikipedia.org/wiki/Box_Drawing
@@ -246,4 +247,5 @@ ndnsec_list(int argc, char** argv)
   return 0;
 }
 
-} // namespace ndn::ndnsec
+} // namespace ndnsec
+} // namespace ndn

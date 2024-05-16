@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -27,7 +27,10 @@
 
 #include <openssl/crypto.h>
 
-namespace ndn::util {
+namespace ndn {
+namespace util {
+
+const size_t Sha256::DIGEST_SIZE;
 
 Sha256::Sha256()
 {
@@ -91,7 +94,7 @@ Sha256::operator<<(Sha256& src)
 }
 
 Sha256&
-Sha256::operator<<(std::string_view str)
+Sha256::operator<<(const std::string& str)
 {
   update({reinterpret_cast<const uint8_t*>(str.data()), str.size()});
   return *this;
@@ -145,4 +148,5 @@ operator<<(std::ostream& os, Sha256& digest)
   return os;
 }
 
-} // namespace ndn::util
+} // namespace util
+} // namespace ndn

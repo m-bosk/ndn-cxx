@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -37,32 +37,33 @@ public:
   run()
   {
     m_face.setInterestFilter("/example/testApp/randomData",
-                             std::bind(&Producer::onInterest, this, _2),
+                             std::bind(&Producer::onInterest, this, _1, _2),
                              nullptr, // RegisterPrefixSuccessCallback is optional
                              std::bind(&Producer::onRegisterFailed, this, _1, _2));
 
     auto cert = m_keyChain.getPib().getDefaultIdentity().getDefaultKey().getDefaultCertificate();
     m_certServeHandle = m_face.setInterestFilter(security::extractIdentityFromCertName(cert.getName()),
-                                                 [this, cert] (auto&&...) {
-                                                   m_face.put(cert);
-                                                 },
-                                                 std::bind(&Producer::onRegisterFailed, this, _1, _2));
+                             [this, cert] (auto&&...) {
+                               m_face.put(cert);
+                             },
+                             std::bind(&Producer::onRegisterFailed, this, _1, _2));
     m_face.processEvents();
   }
 
 private:
   void
-  onInterest(const Interest& interest)
+  onInterest(const InterestFilter&, const Interest& interest)
   {
     std::cout << ">> I: " << interest << std::endl;
 
-    // Create Data packet
-    auto data = std::make_shared<Data>();
-    data->setName(interest.getName());
-    data->setFreshnessPeriod(10_s);
-    data->setContent("Hello, world!");
+    static const std::string content("Hello, world!");
 
-    // In order for the consumer application to be able to validate the packet, you need to setup
+    // Create Data packet
+    auto data = make_shared<Data>(interest.getName());
+    data->setFreshnessPeriod(10_s);
+    data->setContent(make_span(reinterpret_cast<const uint8_t*>(content.data()), content.size()));
+
+    // in order for the consumer application to be able to validate the packet, you need to setup
     // the following keys:
     // 1. Generate example trust anchor
     //
@@ -90,7 +91,7 @@ private:
   onRegisterFailed(const Name& prefix, const std::string& reason)
   {
     std::cerr << "ERROR: Failed to register prefix '" << prefix
-              << "' with the local forwarder (" << reason << ")\n";
+              << "' with the local forwarder (" << reason << ")" << std::endl;
     m_face.shutdown();
   }
 

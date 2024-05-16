@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2021 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -24,9 +24,11 @@
 #include "ndn-cxx/encoding/buffer-stream.hpp"
 #include "ndn-cxx/security/transform/base64-decode.hpp"
 #include "ndn-cxx/security/transform/buffer-source.hpp"
+#include "ndn-cxx/security/transform/digest-filter.hpp"
 #include "ndn-cxx/security/transform/stream-sink.hpp"
 
-namespace ndn::security {
+namespace ndn {
+namespace security {
 
 const Name&
 SigningInfo::getDigestSha256Identity()
@@ -66,34 +68,34 @@ SigningInfo::SigningInfo(const Key& key)
   this->setPibKey(key);
 }
 
-SigningInfo::SigningInfo(std::string_view signingStr)
+SigningInfo::SigningInfo(const std::string& signingStr)
   : SigningInfo(SIGNER_TYPE_NULL)
 {
   if (signingStr.empty()) {
     return;
   }
 
-  auto pos = signingStr.find(':');
-  if (pos == std::string_view::npos) {
+  size_t pos = signingStr.find(':');
+  if (pos == std::string::npos) {
     NDN_THROW(std::invalid_argument("Invalid signing string cannot represent SigningInfo"));
   }
 
-  auto scheme = signingStr.substr(0, pos);
-  auto nameArg = signingStr.substr(pos + 1);
+  std::string scheme = signingStr.substr(0, pos);
+  std::string nameArg = signingStr.substr(pos + 1);
 
   if (scheme == "id") {
     if (nameArg == getDigestSha256Identity().toUri()) {
       setSha256Signing();
     }
     else {
-      setSigningIdentity(Name(nameArg));
+      setSigningIdentity(nameArg);
     }
   }
   else if (scheme == "key") {
-    setSigningKeyName(Name(nameArg));
+    setSigningKeyName(nameArg);
   }
   else if (scheme == "cert") {
-    setSigningCertName(Name(nameArg));
+    setSigningCertName(nameArg);
   }
   else if (scheme == "hmac-sha256") {
     setSigningHmacKey(nameArg);
@@ -131,7 +133,7 @@ SigningInfo::setSigningCertName(const Name& certificateName)
 }
 
 SigningInfo&
-SigningInfo::setSigningHmacKey(std::string_view hmacKey)
+SigningInfo::setSigningHmacKey(const std::string& hmacKey)
 {
   m_type = SIGNER_TYPE_HMAC;
 
@@ -214,4 +216,5 @@ operator<<(std::ostream& os, const SignedInterestFormat& format)
   return os << "Unknown signed Interest format " << to_underlying(format);
 }
 
-} // namespace ndn::security
+} // namespace security
+} // namespace ndn

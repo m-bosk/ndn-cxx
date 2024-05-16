@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2021 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -21,7 +21,15 @@
 
 #include "ndn-cxx/security/transform/bool-sink.hpp"
 
-namespace ndn::security::transform {
+namespace ndn {
+namespace security {
+namespace transform {
+
+BoolSink::BoolSink(bool& value)
+  : m_hasValue(false)
+  , m_value(value)
+{
+}
 
 size_t
 BoolSink::doWrite(span<const uint8_t> buf)
@@ -33,10 +41,18 @@ BoolSink::doWrite(span<const uint8_t> buf)
   return buf.size();
 }
 
+void
+BoolSink::doEnd()
+{
+  // nothing to do.
+}
+
 unique_ptr<Sink>
 boolSink(bool& value)
 {
   return make_unique<BoolSink>(value);
 }
 
-} // namespace ndn::security::transform
+} // namespace transform
+} // namespace security
+} // namespace ndn

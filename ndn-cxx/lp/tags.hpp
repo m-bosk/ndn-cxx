@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -27,7 +27,8 @@
 #include "ndn-cxx/lp/prefix-announcement-header.hpp"
 #include "ndn-cxx/tag.hpp"
 
-namespace ndn::lp {
+namespace ndn {
+namespace lp {
 
 /**
  * \class IncomingFaceIdTag
@@ -77,6 +78,7 @@ using NonDiscoveryTag = SimpleTag<EmptyValue, 14>;
  */
 using PrefixAnnouncementTag = SimpleTag<PrefixAnnouncementHeader, 15>;
 
-} // namespace ndn::lp
+} // namespace lp
+} // namespace ndn
 
 #endif // NDN_CXX_LP_TAGS_HPP

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -31,9 +31,8 @@
 #include <cstring>
 #include <sstream>
 
-namespace ndn::tests {
-
-BOOST_CONCEPT_ASSERT((boost::EqualityComparable<Block>));
+namespace ndn {
+namespace tests {
 
 BOOST_AUTO_TEST_SUITE(Encoding)
 BOOST_AUTO_TEST_SUITE(TestBlock)
@@ -168,7 +167,7 @@ BOOST_AUTO_TEST_CASE(FromType)
   BOOST_CHECK_EQUAL(b3.isValid(), false);
   BOOST_CHECK_EQUAL(b3.type(), tlv::Invalid);
   BOOST_CHECK_EXCEPTION(b3.size(), Block::Error, [] (const auto& e) {
-    return e.what() == "Cannot determine size of invalid block"sv;
+    return e.what() == "Cannot determine size of invalid block"s;
   });
   BOOST_CHECK_EQUAL(b3.hasValue(), false);
   BOOST_CHECK_EQUAL(b3.value_size(), 0);
@@ -252,12 +251,11 @@ BOOST_AUTO_TEST_CASE(FromStream)
 
   BOOST_CHECK(stream.eof());
   BOOST_CHECK_EXCEPTION(Block::fromStream(stream), tlv::Error, [] (const auto& e) {
-    return e.what() == "Insufficient data during TLV parsing"sv;
+    return e.what() == "Empty buffer during TLV parsing"s;
   });
 }
 
-BOOST_AUTO_TEST_CASE(FromStreamWhitespace,
-  * ut::description("test for bug #2728"))
+BOOST_AUTO_TEST_CASE(FromStreamWhitespace) // Bug 2728
 {
   const uint8_t PACKET[] = {
     0x06, 0x20, // Data
@@ -315,7 +313,7 @@ BOOST_AUTO_TEST_CASE(FromStreamZeroLength)
   BOOST_CHECK(b3.value() == nullptr);
 
   BOOST_CHECK_EXCEPTION(Block::fromStream(stream), tlv::Error, [] (const auto& e) {
-    return e.what() == "Insufficient data during TLV parsing"sv;
+    return e.what() == "Empty buffer during TLV parsing"s;
   });
 }
 
@@ -331,7 +329,7 @@ BOOST_AUTO_TEST_CASE(FromStreamPacketTooLarge)
   stream.seekg(0);
 
   BOOST_CHECK_EXCEPTION(Block::fromStream(stream), tlv::Error, [] (const auto& e) {
-    return e.what() == "TLV-LENGTH from stream exceeds limit"sv;
+    return e.what() == "TLV-LENGTH from stream exceeds limit"s;
   });
 }
 
@@ -447,12 +445,12 @@ BOOST_AUTO_TEST_CASE(BlockFromValue)
 {
   Block b1(301);
   BOOST_CHECK_EXCEPTION(b1.blockFromValue(), Block::Error, [] (const auto& e) {
-    return e.what() == "Cannot construct block from empty TLV-VALUE"sv;
+    return e.what() == "Cannot construct block from empty TLV-VALUE"s;
   });
 
   Block b2(302, std::make_shared<Buffer>());
   BOOST_CHECK_EXCEPTION(b2.blockFromValue(), Block::Error, [] (const auto& e) {
-    return e.what() == "Cannot construct block from empty TLV-VALUE"sv;
+    return e.what() == "Cannot construct block from empty TLV-VALUE"s;
   });
 
   b1.encode();
@@ -491,7 +489,7 @@ BOOST_AUTO_TEST_CASE(Parse)
 
   BOOST_CHECK(data.get(0x15) == data.elements().at(2));
   BOOST_CHECK_EXCEPTION(data.get(0x01), Block::Error, [] (const auto& e) {
-    return e.what() == "No sub-element of type 1 found in block of type 6"sv;
+    return e.what() == "No sub-element of type 1 found in block of type 6"s;
   });
 
   BOOST_CHECK(data.find(0x15) == data.elements_begin() + 2);
@@ -503,7 +501,7 @@ BOOST_AUTO_TEST_CASE(Parse)
   };
   Block bad(MALFORMED);
   BOOST_CHECK_EXCEPTION(bad.parse(), Block::Error, [] (const auto& e) {
-    return e.what() == "TLV-LENGTH of sub-element of type 7 exceeds TLV-VALUE boundary of parent block"sv;
+    return e.what() == "TLV-LENGTH of sub-element of type 7 exceeds TLV-VALUE boundary of parent block"s;
   });
 }
 
@@ -650,8 +648,8 @@ BOOST_AUTO_TEST_CASE(ToAsioConstBuffer)
 {
   Block block = "0101A0"_block;
   boost::asio::const_buffer buffer(block);
-  BOOST_CHECK_EQUAL(buffer.data(), block.data());
-  BOOST_CHECK_EQUAL(buffer.size(), block.size());
+  BOOST_CHECK_EQUAL(boost::asio::buffer_cast<const uint8_t*>(buffer), block.data());
+  BOOST_CHECK_EQUAL(boost::asio::buffer_size(buffer), block.size());
 }
 
 BOOST_AUTO_TEST_CASE(Equality)
@@ -751,4 +749,5 @@ BOOST_AUTO_TEST_SUITE_END() // BlockLiteral
 BOOST_AUTO_TEST_SUITE_END() // TestBlock
 BOOST_AUTO_TEST_SUITE_END() // Encoding
 
-} // namespace ndn::tests
+} // namespace tests
+} // namespace ndn

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2021 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -26,77 +26,31 @@
 #include "ndn-cxx/security/validator.hpp"
 #include "ndn-cxx/util/rtt-estimator.hpp"
 #include "ndn-cxx/util/scheduler.hpp"
-#include "ndn-cxx/util/signal/signal.hpp"
+#include "ndn-cxx/util/signal.hpp"
 
 #include <queue>
 #include <set>
 
 namespace ndn {
+namespace util {
 
 /**
- * \brief Options for SegmentFetcher.
- */
-struct SegmentFetcherOptions
-{
-  /// Lifetime of sent Interests (independent of Interest timeout)
-  time::milliseconds interestLifetime = 4_s;
-  /// Maximum allowed time between successful receipt of segments
-  time::milliseconds maxTimeout = 60_s;
-  /// Use the first Interest to probe the latest version of the object
-  bool probeLatestVersion = true;
-  /// Set to true for 'in order' mode, false for 'block' mode
-  bool inOrder = false;
-  /// If true, Interest timeout is kept fixed at #maxTimeout
-  bool useConstantInterestTimeout = false;
-  /// If true, window size is kept fixed at #initCwnd
-  bool useConstantCwnd = false;
-  /// Disable Conservative Window Adaptation
-  bool disableCwa = false;
-  /// Reduce cwnd to #initCwnd when a loss event occurs
-  bool resetCwndToInit = false;
-  /// Disable window decrease after a congestion mark is received
-  bool ignoreCongMarks = false;
-  /// Initial congestion window size
-  double initCwnd = 1.0;
-  /// Initial slow start threshold
-  double initSsthresh = std::numeric_limits<double>::max();
-  /// Additive increase step (in segments)
-  double aiStep = 1.0;
-  /// Multiplicative decrease coefficient
-  double mdCoef = 0.5;
-  /// Options for the RTT estimator
-  util::RttEstimator::Options rttOptions;
-  /// Maximum number of segments stored in the reorder buffer
-  size_t flowControlWindow = 25000;
-
-  void
-  validate();
-};
-
-/**
- * @brief Utility class to fetch a versioned and segmented object.
+ * @brief Utility class to fetch the latest version of a segmented object.
  *
  * SegmentFetcher assumes that segments in the object are named `/<prefix>/<version>/<segment>`,
  * where:
- * - `<prefix>` is an arbitrary name prefix;
- * - `<version>` is the version number (VersionNameComponent);
- * - `<segment>` is the segment number (SegmentNameComponent).
- *
- * The number of segments in the object is generally unknown until a Data packet containing
- * a `FinalBlockId` field is received and validated.
- *
- * The version can either be provided by the application or be discovered at the beginning
- * of the fetching process. By default, SegmentFetcher will attempt to probe the latest
- * version of the object by requesting only "fresh" segments during the initial discovery
- * phase. This behavior can be turned off by setting Options::probeLatestVersion to false.
+ * - `<prefix>` is the specified prefix,
+ * - `<version>` is an unknown version that needs to be discovered, and
+ * - `<segment>` is a segment number (the number of segments in the object is unknown until a Data
+ *   packet containing the `FinalBlockId` field is received).
  *
  * SegmentFetcher implements the following logic:
  *
- * 1. If the application does not provide a `<version>` component and requires probing the
- *    latest version of the object, an Interest with CanBePrefix and MustBeFresh is sent to
- *    discover a fresh version. Otherwise, only CanBePrefix is set.
+ * 1. Express an Interest to discover the latest version of the object:
  *
- * 2. Infer the version of the object: `version = data.getName().get(-2).toVersion()`.
+ *    Interest: `/<prefix>?CanBePrefix&MustBeFresh`
+ *
+ * 2. Infer the latest version of the object: `<version> = Data.getName().get(-2)`.
  *
  * 3. Keep sending Interests for future segments until an error occurs or the number of segments
  *    indicated by the FinalBlockId in a received Data packet is reached. This retrieval will start
@@ -118,9 +72,9 @@ struct SegmentFetcherOptions
  *
  * Example:
  * @code
- * auto fetcher = SegmentFetcher::start(face, Interest("/data/prefix"), validator);
- * fetcher->onComplete.connect([] (ConstBufferPtr data) {...});
- * fetcher->onError.connect([] (uint32_t errorCode, const std::string& errorMsg) {...});
+ *   auto fetcher = SegmentFetcher::start(face, Interest("/data/prefix"), validator);
+ *   fetcher->onComplete.connect([] (ConstBufferPtr data) {...});
+ *   fetcher->onError.connect([] (uint32_t errorCode, const std::string& errorMsg) {...});
  * @endcode
  */
 class SegmentFetcher : noncopyable
@@ -142,7 +96,32 @@ public:
     FINALBLOCKID_NOT_SEGMENT = 5,
   };
 
-  using Options = SegmentFetcherOptions;
+  class Options
+  {
+  public:
+    Options()
+    {
+    }
+
+    void
+    validate();
+
+  public:
+    time::milliseconds interestLifetime = 4_s; ///< lifetime of sent Interests - independent of Interest timeout
+    time::milliseconds maxTimeout = 60_s; ///< maximum allowed time between successful receipt of segments
+    bool inOrder = false; ///< true for 'in order' mode, false for 'block' mode
+    bool useConstantInterestTimeout = false; ///< if true, Interest timeout is kept at `maxTimeout`
+    bool useConstantCwnd = false; ///< if true, window size is kept at `initCwnd`
+    bool disableCwa = false; ///< disable Conservative Window Adaptation
+    bool resetCwndToInit = false; ///< reduce cwnd to initCwnd when loss event occurs
+    bool ignoreCongMarks = false; ///< disable window decrease after congestion mark received
+    double initCwnd = 1.0; ///< initial congestion window size
+    double initSsthresh = std::numeric_limits<double>::max(); ///< initial slow start threshold
+    double aiStep = 1.0; ///< additive increase step (in segments)
+    double mdCoef = 0.5; ///< multiplicative decrease coefficient
+    RttEstimator::Options rttOptions; ///< options for RTT estimator
+    size_t flowControlWindow = 25000; ///< maximum number of segments stored in the reorder buffer
+  };
 
   /**
    * @brief Initiates segment fetching.
@@ -151,13 +130,11 @@ public:
    *
    * @param face         Reference to the Face that should be used to fetch data.
    * @param baseInterest Interest for the initial segment of requested data.
-   *                     This Interest may include certain fields, such as ForwardingHint, that
-   *                     will propagate to all subsequent Interests sent by this SegmentFetcher.
-   *                     As a special case, the initial Interest will be forced to include the
-   *                     CanBePrefix field, which will not be included in subsequent Interests.
-   *                     If Options::probeLatestVersion is true, the initial Interest will also
-   *                     be forced to include the MustBeFresh field, while all subsequent Interests
-   *                     will not include it.
+   *                     This interest may include a custom InterestLifetime and parameters that
+   *                     will propagate to all subsequent Interests. The only exception is that the
+   *                     initial Interest will be forced to include the "CanBePrefix=true" and
+   *                     "MustBeFresh=true" parameters, which will not be included in subsequent
+   *                     Interests.
    * @param validator    Reference to the Validator the fetcher will use to validate data.
    *                     The caller must ensure the validator remains valid until either #onComplete
    *                     or #onError has been signaled.
@@ -169,8 +146,10 @@ public:
    *                     SegmentFetcher's signals can be connected to.
    */
   static shared_ptr<SegmentFetcher>
-  start(Face& face, const Interest& baseInterest, security::Validator& validator,
-        const Options& options = {});
+  start(Face& face,
+        const Interest& baseInterest,
+        security::Validator& validator,
+        const Options& options = Options());
 
   /**
    * @brief Stops fetching.
@@ -253,46 +232,46 @@ public:
    * @brief Emitted upon successful retrieval of the complete object (all segments).
    * @note Emitted only if SegmentFetcher is operating in 'block' mode.
    */
-  signal::Signal<SegmentFetcher, ConstBufferPtr> onComplete;
+  Signal<SegmentFetcher, ConstBufferPtr> onComplete;
 
   /**
    * @brief Emitted when the retrieval could not be completed due to an error.
    *
    * Handlers are provided with an error code and a string error message.
    */
-  signal::Signal<SegmentFetcher, uint32_t, std::string> onError;
+  Signal<SegmentFetcher, uint32_t, std::string> onError;
 
   /**
    * @brief Emitted whenever a data segment received.
    */
-  signal::Signal<SegmentFetcher, Data> afterSegmentReceived;
+  Signal<SegmentFetcher, Data> afterSegmentReceived;
 
   /**
    * @brief Emitted whenever a received data segment has been successfully validated.
    */
-  signal::Signal<SegmentFetcher, Data> afterSegmentValidated;
+  Signal<SegmentFetcher, Data> afterSegmentValidated;
 
   /**
    * @brief Emitted whenever an Interest for a data segment is nacked.
    */
-  signal::Signal<SegmentFetcher> afterSegmentNacked;
+  Signal<SegmentFetcher> afterSegmentNacked;
 
   /**
    * @brief Emitted whenever an Interest for a data segment times out.
    */
-  signal::Signal<SegmentFetcher> afterSegmentTimedOut;
+  Signal<SegmentFetcher> afterSegmentTimedOut;
 
   /**
    * @brief Emitted after each data segment in segment order has been validated.
    * @note Emitted only if SegmentFetcher is operating in 'in order' mode.
    */
-  signal::Signal<SegmentFetcher, ConstBufferPtr> onInOrderData;
+  Signal<SegmentFetcher, ConstBufferPtr> onInOrderData;
 
   /**
    * @brief Emitted on successful retrieval of all segments in 'in order' mode.
    * @note Emitted only if SegmentFetcher is operating in 'in order' mode.
    */
-  signal::Signal<SegmentFetcher> onInOrderComplete;
+  Signal<SegmentFetcher> onInOrderComplete;
 
 private:
   enum class SegmentState {
@@ -305,7 +284,7 @@ private:
   {
   public:
     SegmentState state;
-    time::steady_clock::time_point sendTime;
+    time::steady_clock::TimePoint sendTime;
     ScopedPendingInterestHandle hdl;
     scheduler::ScopedEventId timeoutEvent;
   };
@@ -319,9 +298,9 @@ NDN_CXX_PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   Face& m_face;
   Scheduler m_scheduler;
   security::Validator& m_validator;
-  util::RttEstimator m_rttEstimator;
+  RttEstimator m_rttEstimator;
 
-  time::steady_clock::time_point m_timeLastSegmentReceived;
+  time::steady_clock::TimePoint m_timeLastSegmentReceived;
   std::queue<uint64_t> m_retxQueue;
   Name m_versionedDataName;
   uint64_t m_nextSegmentNum = 0;
@@ -341,6 +320,7 @@ NDN_CXX_PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   std::set<uint64_t> m_receivedSegments;
 };
 
+} // namespace util
 } // namespace ndn
 
 #endif // NDN_CXX_UTIL_SEGMENT_FETCHER_HPP

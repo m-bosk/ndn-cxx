@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -22,11 +22,10 @@
 #ifndef NDN_CXX_DETAIL_TAG_HOST_HPP
 #define NDN_CXX_DETAIL_TAG_HOST_HPP
 
+#include "ndn-cxx/detail/common.hpp"
 #include "ndn-cxx/tag.hpp"
 
 #include <map>
-#include <memory>
-#include <type_traits>
 
 namespace ndn {
 
@@ -36,54 +35,51 @@ namespace ndn {
 class TagHost
 {
 public:
-  /**
-   * \brief Get a tag item.
-   * \tparam T type of the tag, which must be a subclass of ndn::Tag
-   * \retval nullptr if no Tag of type T is stored
+  /** \brief Get a tag item.
+   *  \tparam T type of the tag, which must be a subclass of ndn::Tag
+   *  \retval nullptr if no Tag of type T is stored
    */
   template<typename T>
-  std::shared_ptr<T>
+  shared_ptr<T>
   getTag() const;
 
-  /**
-   * \brief Set (add or replace) a tag item.
-   * \tparam T type of the tag, which must be a subclass of ndn::Tag
-   * \note Tag can be set even on a const tag host instance
+  /** \brief Set (add or replace) a tag item.
+   *  \tparam T type of the tag, which must be a subclass of ndn::Tag
+   *  \note Tag can be set even on a const tag host instance
    */
   template<typename T>
   void
-  setTag(std::shared_ptr<T> tag) const;
+  setTag(shared_ptr<T> tag) const;
 
-  /**
-   * \brief Remove a tag item.
-   * \tparam T type of the tag, which must be a subclass of ndn::Tag
-   * \note Tag can be removed even on a const tag host instance
+  /** \brief Remove a tag item.
+   *  \note Tag can be removed even on a const tag host instance
    */
   template<typename T>
   void
   removeTag() const;
 
 private:
-  mutable std::map<int, std::shared_ptr<Tag>> m_tags;
+  mutable std::map<int, shared_ptr<Tag>> m_tags;
 };
 
 template<typename T>
-std::shared_ptr<T>
+shared_ptr<T>
 TagHost::getTag() const
 {
-  static_assert(std::is_convertible_v<T*, Tag*>, "T must inherit from ndn::Tag");
+  static_assert(std::is_base_of<Tag, T>::value, "T must inherit from Tag");
 
-  if (auto it = m_tags.find(T::getTypeId()); it != m_tags.end()) {
-    return std::static_pointer_cast<T>(it->second);
+  auto it = m_tags.find(T::getTypeId());
+  if (it == m_tags.end()) {
+    return nullptr;
   }
-  return nullptr;
+  return static_pointer_cast<T>(it->second);
 }
 
 template<typename T>
 void
-TagHost::setTag(std::shared_ptr<T> tag) const
+TagHost::setTag(shared_ptr<T> tag) const
 {
-  static_assert(std::is_convertible_v<T*, Tag*>, "T must inherit from ndn::Tag");
+  static_assert(std::is_base_of<Tag, T>::value, "T must inherit from Tag");
 
   if (tag == nullptr) {
     m_tags.erase(T::getTypeId());

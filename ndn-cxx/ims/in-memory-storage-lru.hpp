@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2021 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -32,8 +32,7 @@
 
 namespace ndn {
 
-/**
- * @brief Provides in-memory storage employing Least Recently Used (LRU) replacement policy.
+/** @brief Provides in-memory storage employing Least Recently Used (LRU) replacement policy.
  */
 class InMemoryStorageLru : public InMemoryStorage
 {
@@ -42,7 +41,7 @@ public:
   InMemoryStorageLru(size_t limit = 16);
 
   explicit
-  InMemoryStorageLru(boost::asio::io_context& ioCtx, size_t limit = 16);
+  InMemoryStorageLru(boost::asio::io_service& ioService, size_t limit = 16);
 
 NDN_CXX_PUBLIC_WITH_TESTS_ELSE_PROTECTED:
   /** @brief Removes one Data packet from in-memory storage based on LRU, i.e. evict the least
@@ -74,20 +73,23 @@ private:
   class byUsedTime;
   class byEntity;
 
-  using CleanupIndex = boost::multi_index_container<
+  typedef boost::multi_index_container<
     InMemoryStorageEntry*,
     boost::multi_index::indexed_by<
+
       // by Entry itself
       boost::multi_index::hashed_unique<
         boost::multi_index::tag<byEntity>,
         boost::multi_index::identity<InMemoryStorageEntry*>
       >,
+
       // by last used time (LRU)
       boost::multi_index::sequenced<
         boost::multi_index::tag<byUsedTime>
       >
+
     >
-  >;
+  > CleanupIndex;
 
   CleanupIndex m_cleanupIndex;
 };

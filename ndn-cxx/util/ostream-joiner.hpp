@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2021 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -19,18 +19,17 @@
  * See AUTHORS.md for complete list of ndn-cxx authors and contributors.
  */
 
-/**
- * \file
- * \brief Backport of `ostream_joiner` from the Library Fundamentals v2 TS
- * \sa https://en.cppreference.com/w/cpp/experimental/ostream_joiner
+/** \file
+ *  \brief Backport of ostream_joiner from the Library Fundamentals v2 TS
+ *  \sa https://en.cppreference.com/w/cpp/experimental/ostream_joiner
  */
 
 #ifndef NDN_CXX_UTIL_OSTREAM_JOINER_HPP
 #define NDN_CXX_UTIL_OSTREAM_JOINER_HPP
 
-#include "ndn-cxx/detail/common.hpp"
+#include "ndn-cxx/util/backports.hpp"
 
-#if __has_include(<experimental/iterator>)
+#if NDN_CXX_HAS_INCLUDE(<experimental/iterator>)
 #  include <experimental/iterator>
 #  if __cpp_lib_experimental_ostream_joiner >= 201411
 #    define NDN_CXX_HAVE_EXPERIMENTAL_OSTREAM_JOINER
@@ -66,13 +65,13 @@ public:
   typedef void reference;
 
   ostream_joiner(ostream_type& os, const DelimT& delimiter)
-  noexcept(std::is_nothrow_copy_constructible_v<DelimT>)
+  noexcept(std::is_nothrow_copy_constructible<DelimT>::value)
     : m_os(std::addressof(os)), m_delim(delimiter)
   {
   }
 
   ostream_joiner(ostream_type& os, DelimT&& delimiter)
-  noexcept(std::is_nothrow_move_constructible_v<DelimT>)
+  noexcept(std::is_nothrow_move_constructible<DelimT>::value)
     : m_os(std::addressof(os)), m_delim(std::move(delimiter))
   {
   }

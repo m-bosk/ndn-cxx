@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -23,10 +23,9 @@
 #define NDN_CXX_NAME_HPP
 
 #include "ndn-cxx/name-component.hpp"
+#include "ndn-cxx/util/optional.hpp"
 
 #include <iterator>
-#include <limits>
-#include <optional>
 
 namespace ndn {
 
@@ -41,13 +40,15 @@ using PartialName = Name;
  * @brief Represents an absolute name.
  * @sa https://docs.named-data.net/NDN-packet-spec/0.3/name.html
  */
-class Name : private boost::totally_ordered<Name>
+class Name
 {
 public: // nested types
-  using Component = name::Component;
-  using Error = Component::Error;
+  using Error = name::Component::Error;
 
-  // Name appears as an ordered sequence of name components
+  using Component = name::Component;
+  using component_container = std::vector<Component>;
+
+  // Name appears as a container of name components
   using value_type             = Component;
   using allocator_type         = void;
   using reference              = Component&;
@@ -58,76 +59,54 @@ public: // nested types
   using const_iterator         = const Component*;
   using reverse_iterator       = std::reverse_iterator<iterator>;
   using const_reverse_iterator = std::reverse_iterator<const_iterator>;
-  using difference_type        = std::vector<Component>::difference_type;
-  using size_type              = std::vector<Component>::size_type;
+  using difference_type        = component_container::difference_type;
+  using size_type              = component_container::size_type;
 
 public: // constructors, encoding, decoding
-  /**
-   * @brief Create an empty name.
-   * @post empty() == true
+  /** @brief Create an empty name.
+   *  @post empty() == true
    */
   Name();
 
-  /**
-   * @brief Create Name from wire encoding.
-   * @param wire TLV element of type tlv::Name
+  /** @brief Decode Name from wire encoding.
+   *  @throw tlv::Error wire encoding is invalid
    *
-   * This is equivalent to:
-   * @code
-   * Name name;
-   * name.wireDecode(wire);
-   * @endcode
-   *
-   * @throw tlv::Error The wire encoding is invalid.
+   *  This is a more efficient equivalent for
+   *  @code
+   *    Name name;
+   *    name.wireDecode(wire);
+   *  @endcode
    */
   explicit
   Name(const Block& wire);
 
-  /**
-   * @brief Create name from NDN URI.
-   * @sa https://docs.named-data.net/NDN-packet-spec/0.3/name.html#ndn-uri-scheme
+  /** @brief Parse name from NDN URI.
+   *  @param uri a null-terminated URI string
+   *  @sa https://docs.named-data.net/NDN-packet-spec/0.3/name.html#ndn-uri-scheme
    */
-  explicit
-  Name(std::string_view uri);
+  Name(const char* uri);
 
-  /**
-   * @brief Create name from NDN URI.
-   * @sa https://docs.named-data.net/NDN-packet-spec/0.3/name.html#ndn-uri-scheme
-   * @note This constructor enables implicit conversion from a string literal.
+  /** @brief Create name from NDN URI.
+   *  @param uri a URI string
+   *  @sa https://docs.named-data.net/NDN-packet-spec/0.3/name.html#ndn-uri-scheme
    */
-  Name(const char* uri)
-    : Name(std::string_view(uri))
-  {
-  }
+  Name(std::string uri);
 
-  /**
-   * @brief Create name from NDN URI.
-   * @sa https://docs.named-data.net/NDN-packet-spec/0.3/name.html#ndn-uri-scheme
-   * @note This constructor enables implicit conversion from `std::string`.
-   */
-  Name(const std::string& uri)
-    : Name(std::string_view(uri))
-  {
-  }
-
-  /**
-   * @brief Write URI representation of the name to the output stream.
-   * @sa https://docs.named-data.net/NDN-packet-spec/0.3/name.html#ndn-uri-scheme
+  /** @brief Write URI representation of the name to the output stream.
+   *  @sa https://docs.named-data.net/NDN-packet-spec/0.3/name.html#ndn-uri-scheme
    */
   void
   toUri(std::ostream& os, name::UriFormat format = name::UriFormat::DEFAULT) const;
 
-  /**
-   * @brief Get URI representation of the name.
-   * @return URI representation; the "ndn:" scheme identifier is not included.
-   * @note To print the URI representation to a stream, it is more efficient to use `os << name`.
-   * @sa https://docs.named-data.net/NDN-packet-spec/0.3/name.html#ndn-uri-scheme
+  /** @brief Get URI representation of the name.
+   *  @return URI representation; the "ndn:" scheme identifier is not included
+   *  @note To print URI representation into a stream, it is more efficient to use `os << name`.
+   *  @sa https://docs.named-data.net/NDN-packet-spec/0.3/name.html#ndn-uri-scheme
    */
   std::string
   toUri(name::UriFormat format = name::UriFormat::DEFAULT) const;
 
-  /**
-   * @brief Check if this instance already has wire encoding.
+  /** @brief Check if this instance already has wire encoding.
    */
   bool
   hasWire() const noexcept
@@ -135,30 +114,26 @@ public: // constructors, encoding, decoding
     return m_wire.hasWire();
   }
 
-  /**
-   * @brief Prepend wire encoding to @p encoder.
+  /** @brief Fast encoding or block size estimation.
    */
   template<encoding::Tag TAG>
   size_t
   wireEncode(EncodingImpl<TAG>& encoder) const;
 
-  /**
-   * @brief Perform wire encoding, or return existing (cached) wire encoding.
-   * @post hasWire() == true
+  /** @brief Perform wire encoding, or return existing wire encoding.
+   *  @post hasWire() == true
    */
   const Block&
   wireEncode() const;
 
-  /**
-   * @brief Decode name from wire encoding.
-   * @throw tlv::Error The wire encoding is invalid.
-   * @post hasWire() == true
+  /** @brief Decode name from wire encoding.
+   *  @throw tlv::Error wire encoding is invalid
+   *  @post hasWire() == true
    */
   void
   wireDecode(const Block& wire);
 
-  /**
-   * @brief Make a deep copy of the name, reallocating the underlying memory buffer.
+  /** @brief Make a deep copy of the name, reallocating the underlying memory buffer.
    */
   Name
   deepCopy() const;
@@ -167,7 +142,7 @@ public: // access
   /**
    * @brief Checks if the name is empty, i.e., has no components.
    */
-  [[nodiscard]] bool
+  NDN_CXX_NODISCARD bool
   empty() const noexcept
   {
     return m_wire.elements().empty();
@@ -343,13 +318,36 @@ public: // modifiers
   }
 
   /**
-   * @brief Append a `NameComponent` of TLV-TYPE @p type, copying the TLV-VALUE from a range.
-   * @tparam Iterator an @c InputIterator dereferencing to a one-octet value type. More efficient
-   *                  implementation is available when it is a @c RandomAccessIterator.
-   * @param type      the TLV-TYPE.
-   * @param first     beginning of the range.
-   * @param last      past-end of the range.
+   * @brief Append a `NameComponent` of TLV-TYPE @p type, copying @p count bytes at @p value as TLV-VALUE.
    * @return A reference to this Name, to allow chaining.
+   * @deprecated Use append(uint32_t, span<const uint8_t>)
+   */
+  [[deprecated("use the overload that takes a span<>")]]
+  Name&
+  append(uint32_t type, const uint8_t* value, size_t count)
+  {
+    return append(type, make_span(value, count));
+  }
+
+  /**
+   * @brief Append a `GenericNameComponent`, copying @p count bytes at @p value as TLV-VALUE.
+   * @return A reference to this Name, to allow chaining.
+   * @deprecated Use append(span<const uint8_t>)
+   */
+  [[deprecated("use the overload that takes a span<>")]]
+  Name&
+  append(const uint8_t* value, size_t count)
+  {
+    return append(make_span(value, count));
+  }
+
+  /** @brief Append a `NameComponent` of TLV-TYPE @p type, copying TLV-VALUE from a range.
+   *  @tparam Iterator an @c InputIterator dereferencing to a one-octet value type. More efficient
+   *                   implementation is available when it is a @c RandomAccessIterator.
+   *  @param type      the TLV-TYPE.
+   *  @param first     beginning of the range.
+   *  @param last      past-end of the range.
+   *  @return A reference to this Name, to allow chaining.
    */
   template<class Iterator>
   Name&
@@ -358,13 +356,12 @@ public: // modifiers
     return append(Component(type, first, last));
   }
 
-  /**
-   * @brief Append a `GenericNameComponent`, copying the TLV-VALUE from a range.
-   * @tparam Iterator an @c InputIterator dereferencing to a one-octet value type. More efficient
-   *                  implementation is available when it is a @c RandomAccessIterator.
-   * @param first     beginning of the range.
-   * @param last      past-end of the range.
-   * @return A reference to this Name, to allow chaining.
+  /** @brief Append a `GenericNameComponent`, copying TLV-VALUE from a range.
+   *  @tparam Iterator an @c InputIterator dereferencing to a one-octet value type. More efficient
+   *                   implementation is available when it is a @c RandomAccessIterator.
+   *  @param first     beginning of the range.
+   *  @param last      past-end of the range.
+   *  @return A reference to this Name, to allow chaining.
    */
   template<class Iterator>
   Name&
@@ -373,11 +370,10 @@ public: // modifiers
     return append(Component(tlv::GenericNameComponent, first, last));
   }
 
-  /**
-   * @brief Append a `GenericNameComponent`, copying the TLV-VALUE from a null-terminated string.
-   * @param str a null-terminated string. Bytes from the string are copied as is, and not
-   *            interpreted as a URI component.
-   * @return A reference to this Name, to allow chaining.
+  /** @brief Append a `GenericNameComponent`, copying TLV-VALUE from a null-terminated string.
+   *  @param str a null-terminated string. Bytes from the string are copied as is, and not
+   *             interpreted as URI component.
+   *  @return A reference to this Name, to allow chaining.
    */
   Name&
   append(const char* str)
@@ -385,18 +381,16 @@ public: // modifiers
     return append(Component(str));
   }
 
-  /**
-   * @brief Append a PartialName.
-   * @param name the components to append
-   * @return A reference to this Name, to allow chaining.
+  /** @brief Append a PartialName.
+   *  @param name the components to append
+   *  @return A reference to this Name, to allow chaining.
    */
   Name&
   append(const PartialName& name);
 
-  /**
-   * @brief Append a component with a NonNegativeInteger.
-   * @return A reference to this Name, to allow chaining.
-   * @sa https://docs.named-data.net/NDN-packet-spec/0.3/tlv.html#non-negative-integer-encoding
+  /** @brief Append a component with a NonNegativeInteger.
+   *  @return A reference to this Name, to allow chaining.
+   *  @sa https://docs.named-data.net/NDN-packet-spec/0.3/tlv.html#non-negative-integer-encoding
    */
   Name&
   appendNumber(uint64_t number)
@@ -404,16 +398,15 @@ public: // modifiers
     return append(Component::fromNumber(number));
   }
 
-  /**
-   * @brief Append a component with a marked number.
-   * @param marker 1-octet marker
-   * @param number the number
+  /** @brief Append a component with a marked number.
+   *  @param marker 1-octet marker
+   *  @param number the number
    *
-   * The component is encoded as a 1-octet marker, followed by a NonNegativeInteger.
+   *  The component is encoded as a 1-octet marker, followed by a NonNegativeInteger.
    *
-   * @return A reference to this Name, to allow chaining.
-   * @sa NDN Naming Conventions revision 1 (obsolete)
-   *     https://named-data.net/wp-content/uploads/2014/08/ndn-tr-22-ndn-memo-naming-conventions.pdf
+   *  @return A reference to this Name, to allow chaining.
+   *  @sa NDN Naming Conventions revision 1 (obsolete)
+   *      https://named-data.net/wp-content/uploads/2014/08/ndn-tr-22-ndn-memo-naming-conventions.pdf
    */
   Name&
   appendNumberWithMarker(uint8_t marker, uint64_t number)
@@ -454,7 +447,7 @@ public: // modifiers
    *     https://named-data.net/publications/techreports/ndn-tr-22-3-ndn-memo-naming-conventions/
    */
   Name&
-  appendVersion(const std::optional<uint64_t>& version = std::nullopt);
+  appendVersion(const optional<uint64_t>& version = nullopt);
 
   /**
    * @brief Append a timestamp component.
@@ -464,7 +457,7 @@ public: // modifiers
    *     https://named-data.net/publications/techreports/ndn-tr-22-3-ndn-memo-naming-conventions/
    */
   Name&
-  appendTimestamp(const std::optional<time::system_clock::time_point>& timestamp = std::nullopt);
+  appendTimestamp(const optional<time::system_clock::time_point>& timestamp = nullopt);
 
   /**
    * @brief Append a sequence number component.
@@ -540,10 +533,21 @@ public: // modifiers
    * @return A reference to this Name, to allow chaining.
    */
   Name&
-  appendKeyword(std::string_view keyword)
+  appendKeyword(const char* keyword)
   {
-    return append(Component(tlv::KeywordNameComponent,
-                            {reinterpret_cast<const uint8_t*>(keyword.data()), keyword.size()}));
+    return append(Component(tlv::KeywordNameComponent, {reinterpret_cast<const uint8_t*>(keyword),
+                                                        std::char_traits<char>::length(keyword)}));
+  }
+
+  /**
+   * @brief Append a name component.
+   * @note This makes push_back() an alias of append(), giving Name a similar API as `std::vector`.
+   */
+  template<class T>
+  void
+  push_back(const T& component)
+  {
+    append(component);
   }
 
   /**
@@ -648,7 +652,6 @@ public: // algorithms
 private: // non-member operators
   // NOTE: the following "hidden friend" operators are available via
   //       argument-dependent lookup only and must be defined inline.
-  // boost::totally_ordered provides !=, <=, >=, and > operators.
 
   friend bool
   operator==(const Name& lhs, const Name& rhs) noexcept
@@ -657,9 +660,33 @@ private: // non-member operators
   }
 
   friend bool
+  operator!=(const Name& lhs, const Name& rhs) noexcept
+  {
+    return !lhs.equals(rhs);
+  }
+
+  friend bool
   operator<(const Name& lhs, const Name& rhs)
   {
     return lhs.compare(rhs) < 0;
+  }
+
+  friend bool
+  operator<=(const Name& lhs, const Name& rhs)
+  {
+    return lhs.compare(rhs) <= 0;
+  }
+
+  friend bool
+  operator>(const Name& lhs, const Name& rhs)
+  {
+    return lhs.compare(rhs) > 0;
+  }
+
+  friend bool
+  operator>=(const Name& lhs, const Name& rhs)
+  {
+    return lhs.compare(rhs) >= 0;
   }
 
   /**
@@ -677,10 +704,10 @@ public:
   /**
    * @brief Indicates "until the end" in getSubName() and compare().
    */
-  static constexpr size_t npos = std::numeric_limits<size_t>::max();
+  static const size_t npos;
 
 private:
-  mutable Block m_wire{tlv::Name};
+  mutable Block m_wire;
 };
 
 NDN_CXX_DECLARE_WIRE_ENCODE_INSTANTIATIONS(Name);

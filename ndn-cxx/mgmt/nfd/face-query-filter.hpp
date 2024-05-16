@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -24,10 +24,10 @@
 
 #include "ndn-cxx/encoding/block.hpp"
 #include "ndn-cxx/encoding/nfd-constants.hpp"
+#include "ndn-cxx/util/optional.hpp"
 
-#include <optional>
-
-namespace ndn::nfd {
+namespace ndn {
+namespace nfd {
 
 /**
  * \ingroup management
@@ -204,13 +204,13 @@ public: // getters & setters
   unsetLinkType();
 
 private:
-  std::optional<uint64_t> m_faceId;
+  optional<uint64_t> m_faceId;
   std::string m_uriScheme;
   std::string m_remoteUri;
   std::string m_localUri;
-  std::optional<FaceScope> m_faceScope;
-  std::optional<FacePersistency> m_facePersistency;
-  std::optional<LinkType> m_linkType;
+  optional<FaceScope> m_faceScope;
+  optional<FacePersistency> m_facePersistency;
+  optional<LinkType> m_linkType;
 
   mutable Block m_wire;
 };
@@ -229,6 +229,7 @@ operator!=(const FaceQueryFilter& a, const FaceQueryFilter& b)
 std::ostream&
 operator<<(std::ostream& os, const FaceQueryFilter& filter);
 
-} // namespace ndn::nfd
+} // namespace nfd
+} // namespace ndn
 
 #endif // NDN_CXX_MGMT_NFD_FACE_QUERY_FILTER_HPP

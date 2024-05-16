@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -37,20 +37,23 @@
 
 #include "tests/boost-test.hpp"
 
+#include <openssl/opensslv.h>
+#include <boost/mpl/vector.hpp>
 #include <set>
-#include <boost/mp11/list.hpp>
 
-namespace ndn::tests {
-
-using namespace ndn::security;
-using ndn::security::tpm::BackEnd;
-using ndn::security::tpm::KeyHandle;
+namespace ndn {
+namespace security {
+namespace tpm {
+namespace tests {
 
 BOOST_AUTO_TEST_SUITE(Security)
-BOOST_AUTO_TEST_SUITE(TestTpmBackEnd)
+BOOST_AUTO_TEST_SUITE(Tpm)
+BOOST_AUTO_TEST_SUITE(TestBackEnd)
 
-using TestBackEnds = boost::mp11::mp_list<
-#ifdef NDN_CXX_WITH_OSX_KEYCHAIN
+using tpm::Tpm;
+
+using TestBackEnds = boost::mpl::vector<
+#if defined(NDN_CXX_HAVE_OSX_FRAMEWORKS) && defined(NDN_CXX_WITH_OSX_KEYCHAIN)
   BackEndWrapperOsx,
 #endif
   BackEndWrapperMem,
@@ -87,12 +90,14 @@ BOOST_AUTO_TEST_CASE(CreateHmacKey)
 {
   Name identity("/Test/Identity/HMAC");
 
+#if OPENSSL_VERSION_NUMBER < 0x30000000L // FIXME #5154
   BackEndWrapperMem mem;
   BackEnd& memTpm = mem.getTpm();
   auto key = memTpm.createKey(identity, HmacKeyParams());
   BOOST_REQUIRE(key != nullptr);
   BOOST_CHECK(!key->getKeyName().empty());
   BOOST_CHECK(memTpm.hasKey(key->getKeyName()));
+#endif
 
   BackEndWrapperFile file;
   BackEnd& fileTpm = file.getTpm();
@@ -223,6 +228,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(EcdsaSigning, T, TestBackEnds)
   BOOST_CHECK_EQUAL(tpm.hasKey(ecKeyName), false);
 }
 
+#if OPENSSL_VERSION_NUMBER < 0x30000000L // FIXME #5154
 BOOST_AUTO_TEST_CASE(HmacSigningAndVerifying)
 {
   BackEndWrapperMem wrapper;
@@ -250,6 +256,7 @@ BOOST_AUTO_TEST_CASE(HmacSigningAndVerifying)
   tpm.deleteKey(hmacKeyName);
   BOOST_CHECK_EQUAL(tpm.hasKey(hmacKeyName), false);
 }
+#endif
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(ImportExport, T, TestBackEnds)
 {
@@ -343,12 +350,15 @@ BOOST_AUTO_TEST_CASE(RandomKeyId)
   for (int i = 0; i < 100; i++) {
     auto key = tpm.createKey(identity, RsaKeyParams());
     Name keyName = key->getKeyName();
-    BOOST_TEST_INFO_SCOPE("KeyName = " << keyName);
-    BOOST_TEST(keyNames.insert(keyName).second);
+    BOOST_CHECK(keyNames.insert(keyName).second);
   }
 }
 
-BOOST_AUTO_TEST_SUITE_END() // TestTpmBackEnd
+BOOST_AUTO_TEST_SUITE_END() // TestBackEnd
+BOOST_AUTO_TEST_SUITE_END() // Tpm
 BOOST_AUTO_TEST_SUITE_END() // Security
 
-} // namespace ndn::tests
+} // namespace tests
+} // namespace tpm
+} // namespace security
+} // namespace ndn

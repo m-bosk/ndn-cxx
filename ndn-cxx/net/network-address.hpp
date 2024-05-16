@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2021 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -24,12 +24,12 @@
 #ifndef NDN_CXX_NET_NETWORK_ADDRESS_HPP
 #define NDN_CXX_NET_NETWORK_ADDRESS_HPP
 
-#include <cstdint>
-#include <iosfwd>
+#include "ndn-cxx/detail/common.hpp"
 
 #include <boost/asio/ip/address.hpp>
 
-namespace ndn::net {
+namespace ndn {
+namespace net {
 
 enum class AddressFamily {
   UNSPECIFIED,
@@ -140,6 +140,7 @@ private:
 std::ostream&
 operator<<(std::ostream& os, const NetworkAddress& address);
 
-} // namespace ndn::net
+} // namespace net
+} // namespace ndn
 
 #endif // NDN_CXX_NET_NETWORK_ADDRESS_HPP

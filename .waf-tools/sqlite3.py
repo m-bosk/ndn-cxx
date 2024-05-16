@@ -1,3 +1,6 @@
+#! /usr/bin/env python
+# encoding: utf-8
+
 from waflib.Configure import conf
 
 def options(opt):

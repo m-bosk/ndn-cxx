@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2020 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -23,12 +23,13 @@
 #define NDN_CXX_SECURITY_DETAIL_CERTIFICATE_BUNDLE_DECODER_HPP
 
 #include "ndn-cxx/security/certificate.hpp"
-#include "ndn-cxx/util/signal/signal.hpp"
+#include "ndn-cxx/util/signal.hpp"
 
-namespace ndn::security::detail {
+namespace ndn {
+namespace security {
+namespace detail {
 
-/**
- * @brief Helper class to decode a certificate bundle.
+/** @brief Helper class to decode a certificate bundle.
  */
 class CertificateBundleDecoder
 {
@@ -57,7 +58,7 @@ public:
   /**
    * @brief Emitted every time a certificate is successfully decoded.
    */
-  signal::Signal<CertificateBundleDecoder, Certificate> onCertDecoded;
+  util::Signal<CertificateBundleDecoder, Certificate> onCertDecoded;
 
 private:
   void
@@ -68,6 +69,8 @@ private:
   bool m_hasError = false;
 };
 
-} // namespace ndn::security::detail
+} // namespace detail
+} // namespace security
+} // namespace ndn
 
 #endif // NDN_CXX_SECURITY_DETAIL_CERTIFICATE_BUNDLE_DECODER_HPP

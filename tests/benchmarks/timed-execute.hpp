@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2020 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -24,18 +24,20 @@
 
 #include "ndn-cxx/util/time.hpp"
 
-namespace ndn::tests {
+namespace ndn {
+namespace tests {
 
 template<typename F>
 time::nanoseconds
-timedExecute(F&& f)
+timedExecute(const F& f)
 {
   auto before = time::steady_clock::now();
-  std::invoke(std::forward<F>(f));
+  f();
   auto after = time::steady_clock::now();
   return after - before;
 }
 
-} // namespace ndn::tests
+} // namespace tests
+} // namespace ndn
 
 #endif // NDN_CXX_TESTS_BENCHMARKS_TIMED_EXECUTE_HPP

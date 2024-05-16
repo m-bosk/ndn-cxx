@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -22,14 +22,13 @@
 #ifndef NDN_CXX_LP_PACKET_HPP
 #define NDN_CXX_LP_PACKET_HPP
 
-#include "ndn-cxx/encoding/block.hpp"
-#include "ndn-cxx/encoding/encoding-buffer.hpp"
-#include "ndn-cxx/lp/tlv.hpp"
+#include "ndn-cxx/lp/fields.hpp"
 
+namespace ndn {
 /**
  * @brief Contains classes and functions related to NDNLPv2.
  */
-namespace ndn::lp {
+namespace lp {
 
 class Packet
 {
@@ -62,7 +61,7 @@ public:
    * \retval true packet has no field
    * \retval false packet has one or more fields
    */
-  [[nodiscard]] bool
+  NDN_CXX_NODISCARD bool
   empty() const
   {
     return m_wire.elements_size() == 0;
@@ -74,7 +73,7 @@ public: // field access
    * \details This is equivalent to count() > 0
    */
   template<typename FIELD>
-  [[nodiscard]] bool
+  NDN_CXX_NODISCARD bool
   has() const
   {
     return count<FIELD>() > 0;
@@ -84,7 +83,7 @@ public: // field access
    * \brief Returns the number of occurrences of \c FIELD.
    */
   template<typename FIELD>
-  [[nodiscard]] size_t
+  NDN_CXX_NODISCARD size_t
   count() const
   {
     return std::count_if(m_wire.elements_begin(), m_wire.elements_end(),
@@ -116,7 +115,7 @@ public: // field access
    * \brief Returns the values of all occurrences of \c FIELD.
    */
   template<typename FIELD>
-  [[nodiscard]] std::vector<typename FIELD::ValueType>
+  NDN_CXX_NODISCARD std::vector<typename FIELD::ValueType>
   list() const
   {
     std::vector<typename FIELD::ValueType> output;
@@ -203,12 +202,13 @@ public: // field access
 
 private:
   static bool
-  comparePos(uint32_t first, const Block& second) noexcept;
+  comparePos(uint64_t first, const Block& second) noexcept;
 
 private:
-  mutable Block m_wire{tlv::LpPacket};
+  mutable Block m_wire;
 };
 
-} // namespace ndn::lp
+} // namespace lp
+} // namespace ndn
 
 #endif // NDN_CXX_LP_PACKET_HPP

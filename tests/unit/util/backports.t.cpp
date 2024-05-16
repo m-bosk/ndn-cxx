@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2020 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -19,25 +19,39 @@
  * See AUTHORS.md for complete list of ndn-cxx authors and contributors.
  */
 
-#include "ndn-cxx/lp/fields.hpp"
+#include "ndn-cxx/util/backports.hpp"
 
-namespace ndn::tests {
+#include "tests/boost-test.hpp"
 
-using namespace ndn::lp;
+namespace ndn {
+namespace tests {
 
-BOOST_CONCEPT_ASSERT((Field<FragmentField>));
-BOOST_CONCEPT_ASSERT((Field<SequenceField>));
-BOOST_CONCEPT_ASSERT((Field<FragIndexField>));
-BOOST_CONCEPT_ASSERT((Field<FragCountField>));
-BOOST_CONCEPT_ASSERT((Field<PitTokenField>));
-BOOST_CONCEPT_ASSERT((Field<NackField>));
-BOOST_CONCEPT_ASSERT((Field<IncomingFaceIdField>));
-BOOST_CONCEPT_ASSERT((Field<NextHopFaceIdField>));
-BOOST_CONCEPT_ASSERT((Field<CachePolicyField>));
-BOOST_CONCEPT_ASSERT((Field<CongestionMarkField>));
-BOOST_CONCEPT_ASSERT((Field<AckField>));
-BOOST_CONCEPT_ASSERT((Field<TxSequenceField>));
-BOOST_CONCEPT_ASSERT((Field<NonDiscoveryField>));
-BOOST_CONCEPT_ASSERT((Field<PrefixAnnouncementField>));
+BOOST_AUTO_TEST_SUITE(Util)
+BOOST_AUTO_TEST_SUITE(TestBackports)
 
-} // namespace ndn::tests
+BOOST_AUTO_TEST_CASE(Clamp)
+{
+  int x = clamp(5, 1, 10);
+  BOOST_CHECK_EQUAL(x, 5);
+
+  x = clamp(-5, 1, 10);
+  BOOST_CHECK_EQUAL(x, 1);
+
+  x = clamp(15, 1, 10);
+  BOOST_CHECK_EQUAL(x, 10);
+
+  x = clamp(5, 10, 1, std::greater<int>());
+  BOOST_CHECK_EQUAL(x, 5);
+
+  x = clamp(-5, 10, 1, std::greater<int>());
+  BOOST_CHECK_EQUAL(x, 1);
+
+  x = clamp(15, 10, 1, std::greater<int>());
+  BOOST_CHECK_EQUAL(x, 10);
+}
+
+BOOST_AUTO_TEST_SUITE_END() // TestBackports
+BOOST_AUTO_TEST_SUITE_END() // Util
+
+} // namespace tests
+} // namespace ndn

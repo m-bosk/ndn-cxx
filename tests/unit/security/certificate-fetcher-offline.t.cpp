@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -25,11 +25,10 @@
 #include "tests/boost-test.hpp"
 #include "tests/unit/security/validator-fixture.hpp"
 
-#include <boost/mp11/list.hpp>
-
-namespace ndn::tests {
-
-using namespace ndn::security;
+namespace ndn {
+namespace security {
+inline namespace v2 {
+namespace tests {
 
 BOOST_AUTO_TEST_SUITE(Security)
 
@@ -46,7 +45,7 @@ using CertificateFetcherOfflineFixture = HierarchicalValidatorFixture<Validation
 
 BOOST_FIXTURE_TEST_SUITE(TestCertificateFetcherOffline, CertificateFetcherOfflineFixture)
 
-using Packets = boost::mp11::mp_list<InterestV03Pkt, DataPkt>;
+using Packets = boost::mpl::vector<InterestV03Pkt, DataPkt>;
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(Validate, Packet, Packets)
 {
@@ -67,4 +66,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(Validate, Packet, Packets)
 BOOST_AUTO_TEST_SUITE_END() // TestCertificateFetcherOffline
 BOOST_AUTO_TEST_SUITE_END() // Security
 
-} // namespace ndn::tests
+} // namespace tests
+} // inline namespace v2
+} // namespace security
+} // namespace ndn

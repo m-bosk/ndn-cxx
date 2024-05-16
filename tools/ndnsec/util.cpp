@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -25,7 +25,8 @@
 
 #include <unistd.h>
 
-namespace ndn::ndnsec {
+namespace ndn {
+namespace ndnsec {
 
 bool
 getPassword(std::string& password, const std::string& prompt, bool shouldConfirm)
@@ -88,4 +89,5 @@ getCertificateFromPib(const security::pib::Pib& pib, const Name& name,
   NDN_CXX_UNREACHABLE;
 }
 
-} // namespace ndn::ndnsec
+} // namespace ndnsec
+} // namespace ndn

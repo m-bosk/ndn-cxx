@@ -11,13 +11,13 @@ if [[ -n $DISABLE_HEADERS_CHECK ]]; then
   exit 0
 fi
 
-if [[ $ID_LIKE == *linux* && -d /usr/local/lib64/pkgconfig ]]; then
+if [[ $ID_LIKE == *fedora* ]]; then
   export PKG_CONFIG_PATH=/usr/local/lib64/pkgconfig
 fi
 
 CXX=${CXX:-g++}
-STD=-std=c++17
-CXXFLAGS="-O2 -Wall -Wno-unknown-warning-option -Wno-enum-constexpr-conversion -Wno-unused-const-variable $(pkg-config --cflags libndn-cxx $PCFILE)"
+STD=-std=c++14
+CXXFLAGS="-O2 -Wall -Wno-unneeded-internal-declaration -Wno-unused-const-variable $(pkg-config --cflags libndn-cxx $PCFILE)"
 INCLUDEDIR="$(pkg-config --variable=includedir $PCFILE)"/$PROJ
 
 echo "Using: $CXX $STD $CXXFLAGS"

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -26,9 +26,12 @@
 #include "tests/test-common.hpp"
 #include "tests/unit/io-key-chain-fixture.hpp"
 
-namespace ndn::tests {
+namespace ndn {
+namespace mgmt {
+namespace tests {
 
-using namespace ndn::mgmt;
+using namespace ndn::tests;
+using std::bind;
 
 class DispatcherFixture : public IoKeyChainFixture
 {
@@ -41,7 +44,7 @@ public:
   }
 
 public:
-  DummyClientFace face;
+  util::DummyClientFace face;
   mgmt::Dispatcher dispatcher;
   InMemoryStorageFifo& storage;
 };
@@ -95,25 +98,25 @@ BOOST_AUTO_TEST_CASE(Basic)
 {
   BOOST_CHECK_NO_THROW(dispatcher
                          .addControlCommand<VoidParameters>("test/1", makeAcceptAllAuthorization(),
-                                                            std::bind([] { return true; }),
-                                                            std::bind([]{})));
+                                                            bind([] { return true; }),
+                                                            bind([]{})));
   BOOST_CHECK_NO_THROW(dispatcher
                          .addControlCommand<VoidParameters>("test/2", makeAcceptAllAuthorization(),
-                                                            std::bind([] { return true; }),
-                                                            std::bind([]{})));
+                                                            bind([] { return true; }),
+                                                            bind([]{})));
 
   BOOST_CHECK_THROW(dispatcher
                       .addControlCommand<VoidParameters>("test", makeAcceptAllAuthorization(),
-                                                         std::bind([] { return true; }),
-                                                         std::bind([]{})),
+                                                         bind([] { return true; }),
+                                                         bind([]{})),
                     std::out_of_range);
 
   BOOST_CHECK_NO_THROW(dispatcher.addStatusDataset("status/1",
-                                                   makeAcceptAllAuthorization(), std::bind([]{})));
+                                                   makeAcceptAllAuthorization(), bind([]{})));
   BOOST_CHECK_NO_THROW(dispatcher.addStatusDataset("status/2",
-                                                   makeAcceptAllAuthorization(), std::bind([]{})));
+                                                   makeAcceptAllAuthorization(), bind([]{})));
   BOOST_CHECK_THROW(dispatcher.addStatusDataset("status",
-                                                makeAcceptAllAuthorization(), std::bind([]{})),
+                                                makeAcceptAllAuthorization(), bind([]{})),
                     std::out_of_range);
 
   BOOST_CHECK_NO_THROW(dispatcher.addNotificationStream("stream/1"));
@@ -127,12 +130,12 @@ BOOST_AUTO_TEST_CASE(Basic)
 
   BOOST_CHECK_THROW(dispatcher
                       .addControlCommand<VoidParameters>("test/3", makeAcceptAllAuthorization(),
-                                                         std::bind([] { return true; }),
-                                                         std::bind([]{})),
+                                                         bind([] { return true; }),
+                                                         bind([]{})),
                     std::domain_error);
 
   BOOST_CHECK_THROW(dispatcher.addStatusDataset("status/3",
-                                                makeAcceptAllAuthorization(), std::bind([]{})),
+                                                makeAcceptAllAuthorization(), bind([]{})),
                     std::domain_error);
 
   BOOST_CHECK_THROW(dispatcher.addNotificationStream("stream/3"), std::domain_error);
@@ -143,13 +146,13 @@ BOOST_AUTO_TEST_CASE(AddRemoveTopPrefix)
   std::map<std::string, size_t> nCallbackCalled;
   dispatcher
     .addControlCommand<VoidParameters>("test/1", makeAcceptAllAuthorization(),
-                                       std::bind([] { return true; }),
-                                       std::bind([&nCallbackCalled] { ++nCallbackCalled["test/1"]; }));
+                                       bind([] { return true; }),
+                                       bind([&nCallbackCalled] { ++nCallbackCalled["test/1"]; }));
 
   dispatcher
     .addControlCommand<VoidParameters>("test/2", makeAcceptAllAuthorization(),
-                                       std::bind([] { return true; }),
-                                       std::bind([&nCallbackCalled] { ++nCallbackCalled["test/2"]; }));
+                                       bind([] { return true; }),
+                                       bind([&nCallbackCalled] { ++nCallbackCalled["test/2"]; }));
 
   face.receive(*makeInterest("/root/1/test/1/%80%00"));
   advanceClocks(1_ms);
@@ -204,8 +207,8 @@ BOOST_AUTO_TEST_CASE(ControlCommand)
   dispatcher
     .addControlCommand<VoidParameters>("test",
                                        makeTestAuthorization(),
-                                       std::bind([] { return true; }),
-                                       std::bind([&nCallbackCalled] { ++nCallbackCalled; }));
+                                       bind([] { return true; }),
+                                       bind([&nCallbackCalled] { ++nCallbackCalled; }));
 
   dispatcher.addTopPrefix("/root");
   advanceClocks(1_ms);
@@ -262,8 +265,7 @@ private:
   int m_state = 0;
 };
 
-BOOST_AUTO_TEST_CASE(ControlCommandAsyncAuthorization,
-  * ut::description("test for bug #4059"))
+BOOST_AUTO_TEST_CASE(ControlCommandAsyncAuthorization) // Bug 4059
 {
   AcceptContinuation authorizationAccept;
   auto authorization =
@@ -279,7 +281,7 @@ BOOST_AUTO_TEST_CASE(ControlCommandAsyncAuthorization,
 
   size_t nCallbackCalled = 0;
   dispatcher.addControlCommand<StatefulParameters>("test", authorization, validateParameters,
-                                                   std::bind([&nCallbackCalled] { ++nCallbackCalled; }));
+                                                   bind([&nCallbackCalled] { ++nCallbackCalled; }));
 
   dispatcher.addTopPrefix("/root");
   advanceClocks(1_ms);
@@ -472,4 +474,6 @@ BOOST_AUTO_TEST_CASE(NotificationStream)
 BOOST_AUTO_TEST_SUITE_END() // TestDispatcher
 BOOST_AUTO_TEST_SUITE_END() // Mgmt
 
-} // namespace ndn::tests
+} // namespace tests
+} // namespace mgmt
+} // namespace ndn

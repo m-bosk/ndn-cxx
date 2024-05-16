@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2021 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -22,44 +22,54 @@
 #ifndef NDN_CXX_TESTS_UNIT_NET_NETWORK_CONFIGURATION_DETECTOR_HPP
 #define NDN_CXX_TESTS_UNIT_NET_NETWORK_CONFIGURATION_DETECTOR_HPP
 
-#include "tests/boost-test.hpp"
+#define SKIP_IF_IPV4_UNAVAILABLE() \
+  do { \
+    if (!::ndn::tests::NetworkConfigurationDetector::hasIpv4()) { \
+      BOOST_WARN_MESSAGE(false, "skipping assertions that require IPv4 support"); \
+      return; \
+    } \
+  } while (false)
 
-namespace ndn::tests {
+#define SKIP_IF_IPV6_UNAVAILABLE() \
+  do { \
+    if (!::ndn::tests::NetworkConfigurationDetector::hasIpv6()) { \
+      BOOST_WARN_MESSAGE(false, "skipping assertions that require IPv6 support"); \
+      return; \
+    } \
+  } while (false)
+
+#define SKIP_IF_IP_UNAVAILABLE() \
+  do { \
+    if (!::ndn::tests::NetworkConfigurationDetector::hasIpv4() && \
+        !::ndn::tests::NetworkConfigurationDetector::hasIpv6()) { \
+      BOOST_WARN_MESSAGE(false, "skipping assertions that require either IPv4 or IPv6 support"); \
+      return; \
+    } \
+  } while (false)
+
+namespace ndn {
+namespace tests {
 
 class NetworkConfigurationDetector
 {
 public:
-  static boost::test_tools::assertion_result
-  hasIpv4(ut::test_unit_id = {})
-  {
-    detect();
-    return s_hasIpv4;
-  }
+  static bool
+  hasIpv4();
 
-  static boost::test_tools::assertion_result
-  hasIpv6(ut::test_unit_id = {})
-  {
-    detect();
-    return s_hasIpv6;
-  }
-
-  static boost::test_tools::assertion_result
-  hasIpv4OrIpv6(ut::test_unit_id = {})
-  {
-    detect();
-    return s_hasIp;
-  }
+  static bool
+  hasIpv6();
 
 private:
   static void
   detect();
 
 private:
-  static inline boost::test_tools::assertion_result s_hasIp = false;
-  static inline boost::test_tools::assertion_result s_hasIpv4 = false;
-  static inline boost::test_tools::assertion_result s_hasIpv6 = false;
+  static bool m_isInitialized;
+  static bool m_hasIpv4;
+  static bool m_hasIpv6;
 };
 
-} // namespace ndn::tests
+} // namespace tests
+} // namespace ndn
 
 #endif // NDN_CXX_TESTS_UNIT_NET_NETWORK_CONFIGURATION_DETECTOR_HPP

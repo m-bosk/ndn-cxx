@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -21,14 +21,33 @@
 
 #include "ndn-cxx/security/pib/certificate-container.hpp"
 #include "ndn-cxx/security/pib/pib-impl.hpp"
+#include "ndn-cxx/util/concepts.hpp"
 #include "ndn-cxx/util/logger.hpp"
 
-namespace ndn::security::pib {
+namespace ndn {
+namespace security {
+namespace pib {
 
 NDN_LOG_INIT(ndn.security.CertificateContainer);
 
+NDN_CXX_ASSERT_FORWARD_ITERATOR(CertificateContainer::const_iterator);
+
+CertificateContainer::const_iterator::const_iterator(NameSet::const_iterator it,
+                                                     const CertificateContainer& container) noexcept
+  : m_it(it)
+  , m_container(&container)
+{
+}
+
+Certificate
+CertificateContainer::const_iterator::operator*()
+{
+  BOOST_ASSERT(m_container != nullptr);
+  return m_container->get(*m_it);
+}
+
 bool
-CertificateContainer::const_iterator::equals(const const_iterator& other) const noexcept
+CertificateContainer::const_iterator::operator==(const const_iterator& other) const
 {
   bool isThisEnd = m_container == nullptr || m_it == m_container->m_certNames.end();
   bool isOtherEnd = other.m_container == nullptr || other.m_it == other.m_container->m_certNames.end();
@@ -94,7 +113,8 @@ CertificateContainer::get(const Name& certName) const
                                     "does not match key `" + m_keyName.toUri() + "`"));
   }
 
-  if (auto it = m_certs.find(certName); it != m_certs.end()) {
+  auto it = m_certs.find(certName);
+  if (it != m_certs.end()) {
     return it->second;
   }
 
@@ -108,4 +128,6 @@ CertificateContainer::isConsistent() const
   return m_certNames == m_pib->getCertificatesOfKey(m_keyName);
 }
 
-} // namespace ndn::security::pib
+} // namespace pib
+} // namespace security
+} // namespace ndn

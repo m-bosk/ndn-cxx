@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2021 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -28,9 +28,12 @@
 
 #include <boost/property_tree/ptree.hpp>
 
-namespace ndn::security::validator_config {
+namespace ndn {
+namespace security {
+inline namespace v2 {
+namespace validator_config {
 
-using ConfigSection = boost::property_tree::ptree;
+typedef boost::property_tree::ptree ConfigSection;
 
 class Error : public std::runtime_error
 {
@@ -38,6 +41,9 @@ public:
   using std::runtime_error::runtime_error;
 };
 
-} // namespace ndn::security::validator_config
+} // namespace validator_config
+} // inline namespace v2
+} // namespace security
+} // namespace ndn
 
 #endif // NDN_CXX_SECURITY_VALIDATOR_CONFIG_COMMON_HPP

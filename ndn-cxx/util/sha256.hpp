@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -22,10 +22,12 @@
 #ifndef NDN_CXX_UTIL_SHA256_HPP
 #define NDN_CXX_UTIL_SHA256_HPP
 
+#include "ndn-cxx/encoding/block.hpp"
 #include "ndn-cxx/encoding/buffer-stream.hpp"
 #include "ndn-cxx/security/transform/step-source.hpp"
 
-namespace ndn::util {
+namespace ndn {
+namespace util {
 
 /**
  * @brief Provides stateful SHA-256 digest calculation.
@@ -51,7 +53,7 @@ public:
   /**
    * @brief Length in bytes of a SHA-256 digest.
    */
-  static constexpr size_t DIGEST_SIZE = 32;
+  static const size_t DIGEST_SIZE = 32;
 
   /**
    * @brief Create an empty SHA-256 digest.
@@ -121,7 +123,7 @@ public:
    * @throw Error the digest has already been finalized
    */
   Sha256&
-  operator<<(std::string_view str);
+  operator<<(const std::string& str);
 
   /**
    * @brief Add a uint64_t value to the digest calculation.
@@ -168,6 +170,7 @@ private:
 std::ostream&
 operator<<(std::ostream& os, Sha256& digest);
 
-} // namespace ndn::util
+} // namespace util
+} // namespace ndn
 
 #endif // NDN_CXX_UTIL_SHA256_HPP

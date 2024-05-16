@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2019 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -23,10 +23,11 @@
 #include "ndn-cxx/encoding/tlv.hpp"
 #include "ndn-cxx/util/string-helper.hpp"
 
-namespace ndn::lp {
+namespace ndn {
+namespace lp {
 
-constexpr size_t LENGTH_MIN = 1;
-constexpr size_t LENGTH_MAX = 32;
+static constexpr size_t LENGTH_MIN = 1;
+static constexpr size_t LENGTH_MAX = 32;
 
 void
 PitToken::validate() const
@@ -44,4 +45,5 @@ operator<<(std::ostream& os, const PitToken& pitToken)
   return os;
 }
 
-} // namespace ndn::lp
+} // namespace lp
+} // namespace ndn

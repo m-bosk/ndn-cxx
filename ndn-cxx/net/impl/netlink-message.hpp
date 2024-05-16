@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2021 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -26,6 +26,7 @@
 
 #include "ndn-cxx/detail/common.hpp"
 #include "ndn-cxx/net/ethernet.hpp"
+#include "ndn-cxx/util/optional.hpp"
 
 #ifndef NDN_CXX_HAVE_NETLINK
 #error "This file should not be included ..."
@@ -35,63 +36,102 @@
 #include <linux/rtnetlink.h>
 #include <string.h>
 
-#include <algorithm>
 #include <cstring>
 #include <map>
-#include <optional>
 
 #include <boost/asio/ip/address.hpp>
 
-namespace ndn::net {
+namespace ndn {
+namespace net {
 
 template<typename T>
 constexpr size_t
-getAttributeLength(const T* attr)
+getAttributeLength(const T* attr);
+
+template<>
+constexpr size_t
+getAttributeLength(const nlattr* attr)
 {
-  if constexpr (std::is_same_v<T, nlattr>)
-    return attr->nla_len;
-  if constexpr (std::is_same_v<T, rtattr>)
-    return attr->rta_len;
+  return attr->nla_len;
+}
+
+template<>
+constexpr size_t
+getAttributeLength(const rtattr* attr)
+{
+  return attr->rta_len;
 }
 
 template<typename T>
 constexpr size_t
-getAttributeLengthAligned(const T* attr)
+getAttributeLengthAligned(const T* attr);
+
+template<>
+constexpr size_t
+getAttributeLengthAligned(const nlattr* attr)
 {
-  if constexpr (std::is_same_v<T, nlattr>)
-    return NLA_ALIGN(attr->nla_len);
-  if constexpr (std::is_same_v<T, rtattr>)
-    return RTA_ALIGN(attr->rta_len);
+  return NLA_ALIGN(attr->nla_len);
+}
+
+template<>
+constexpr size_t
+getAttributeLengthAligned(const rtattr* attr)
+{
+  return RTA_ALIGN(attr->rta_len);
 }
 
 template<typename T>
-uint16_t
-getAttributeType(const T* attr)
+constexpr uint16_t
+getAttributeType(const T* attr);
+
+template<>
+constexpr uint16_t
+getAttributeType(const nlattr* attr)
 {
-  if constexpr (std::is_same_v<T, nlattr>)
-    return attr->nla_type & NLA_TYPE_MASK;
-  if constexpr (std::is_same_v<T, rtattr>)
-    return attr->rta_type;
+  return attr->nla_type & NLA_TYPE_MASK;
+}
+
+template<>
+constexpr uint16_t
+getAttributeType(const rtattr* attr)
+{
+  return attr->rta_type;
 }
 
 template<typename T>
 const uint8_t*
-getAttributeValue(const T* attr)
+getAttributeValue(const T* attr);
+
+template<>
+inline const uint8_t*
+getAttributeValue(const nlattr* attr)
 {
-  if constexpr (std::is_same_v<T, nlattr>)
-    return reinterpret_cast<const uint8_t*>(attr) + NLA_HDRLEN;
-  if constexpr (std::is_same_v<T, rtattr>)
-    return reinterpret_cast<const uint8_t*>(RTA_DATA(const_cast<rtattr*>(attr)));
+  return reinterpret_cast<const uint8_t*>(attr) + NLA_HDRLEN;
+}
+
+template<>
+inline const uint8_t*
+getAttributeValue(const rtattr* attr)
+{
+  return reinterpret_cast<const uint8_t*>(RTA_DATA(const_cast<rtattr*>(attr)));
 }
 
 template<typename T>
 constexpr size_t
-getAttributeValueLength(const T* attr)
+getAttributeValueLength(const T* attr);
+
+template<>
+constexpr size_t
+getAttributeValueLength(const nlattr* attr)
 {
-  if constexpr (std::is_same_v<T, nlattr>)
-    return attr->nla_len - NLA_HDRLEN;
-  if constexpr (std::is_same_v<T, rtattr>)
-    return RTA_PAYLOAD(attr);
+  return attr->nla_len - NLA_HDRLEN;
+}
+
+template<>
+constexpr size_t
+getAttributeValueLength(const rtattr* attr)
+{
+  return RTA_PAYLOAD(attr);
 }
 
 template<typename T>
@@ -187,12 +227,12 @@ public:
   }
 
   template<typename U>
-  std::optional<U>
+  optional<U>
   getAttributeByType(uint16_t attrType) const
   {
     auto it = m_attrs.find(attrType);
     if (it == m_attrs.end())
-      return std::nullopt;
+      return nullopt;
 
     return convertAttrValue(getAttributeValue(it->second),
                             getAttributeValueLength(it->second),
@@ -221,54 +261,55 @@ private:
   }
 
   template<typename Integral>
-  static std::enable_if_t<std::is_integral_v<Integral>, std::optional<Integral>>
+  static std::enable_if_t<std::is_integral<Integral>::value, optional<Integral>>
   convertAttrValue(const uint8_t* val, size_t len, AttrValueTypeTag<Integral>)
   {
     if (len < sizeof(Integral))
-      return std::nullopt;
+      return nullopt;
 
     Integral i;
     std::memcpy(&i, val, sizeof(Integral));
     return i;
   }
 
-  static std::optional<std::string>
+  static optional<std::string>
   convertAttrValue(const uint8_t* val, size_t len, AttrValueTypeTag<std::string>)
   {
     auto str = reinterpret_cast<const char*>(val);
     if (::strnlen(str, len) >= len)
-      return std::nullopt;
+      return nullopt;
 
-    return std::make_optional<std::string>(str);
+    return std::string(str);
   }
 
-  static std::optional<ethernet::Address>
+  static optional<ethernet::Address>
   convertAttrValue(const uint8_t* val, size_t len, AttrValueTypeTag<ethernet::Address>)
   {
     if (len < ethernet::ADDR_LEN)
-      return std::nullopt;
+      return nullopt;
 
-    return std::make_optional<ethernet::Address>(val);
+    return ethernet::Address(val);
   }
 
   template<typename IpAddress>
-  static std::enable_if_t<std::is_same_v<IpAddress, boost::asio::ip::address_v4> ||
-                          std::is_same_v<IpAddress, boost::asio::ip::address_v6>,
-                          std::optional<IpAddress>>
+  static std::enable_if_t<std::is_same<IpAddress, boost::asio::ip::address_v4>::value ||
+                          std::is_same<IpAddress, boost::asio::ip::address_v6>::value,
+                          optional<IpAddress>>
   convertAttrValue(const uint8_t* val, size_t len, AttrValueTypeTag<IpAddress>)
   {
     typename IpAddress::bytes_type bytes;
     if (len < bytes.size())
-      return std::nullopt;
+      return nullopt;
 
     std::copy_n(val, bytes.size(), bytes.begin());
-    return std::make_optional<IpAddress>(bytes);
+    return IpAddress(bytes);
   }
 
 private:
   std::map<uint16_t, const T*> m_attrs;
 };
 
-} // namespace ndn::net
+} // namespace net
+} // namespace ndn
 
 #endif // NDN_CXX_NET_NETLINK_MESSAGE_HPP

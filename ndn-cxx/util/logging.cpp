@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -42,7 +42,8 @@
 #include <iostream>
 #include <sstream>
 
-namespace ndn::util {
+namespace ndn {
+namespace util {
 namespace log {
 
 static std::string
@@ -60,7 +61,7 @@ makeTimestamp()
   std::string buffer(10 + 1 + 6 + 1, '\0'); // note 1 extra byte still needed for snprintf
   BOOST_ASSERT_MSG(usecs / usecsPerSec <= 9999999999, "whole seconds cannot fit in 10 characters");
 
-  static_assert(std::is_same_v<microseconds::rep, int_least64_t>,
+  static_assert(std::is_same<microseconds::rep, int_least64_t>::value,
                 "PRIdLEAST64 is incompatible with microseconds::rep");
   std::snprintf(&buffer.front(), buffer.size(), "%" PRIdLEAST64 ".%06" PRIdLEAST64,
                 usecs / usecsPerSec, usecs % usecsPerSec);
@@ -74,7 +75,7 @@ BOOST_LOG_ATTRIBUTE_KEYWORD(timestamp, "Timestamp", std::string)
 
 } // namespace log
 
-constexpr LogLevel INITIAL_DEFAULT_LEVEL = LogLevel::NONE;
+static const LogLevel INITIAL_DEFAULT_LEVEL = LogLevel::NONE;
 
 Logging&
 Logging::get()
@@ -139,7 +140,8 @@ LogLevel
 Logging::findLevel(std::string mn) const
 {
   while (!mn.empty()) {
-    if (auto it = m_enabledLevel.find(mn); it != m_enabledLevel.end()) {
+    auto it = m_enabledLevel.find(mn);
+    if (it != m_enabledLevel.end()) {
       return it->second;
     }
     size_t pos = mn.find_last_of('.');
@@ -165,7 +167,7 @@ Logging::findLevel(std::string mn) const
   return it != m_enabledLevel.end() ? it->second : INITIAL_DEFAULT_LEVEL;
 }
 
-#ifdef NDN_CXX_WITH_TESTS
+#ifdef NDN_CXX_HAVE_TESTS
 bool
 Logging::removeLogger(Logger& logger)
 {
@@ -179,7 +181,7 @@ Logging::removeLogger(Logger& logger)
   }
   return false;
 }
-#endif // NDN_CXX_WITH_TESTS
+#endif // NDN_CXX_HAVE_TESTS
 
 void
 Logging::setLevelImpl(const std::string& prefix, LogLevel level)
@@ -236,14 +238,14 @@ Logging::setLevelImpl(const std::string& config)
   }
 }
 
-#ifdef NDN_CXX_WITH_TESTS
+#ifdef NDN_CXX_HAVE_TESTS
 void
 Logging::resetLevels()
 {
   this->setLevelImpl("*", INITIAL_DEFAULT_LEVEL);
   m_enabledLevel.clear();
 }
-#endif // NDN_CXX_WITH_TESTS
+#endif // NDN_CXX_HAVE_TESTS
 
 void
 Logging::setDestination(std::ostream& os, bool wantAutoFlush)
@@ -305,7 +307,7 @@ Logging::setDestinationImpl(boost::shared_ptr<boost::log::sinks::sink> destinati
   }
 }
 
-#ifdef NDN_CXX_WITH_TESTS
+#ifdef NDN_CXX_HAVE_TESTS
 boost::shared_ptr<boost::log::sinks::sink>
 Logging::getDestination() const
 {
@@ -326,7 +328,7 @@ Logging::getLevels() const
 {
   return m_enabledLevel;
 }
-#endif // NDN_CXX_WITH_TESTS
+#endif // NDN_CXX_HAVE_TESTS
 
 void
 Logging::flushImpl()
@@ -338,4 +340,5 @@ Logging::flushImpl()
   }
 }
 
-} // namespace ndn::util
+} // namespace util
+} // namespace ndn

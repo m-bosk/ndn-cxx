@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California,
+ * Copyright (c) 2013-2022 Regents of the University of California,
  *                         Arizona Board of Regents,
  *                         Colorado State University,
  *                         University Pierre & Marie Curie, Sorbonne University,
@@ -35,7 +35,6 @@
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ip/udp.hpp>
 #include <boost/asio/local/stream_protocol.hpp>
-#include <boost/operators.hpp>
 
 namespace ndn {
 
@@ -43,7 +42,7 @@ namespace ndn {
  * \brief The underlying protocol and address used by a Face.
  * \sa https://redmine.named-data.net/projects/nfd/wiki/FaceMgmt#FaceUri
  */
-class FaceUri : private boost::totally_ordered<FaceUri>
+class FaceUri
 {
 public:
   class Error : public std::invalid_argument
@@ -52,30 +51,24 @@ public:
     using std::invalid_argument::invalid_argument;
   };
 
-  /// Construct an empty FaceUri.
   FaceUri();
 
   /**
-   * \brief Construct by parsing from a string.
-   * \param uri `scheme://host[:port]/path`
-   * \throw Error URI cannot be parsed
+   * \brief Construct by parsing.
+   * \param uri scheme://host[:port]/path
+   * \throw FaceUri::Error if URI cannot be parsed
    */
   explicit
   FaceUri(const std::string& uri);
 
-  /**
-   * \brief Construct by parsing from a null-terminated string.
-   * \param uri `scheme://host[:port]/path`
-   * \throw Error URI cannot be parsed
-   * \note This overload is needed so that calls with a string literal won't be
-   *       resolved to the boost::asio::local::stream_protocol::endpoint overload.
-   */
+  // This overload is needed so that calls with string literal won't be
+  // resolved to boost::asio::local::stream_protocol::endpoint overload.
   explicit
   FaceUri(const char* uri);
 
   /// Exception-safe parsing.
-  [[nodiscard]] bool
-  parse(std::string_view uri);
+  NDN_CXX_NODISCARD bool
+  parse(const std::string& uri);
 
 public: // scheme-specific construction
   /// Construct a udp4 or udp6 canonical FaceUri.
@@ -87,7 +80,7 @@ public: // scheme-specific construction
   FaceUri(const boost::asio::ip::tcp::endpoint& endpoint);
 
   /// Construct a tcp canonical FaceUri with custom scheme.
-  FaceUri(const boost::asio::ip::tcp::endpoint& endpoint, std::string_view scheme);
+  FaceUri(const boost::asio::ip::tcp::endpoint& endpoint, const std::string& scheme);
 
 #ifdef BOOST_ASIO_HAS_LOCAL_SOCKETS
   /// Construct a unix canonical FaceUri.
@@ -95,21 +88,21 @@ public: // scheme-specific construction
   FaceUri(const boost::asio::local::stream_protocol::endpoint& endpoint);
 #endif // BOOST_ASIO_HAS_LOCAL_SOCKETS
 
-  /// Construct an ether canonical FaceUri.
-  explicit
-  FaceUri(const ethernet::Address& address);
-
   /// Construct an fd FaceUri from a file descriptor.
   static FaceUri
   fromFd(int fd);
 
+  /// Construct an ether canonical FaceUri.
+  explicit
+  FaceUri(const ethernet::Address& address);
+
   /// Construct a dev FaceUri from a network device name.
   static FaceUri
-  fromDev(std::string_view ifname);
+  fromDev(const std::string& ifname);
 
   /// Construct a udp4 or udp6 NIC-associated FaceUri from endpoint and network device name.
   static FaceUri
-  fromUdpDev(const boost::asio::ip::udp::endpoint& endpoint, std::string_view ifname);
+  fromUdpDev(const boost::asio::ip::udp::endpoint& endpoint, const std::string& ifname);
 
 public: // getters
   /// Get scheme (protocol)
@@ -119,7 +112,7 @@ public: // getters
     return m_scheme;
   }
 
-  /// Get host (domain or address)
+  /// Get host (domain)
   const std::string&
   getHost() const
   {
@@ -140,7 +133,7 @@ public: // getters
     return m_path;
   }
 
-  /// Return string representation
+  /// Serialize as a string
   std::string
   toString() const;
 
@@ -159,15 +152,14 @@ public: // canonical FaceUri
   bool
   isCanonical() const;
 
-  using CanonizeSuccessCallback = std::function<void(const FaceUri&)>;
-  using CanonizeFailureCallback = std::function<void(const std::string& reason)>;
+  typedef function<void(const FaceUri&)> CanonizeSuccessCallback;
+  typedef function<void(const std::string& reason)> CanonizeFailureCallback;
 
   /** \brief Asynchronously convert this FaceUri to canonical form.
-   *  \note A new FaceUri in canonical form will be created; this FaceUri is unchanged.
-   *
    *  \param onSuccess function to call after this FaceUri is converted to canonical form
+   *  \note A new FaceUri in canonical form will be created; this FaceUri is unchanged.
    *  \param onFailure function to call if this FaceUri cannot be converted to canonical form
-   *  \param io        reference to `boost::asio::io_context` instance
+   *  \param io        reference to `boost::asio::io_service` instance
    *  \param timeout   maximum allowable duration of the operations.
    *                   It's intentional not to provide a default value: the caller should set
    *                   a reasonable value in balance between network delay and user experience.
@@ -175,40 +167,27 @@ public: // canonical FaceUri
   void
   canonize(const CanonizeSuccessCallback& onSuccess,
            const CanonizeFailureCallback& onFailure,
-           boost::asio::io_context& io,
+           boost::asio::io_service& io,
            time::nanoseconds timeout) const;
-
-private:
-  void
-  print(std::ostream& os) const;
 
 private: // non-member operators
   // NOTE: the following "hidden friend" operators are available via
   //       argument-dependent lookup only and must be defined inline.
-  // boost::totally_ordered provides !=, <=, >=, and > operators.
 
   friend bool
-  operator==(const FaceUri& lhs, const FaceUri& rhs) noexcept
+  operator==(const FaceUri& lhs, const FaceUri& rhs)
   {
-    return lhs.m_isV6 == rhs.m_isV6 &&
-           lhs.m_scheme == rhs.m_scheme &&
-           lhs.m_host == rhs.m_host &&
-           lhs.m_port == rhs.m_port &&
-           lhs.m_path == rhs.m_path;
+    return !(lhs != rhs);
   }
 
   friend bool
-  operator<(const FaceUri& lhs, const FaceUri& rhs) noexcept
+  operator!=(const FaceUri& lhs, const FaceUri& rhs)
   {
-    return std::tie(lhs.m_scheme, lhs.m_isV6, lhs.m_host, lhs.m_port, lhs.m_path) <
-           std::tie(rhs.m_scheme, rhs.m_isV6, rhs.m_host, rhs.m_port, rhs.m_path);
-  }
-
-  friend std::ostream&
-  operator<<(std::ostream& os, const FaceUri& uri)
-  {
-    uri.print(os);
-    return os;
+    return lhs.m_isV6 != rhs.m_isV6 ||
+           lhs.m_scheme != rhs.m_scheme ||
+           lhs.m_host != rhs.m_host ||
+           lhs.m_port != rhs.m_port ||
+           lhs.m_path != rhs.m_path;
   }
 
 private:
@@ -216,8 +195,14 @@ private:
   std::string m_host;
   std::string m_port;
   std::string m_path;
-  bool m_isV6 = false; ///< whether to add [] around host when converting to string representation
+  /// whether to add [] around host when writing string
+  bool m_isV6;
+
+  friend std::ostream& operator<<(std::ostream& os, const FaceUri& uri);
 };
+
+std::ostream&
+operator<<(std::ostream& os, const FaceUri& uri);
 
 } // namespace ndn
 

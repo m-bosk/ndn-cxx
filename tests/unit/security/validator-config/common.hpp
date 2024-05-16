@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2020 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -26,9 +26,11 @@
 
 #include <boost/property_tree/info_parser.hpp>
 
-namespace ndn::tests {
-
-using ndn::security::validator_config::ConfigSection;
+namespace ndn {
+namespace security {
+inline namespace v2 {
+namespace validator_config {
+namespace tests {
 
 inline ConfigSection
 makeSection(const std::string& config)
@@ -39,6 +41,10 @@ makeSection(const std::string& config)
   return section;
 }
 
-} // namespace ndn::tests
+} // namespace tests
+} // namespace validator_config
+} // inline namespace v2
+} // namespace security
+} // namespace ndn
 
 #endif // NDN_CXX_TESTS_UNIT_SECURITY_VALIDATOR_CONFIG_COMMON_HPP

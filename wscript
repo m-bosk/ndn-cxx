@@ -1,8 +1,7 @@
 # -*- Mode: python; py-indent-offset: 4; indent-tabs-mode: nil; coding: utf-8; -*-
 
-import os
-import subprocess
 from waflib import Context, Logs, Utils
+import os, subprocess
 
 VERSION = '0.8.1'
 APPNAME = 'ndn-cxx'
@@ -10,10 +9,10 @@ GIT_TAG_PREFIX = 'ndn-cxx-'
 
 def options(opt):
     opt.load(['compiler_cxx', 'gnu_dirs', 'c_osx'])
-    opt.load(['cross', 'default-compiler-flags', 'pch',
-              'coverage', 'sanitizers', 'osx-frameworks',
+    opt.load(['cross', 'default-compiler-flags', 'compiler-features',
+              'coverage', 'pch', 'sanitizers', 'osx-frameworks',
               'boost', 'openssl', 'sqlite3',
-              'doxygen', 'sphinx'],
+              'doxygen', 'sphinx_build'],
              tooldir=['.waf-tools'])
 
     opt = opt.add_option_group('ndn-cxx Options')
@@ -28,8 +27,8 @@ def options(opt):
     opt.add_option('--disable-shared', action='store_false', default=True,
                    dest='enable_shared', help='Do not build shared library (enabled by default)')
 
-    opt.add_option('--with-osx-keychain', action='store_true', default=False,
-                   help='Use macOS Keychain as default TPM (macOS only)')
+    opt.add_option('--without-osx-keychain', action='store_false', default=True,
+                   dest='with_osx_keychain', help='Do not use macOS Keychain as default TPM (macOS only)')
 
     opt.add_option('--without-sqlite-locking', action='store_false', default=True, dest='with_sqlite_locking',
                    help='Disable filesystem locking in sqlite3 database '
@@ -47,13 +46,7 @@ def options(opt):
                    help='Build examples')
 
     opt.add_option('--with-tests', action='store_true', default=False,
-                   help='Build all tests (benchmarks, integration tests, unit tests)')
-    opt.add_option('--with-benchmarks', action='store_true', default=False,
-                   help='Build benchmarks')
-    opt.add_option('--with-integration-tests', action='store_true', default=False,
-                   help='Build integration tests')
-    opt.add_option('--with-unit-tests', action='store_true', default=False,
-                   help='Build unit tests')
+                   help='Build tests')
 
     opt.add_option('--without-tools', action='store_false', default=True, dest='with_tools',
                    help='Do not build tools')
@@ -76,16 +69,14 @@ def configure(conf):
     if not conf.options.enable_shared and not conf.options.enable_static:
         conf.fatal('Either static library or shared library must be enabled')
 
-    conf.load(['compiler_cxx', 'gnu_dirs', 'c_osx',
-               'cross', 'default-compiler-flags', 'pch',
-               'osx-frameworks', 'boost', 'openssl', 'sqlite3',
-               'doxygen', 'sphinx'])
+    conf.load(['cross', 'compiler_cxx', 'gnu_dirs', 'c_osx',
+               'default-compiler-flags', 'compiler-features',
+               'pch', 'osx-frameworks', 'boost', 'openssl', 'sqlite3',
+               'doxygen', 'sphinx_build'])
 
-    conf.env.WITH_EXAMPLES = conf.options.with_examples
-    conf.env.WITH_BENCHMARKS = conf.options.with_benchmarks or conf.options.with_tests
-    conf.env.WITH_INTEGRATION_TESTS = conf.options.with_integration_tests or conf.options.with_tests
-    conf.env.WITH_UNIT_TESTS = conf.options.with_unit_tests or conf.options.with_tests
+    conf.env.WITH_TESTS = conf.options.with_tests
     conf.env.WITH_TOOLS = conf.options.with_tools
+    conf.env.WITH_EXAMPLES = conf.options.with_examples
 
     conf.find_program('dot', mandatory=False)
 
@@ -112,25 +103,14 @@ def configure(conf):
     conf.check_sqlite3()
     conf.check_openssl(lib='crypto', atleast_version='1.1.1')
 
-    conf.check_boost()
-    if conf.env.BOOST_VERSION_NUMBER < 107100:
-        conf.fatal('The minimum supported version of Boost is 1.71.0.\n'
-                   'Please upgrade your distribution or manually install a newer version of Boost.\n'
-                   'For more information, see https://redmine.named-data.net/projects/nfd/wiki/Boost')
-
-    # Boost.Log requires Boost.Thread
-    boost_libs = ['chrono', 'filesystem', 'log', 'thread']
-
-    # Boost.Date_Time is header-only since 1.73
-    if conf.env.BOOST_VERSION_NUMBER < 107300:
-        boost_libs.append('date_time')
+    boost_libs = ['system', 'program_options', 'chrono', 'date_time', 'filesystem', 'thread', 'log']
 
     stacktrace_backend = conf.options.with_stacktrace
     if stacktrace_backend is None:
         # auto-detect
         for candidate in ('backtrace', 'basic'):
             try:
-                conf.check_boost(lib=f'stacktrace_{candidate}', mt=True)
+                conf.check_boost(lib='stacktrace_%s' % candidate, mt=True)
             except conf.errors.ConfigurationError:
                 continue
             stacktrace_backend = candidate
@@ -138,15 +118,22 @@ def configure(conf):
     if stacktrace_backend:
         conf.env.HAVE_STACKTRACE = True
         conf.env.append_unique('DEFINES_BOOST', ['BOOST_STACKTRACE_DYN_LINK'])
-        boost_libs.append(f'stacktrace_{stacktrace_backend}')
+        boost_libs.append('stacktrace_%s' % stacktrace_backend)
+
+    if conf.env.WITH_TESTS:
+        boost_libs.append('unit_test_framework')
 
     conf.check_boost(lib=boost_libs, mt=True)
+    if conf.env.BOOST_VERSION_NUMBER < 106501:
+        conf.fatal('The minimum supported version of Boost is 1.65.1.\n'
+                   'Please upgrade your distribution or manually install a newer version of Boost.\n'
+                   'For more information, see https://redmine.named-data.net/projects/nfd/wiki/Boost')
 
-    if conf.env.WITH_BENCHMARKS or conf.env.WITH_INTEGRATION_TESTS or conf.env.WITH_UNIT_TESTS:
-        conf.check_boost(lib='unit_test_framework', mt=True, uselib_store='BOOST_TESTS')
+    # Workaround for bug 4860
+    if conf.env.BOOST_VERSION_NUMBER < 106900 and conf.env.CXX_NAME == 'clang':
+        conf.env.append_unique('DEFINES_BOOST', ['BOOST_ASIO_DISABLE_STD_EXPERIMENTAL_STRING_VIEW'])
 
-    if conf.env.WITH_TOOLS:
-        conf.check_boost(lib='program_options', mt=True, uselib_store='BOOST_TOOLS')
+    conf.env.append_unique('DEFINES_BOOST', ['BOOST_FILESYSTEM_NO_DEPRECATED'])
 
     conf.check_compiler_flags()
 
@@ -161,7 +148,7 @@ def configure(conf):
         conf.env.prepend_value('STLIBPATH', ['.'])
 
     conf.define_cond('HAVE_STACKTRACE', conf.env.HAVE_STACKTRACE)
-    conf.define_cond('WITH_TESTS', conf.env.WITH_INTEGRATION_TESTS or conf.env.WITH_UNIT_TESTS)
+    conf.define_cond('HAVE_TESTS', conf.env.WITH_TESTS)
     conf.define_cond('WITH_OSX_KEYCHAIN', conf.env.HAVE_OSX_FRAMEWORKS and conf.options.with_osx_keychain)
     conf.define_cond('DISABLE_SQLITE3_FS_LOCKING', not conf.options.with_sqlite_locking)
     conf.define('SYSCONFDIR', conf.env.SYSCONFDIR)
@@ -178,7 +165,7 @@ def build(bld):
         name='version.hpp',
         source='ndn-cxx/version.hpp.in',
         target='ndn-cxx/version.hpp',
-        install_path='${INCLUDEDIR}/ndn-cxx',
+        install_path=None,
         VERSION_STRING=VERSION_BASE,
         VERSION_BUILD=VERSION,
         VERSION=int(VERSION_SPLIT[0]) * 1000000 +
@@ -224,18 +211,61 @@ def build(bld):
         libndn_cxx['source'] += bld.path.ant_glob('ndn-cxx/**/*netlink*.cpp')
 
     if bld.env.enable_shared:
-        bld.shlib(
-            name='ndn-cxx',
-            vnum=VERSION_BASE,
-            cnum=VERSION_BASE,
-            **libndn_cxx)
+        bld.shlib(name='ndn-cxx',
+                  vnum=VERSION_BASE,
+                  cnum=VERSION_BASE,
+                  **libndn_cxx)
 
     if bld.env.enable_static:
-        bld.stlib(
-            name='ndn-cxx-static' if bld.env.enable_shared else 'ndn-cxx',
-            **libndn_cxx)
+        bld.stlib(name='ndn-cxx-static' if bld.env.enable_shared else 'ndn-cxx',
+                  **libndn_cxx)
 
-    bld.recurse('tests')
+    # Prepare flags that should go to pkgconfig file
+    pkgconfig_libs = []
+    pkgconfig_ldflags = []
+    pkgconfig_linkflags = []
+    pkgconfig_includes = []
+    pkgconfig_cxxflags = []
+    pkgconfig_defines = []
+    for lib in Utils.to_list(libndn_cxx['use']):
+        if bld.env['LIB_%s' % lib]:
+            pkgconfig_libs += Utils.to_list(bld.env['LIB_%s' % lib])
+        if bld.env['LIBPATH_%s' % lib]:
+            pkgconfig_ldflags += Utils.to_list(bld.env['LIBPATH_%s' % lib])
+        if bld.env['INCLUDES_%s' % lib]:
+            pkgconfig_includes += Utils.to_list(bld.env['INCLUDES_%s' % lib])
+        if bld.env['LINKFLAGS_%s' % lib]:
+            pkgconfig_linkflags += Utils.to_list(bld.env['LINKFLAGS_%s' % lib])
+        if bld.env['CXXFLAGS_%s' % lib]:
+            pkgconfig_cxxflags += Utils.to_list(bld.env['CXXFLAGS_%s' % lib])
+        if bld.env['DEFINES_%s' % lib]:
+            pkgconfig_defines += Utils.to_list(bld.env['DEFINES_%s' % lib])
+
+    EXTRA_FRAMEWORKS = ''
+    if bld.env.HAVE_OSX_FRAMEWORKS:
+        EXTRA_FRAMEWORKS = '-framework CoreFoundation -framework Security -framework SystemConfiguration -framework Foundation -framework CoreWLAN'
+
+    def uniq(alist):
+        seen = set()
+        return [x for x in alist if x not in seen and not seen.add(x)]
+
+    pkconfig = bld(features='subst',
+         source='libndn-cxx.pc.in',
+         target='libndn-cxx.pc',
+         install_path='${LIBDIR}/pkgconfig',
+         VERSION=VERSION_BASE,
+
+         # This probably not the right thing to do, but to simplify life of apps
+         # that use the library
+         EXTRA_LIBS=' '.join([('-l%s' % i) for i in uniq(pkgconfig_libs)]),
+         EXTRA_LDFLAGS=' '.join([('-L%s' % i) for i in uniq(pkgconfig_ldflags)]),
+         EXTRA_LINKFLAGS=' '.join(uniq(pkgconfig_linkflags)),
+         EXTRA_INCLUDES=' '.join([('-I%s' % i) for i in uniq(pkgconfig_includes)]),
+         EXTRA_CXXFLAGS=' '.join(uniq(pkgconfig_cxxflags) + [('-D%s' % i) for i in uniq(pkgconfig_defines)]),
+         EXTRA_FRAMEWORKS=EXTRA_FRAMEWORKS)
+
+    if bld.env.WITH_TESTS:
+        bld.recurse('tests')
 
     if bld.env.WITH_TOOLS:
         bld.recurse('tools')
@@ -243,7 +273,6 @@ def build(bld):
     if bld.env.WITH_EXAMPLES:
         bld.recurse('examples')
 
-    # Install header files
     headers = bld.path.ant_glob('ndn-cxx/**/*.hpp',
                                 excl=['ndn-cxx/**/*-android.hpp',
                                       'ndn-cxx/**/*-osx.hpp',
@@ -264,49 +293,12 @@ def build(bld):
         headers += bld.path.ant_glob('ndn-cxx/**/*netlink*.hpp', excl='ndn-cxx/**/impl/**/*')
 
     bld.install_files('${INCLUDEDIR}', headers, relative_trick=True)
-    bld.install_files('${INCLUDEDIR}/ndn-cxx/detail', 'ndn-cxx/detail/config.hpp')
 
-    # Prepare flags that should go into pkgconfig file
-    pkgconfig_libs = []
-    pkgconfig_ldflags = []
-    pkgconfig_linkflags = []
-    pkgconfig_includes = []
-    pkgconfig_cxxflags = []
-    pkgconfig_defines = []
-    for lib in Utils.to_list(libndn_cxx['use']):
-        if bld.env[f'LIB_{lib}']:
-            pkgconfig_libs += Utils.to_list(bld.env[f'LIB_{lib}'])
-        if bld.env[f'LIBPATH_{lib}']:
-            pkgconfig_ldflags += Utils.to_list(bld.env[f'LIBPATH_{lib}'])
-        if bld.env[f'LINKFLAGS_{lib}']:
-            pkgconfig_linkflags += Utils.to_list(bld.env[f'LINKFLAGS_{lib}'])
-        if bld.env[f'INCLUDES_{lib}']:
-            pkgconfig_includes += Utils.to_list(bld.env[f'INCLUDES_{lib}'])
-        if bld.env[f'CXXFLAGS_{lib}']:
-            pkgconfig_cxxflags += Utils.to_list(bld.env[f'CXXFLAGS_{lib}'])
-        if bld.env[f'DEFINES_{lib}']:
-            pkgconfig_defines += Utils.to_list(bld.env[f'DEFINES_{lib}'])
+    # Install generated headers
+    for filename in ('ndn-cxx/detail/config.hpp', 'ndn-cxx/version.hpp'):
+        bld.install_files('${INCLUDEDIR}/%s' % os.path.dirname(filename),
+                          bld.path.find_resource(filename))
 
-    EXTRA_FRAMEWORKS = '-framework CoreFoundation -framework Security -framework SystemConfiguration -framework Foundation -framework CoreWLAN'
-
-    def uniq(alist):
-        return list(dict.fromkeys(alist))
-
-    bld(features='subst',
-        source='libndn-cxx.pc.in',
-        target='libndn-cxx.pc',
-        install_path='${LIBDIR}/pkgconfig',
-        VERSION=VERSION_BASE,
-        # This probably not the right thing to do, but to simplify life of apps
-        # that use the library
-        EXTRA_LIBS=' '.join([f'-l{i}' for i in uniq(pkgconfig_libs)]),
-        EXTRA_LDFLAGS=' '.join([f'-L{i}' for i in uniq(pkgconfig_ldflags)]),
-        EXTRA_LINKFLAGS=' '.join(uniq(pkgconfig_linkflags)),
-        EXTRA_INCLUDES=' '.join([f'-I{i}' for i in uniq(pkgconfig_includes)]),
-        EXTRA_CXXFLAGS=' '.join(uniq(pkgconfig_cxxflags) + [f'-D{i}' for i in uniq(pkgconfig_defines)]),
-        EXTRA_FRAMEWORKS=EXTRA_FRAMEWORKS if bld.env.HAVE_OSX_FRAMEWORKS else '')
-
-    # Install sample config
     bld.install_files('${SYSCONFDIR}/ndn', 'client.conf.sample')
 
     if bld.env.SPHINX_BUILD:
@@ -369,43 +361,43 @@ def version(ctx):
     Context.g_module.VERSION_SPLIT = VERSION_BASE.split('.')
 
     # first, try to get a version string from git
-    version_from_git = ''
+    gotVersionFromGit = False
     try:
-        cmd = ['git', 'describe', '--abbrev=8', '--always', '--match', f'{GIT_TAG_PREFIX}*']
-        version_from_git = subprocess.run(cmd, capture_output=True, check=True, text=True).stdout.strip()
-        if version_from_git:
-            if GIT_TAG_PREFIX and version_from_git.startswith(GIT_TAG_PREFIX):
-                Context.g_module.VERSION = version_from_git[len(GIT_TAG_PREFIX):]
-            elif not GIT_TAG_PREFIX and ('.' in version_from_git or '-' in version_from_git):
-                Context.g_module.VERSION = version_from_git
+        cmd = ['git', 'describe', '--always', '--match', '%s*' % GIT_TAG_PREFIX]
+        out = subprocess.check_output(cmd, universal_newlines=True).strip()
+        if out:
+            gotVersionFromGit = True
+            if out.startswith(GIT_TAG_PREFIX):
+                Context.g_module.VERSION = out.lstrip(GIT_TAG_PREFIX)
             else:
-                # no tags matched (or we are in a shallow clone)
-                Context.g_module.VERSION = f'{VERSION_BASE}+git.{version_from_git}'
-    except (OSError, subprocess.SubprocessError):
+                # no tags matched
+                Context.g_module.VERSION = '%s-commit-%s' % (VERSION_BASE, out)
+    except (OSError, subprocess.CalledProcessError):
         pass
 
-    # fallback to the VERSION.info file, if it exists and is not empty
-    version_from_file = ''
-    version_file = ctx.path.find_node('VERSION.info')
-    if version_file is not None:
+    versionFile = ctx.path.find_node('VERSION.info')
+    if not gotVersionFromGit and versionFile is not None:
         try:
-            version_from_file = version_file.read().strip()
-        except OSError as e:
-            Logs.warn(f'{e.filename} exists but is not readable ({e.strerror})')
-    if version_from_file and not version_from_git:
-        Context.g_module.VERSION = version_from_file
-        return
+            Context.g_module.VERSION = versionFile.read()
+            return
+        except EnvironmentError:
+            pass
 
-    # update VERSION.info if necessary
-    if version_from_file == Context.g_module.VERSION:
-        # already up-to-date
-        return
-    if version_file is None:
-        version_file = ctx.path.make_node('VERSION.info')
+    # version was obtained from git, update VERSION file if necessary
+    if versionFile is not None:
+        try:
+            if versionFile.read() == Context.g_module.VERSION:
+                # already up-to-date
+                return
+        except EnvironmentError as e:
+            Logs.warn('%s exists but is not readable (%s)' % (versionFile, e.strerror))
+    else:
+        versionFile = ctx.path.make_node('VERSION.info')
+
     try:
-        version_file.write(Context.g_module.VERSION)
-    except OSError as e:
-        Logs.warn(f'{e.filename} is not writable ({e.strerror})')
+        versionFile.write(Context.g_module.VERSION)
+    except EnvironmentError as e:
+        Logs.warn('%s is not writable (%s)' % (versionFile, e.strerror))
 
 def dist(ctx):
     ctx.algo = 'tar.xz'

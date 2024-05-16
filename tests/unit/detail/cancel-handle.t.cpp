@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2019 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -23,9 +23,9 @@
 
 #include "tests/boost-test.hpp"
 
-namespace ndn::tests {
-
-using ndn::detail::CancelHandle;
+namespace ndn {
+namespace detail {
+namespace tests {
 
 BOOST_AUTO_TEST_SUITE(Detail)
 BOOST_AUTO_TEST_SUITE(TestCancelHandle)
@@ -55,7 +55,7 @@ BOOST_AUTO_TEST_SUITE_END() // PlainHandle
 
 BOOST_AUTO_TEST_SUITE(ScopedHandle)
 
-using ScopedTestHandle = detail::ScopedCancelHandle<CancelHandle>;
+using ScopedTestHandle = ScopedCancelHandle<CancelHandle>;
 
 BOOST_AUTO_TEST_CASE(ManualCancel)
 {
@@ -106,10 +106,10 @@ BOOST_AUTO_TEST_CASE(Release)
 BOOST_AUTO_TEST_CASE(MoveConstruct)
 {
   int nCancels = 0;
-  std::unique_ptr<ScopedTestHandle> hdl1;
+  unique_ptr<ScopedTestHandle> hdl1;
   {
     ScopedTestHandle hdl2 = makeDummyCancelHandle(nCancels);
-    hdl1 = std::make_unique<ScopedTestHandle>(std::move(hdl2));
+    hdl1 = make_unique<ScopedTestHandle>(std::move(hdl2));
   } // hdl2 goes out of scope
   BOOST_CHECK_EQUAL(nCancels, 0);
   hdl1.reset();
@@ -134,4 +134,6 @@ BOOST_AUTO_TEST_SUITE_END() // ScopedHandle
 BOOST_AUTO_TEST_SUITE_END() // TestCancelHandle
 BOOST_AUTO_TEST_SUITE_END() // Detail
 
-} // namespace ndn::tests
+} // namespace tests
+} // namespace detail
+} // namespace ndn

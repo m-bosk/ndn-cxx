@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -23,37 +23,10 @@
 
 #include <boost/endian/conversion.hpp>
 
-namespace ndn::encoding {
+namespace ndn {
+namespace encoding {
 
-// ---- empty ----
-
-template<Tag TAG>
-size_t
-prependEmptyBlock(EncodingImpl<TAG>& encoder, uint32_t type)
-{
-  size_t length = encoder.prependVarNumber(0);
-  length += encoder.prependVarNumber(type);
-
-  return length;
-}
-
-template size_t
-prependEmptyBlock<EstimatorTag>(EncodingImpl<EstimatorTag>&, uint32_t);
-
-template size_t
-prependEmptyBlock<EncoderTag>(EncodingImpl<EncoderTag>&, uint32_t);
-
-Block
-makeEmptyBlock(uint32_t type)
-{
-  EncodingEstimator estimator;
-  size_t totalLength = prependEmptyBlock(estimator, type);
-
-  EncodingBuffer encoder(totalLength, 0);
-  prependEmptyBlock(encoder, type);
-
-  return encoder.block();
-}
+namespace endian = boost::endian;
 
 // ---- non-negative integer ----
 
@@ -93,6 +66,63 @@ readNonNegativeInteger(const Block& block)
   return tlv::readNonNegativeInteger(block.value_size(), begin, block.value_end());
 }
 
+// ---- empty ----
+
+template<Tag TAG>
+size_t
+prependEmptyBlock(EncodingImpl<TAG>& encoder, uint32_t type)
+{
+  size_t length = encoder.prependVarNumber(0);
+  length += encoder.prependVarNumber(type);
+
+  return length;
+}
+
+template size_t
+prependEmptyBlock<EstimatorTag>(EncodingImpl<EstimatorTag>&, uint32_t);
+
+template size_t
+prependEmptyBlock<EncoderTag>(EncodingImpl<EncoderTag>&, uint32_t);
+
+Block
+makeEmptyBlock(uint32_t type)
+{
+  EncodingEstimator estimator;
+  size_t totalLength = prependEmptyBlock(estimator, type);
+
+  EncodingBuffer encoder(totalLength, 0);
+  prependEmptyBlock(encoder, type);
+
+  return encoder.block();
+}
+
+// ---- string ----
+
+template<Tag TAG>
+size_t
+prependStringBlock(EncodingImpl<TAG>& encoder, uint32_t type, const std::string& value)
+{
+  return prependBinaryBlock(encoder, type, {reinterpret_cast<const uint8_t*>(value.data()), value.size()});
+}
+
+template size_t
+prependStringBlock<EstimatorTag>(EncodingImpl<EstimatorTag>&, uint32_t, const std::string&);
+
+template size_t
+prependStringBlock<EncoderTag>(EncodingImpl<EncoderTag>&, uint32_t, const std::string&);
+
+Block
+makeStringBlock(uint32_t type, const std::string& value)
+{
+  return makeBinaryBlock(type, value.data(), value.size());
+}
+
+std::string
+readString(const Block& block)
+{
+  return std::string(reinterpret_cast<const char*>(block.value()), block.value_size());
+}
+
 // ---- double ----
 
 static_assert(std::numeric_limits<double>::is_iec559, "This code requires IEEE-754 doubles");
@@ -103,7 +133,7 @@ prependDoubleBlock(EncodingImpl<TAG>& encoder, uint32_t type, double value)
 {
   uint64_t temp = 0;
   std::memcpy(&temp, &value, 8);
-  boost::endian::native_to_big_inplace(temp);
+  endian::native_to_big_inplace(temp);
   return prependBinaryBlock(encoder, type, {reinterpret_cast<const uint8_t*>(&temp), 8});
 }
 
@@ -131,7 +161,17 @@ readDouble(const Block& block)
   if (block.value_size() != 8) {
     NDN_THROW(tlv::Error("Invalid length for double (must be 8)"));
   }
-  return boost::endian::endian_load<double, 8, boost::endian::order::big>(block.value());
+
+#if BOOST_VERSION >= 107100
+  return endian::endian_load<double, 8, endian::order::big>(block.value());
+#else
+  uint64_t temp = 0;
+  std::memcpy(&temp, block.value(), 8);
+  endian::big_to_native_inplace(temp);
+  double d = 0;
+  std::memcpy(&d, &temp, 8);
+  return d;
+#endif
 }
 
 // ---- binary ----
@@ -165,27 +205,6 @@ makeBinaryBlock(uint32_t type, span<const uint8_t> value)
   return encoder.block();
 }
 
-// ---- string ----
-
-template<Tag TAG>
-size_t
-prependStringBlock(EncodingImpl<TAG>& encoder, uint32_t type, std::string_view value)
-{
-  return prependBinaryBlock(encoder, type, {reinterpret_cast<const uint8_t*>(value.data()), value.size()});
-}
-
-template size_t
-prependStringBlock<EstimatorTag>(EncodingImpl<EstimatorTag>&, uint32_t, std::string_view);
-
-template size_t
-prependStringBlock<EncoderTag>(EncodingImpl<EncoderTag>&, uint32_t, std::string_view);
-
-std::string
-readString(const Block& block)
-{
-  return std::string(reinterpret_cast<const char*>(block.value()), block.value_size());
-}
-
 // ---- block ----
 
 template<Tag TAG>
@@ -207,4 +226,5 @@ prependBlock<EstimatorTag>(EncodingImpl<EstimatorTag>&, const Block&);
 template size_t
 prependBlock<EncoderTag>(EncodingImpl<EncoderTag>&, const Block&);
 
-} // namespace ndn::encoding
+} // namespace encoding
+} // namespace ndn

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -24,7 +24,7 @@
 
 #include "ndn-cxx/ims/in-memory-storage-entry.hpp"
 
-#include <limits>
+#include <iterator>
 #include <stack>
 
 #include <boost/multi_index_container.hpp>
@@ -44,9 +44,10 @@ public:
   // multi_index_container to implement storage
   class byFullName;
 
-  using Cache = boost::multi_index_container<
+  typedef boost::multi_index_container<
     InMemoryStorageEntry*,
     boost::multi_index::indexed_by<
+
       // by Full Name
       boost::multi_index::ordered_unique<
         boost::multi_index::tag<byFullName>,
@@ -54,38 +55,43 @@ public:
                                           &InMemoryStorageEntry::getFullName>,
         std::less<Name>
       >
-    >
-  >;
 
-  /**
-   * @brief Represents a const_iterator for the in-memory storage.
-   * @note Do not instantiate this class directly, use InMemoryStorage::begin() instead.
+    >
+  > Cache;
+
+  /** @brief Represents a self-defined const_iterator for the in-memory storage.
+   *
+   *  @note Don't try to instantiate this class directly, use InMemoryStorage::begin() instead.
    */
-  class const_iterator : public boost::forward_iterator_helper<const_iterator, const Data>
+  class const_iterator
   {
   public:
-    const_iterator(const Data* ptr, const Cache* cache,
-                   Cache::index<byFullName>::type::iterator it) noexcept
-      : m_ptr(ptr)
-      , m_cache(cache)
-      , m_it(it)
-    {
-    }
+    using iterator_category = std::input_iterator_tag;
+    using value_type        = const Data;
+    using difference_type   = std::ptrdiff_t;
+    using pointer           = value_type*;
+    using reference         = value_type&;
 
-    reference
-    operator*() const noexcept
-    {
-      return *m_ptr;
-    }
+    const_iterator(const Data* ptr, const Cache* cache,
+                   Cache::index<byFullName>::type::iterator it);
 
     const_iterator&
     operator++();
 
-    friend bool
-    operator==(const const_iterator& lhs, const const_iterator& rhs) noexcept
-    {
-      return lhs.m_it == rhs.m_it;
-    }
+    const_iterator
+    operator++(int);
+
+    reference
+    operator*();
+
+    pointer
+    operator->();
+
+    bool
+    operator==(const const_iterator& rhs);
+
+    bool
+    operator!=(const const_iterator& rhs);
 
   private:
     const Data* m_ptr;
@@ -117,7 +123,7 @@ public:
    *  The InMemoryStorage created through this method will handle MustBeFresh in interest processing
    */
   explicit
-  InMemoryStorage(boost::asio::io_context& ioCtx,
+  InMemoryStorage(boost::asio::io_service& ioService,
                   size_t limit = std::numeric_limits<size_t>::max());
 
   /** @note Please make sure to implement it to free m_freeEntries and evict
@@ -129,14 +135,8 @@ public:
   /** @brief Inserts a Data packet.
    *
    *  @param data the packet to insert, must be signed and have wire encoding
-   *  @param mustBeFreshProcessingWindow Beyond this time period, the inserted data can
-   *         only be used to answer interest without MustBeFresh.  The value of
-   *         mustBeFreshProcessingWindow is an application decision and it may or may not
-   *         correspond to FreshnessPeriod.
-   *
-   *  @note InMemoryStorage does not use the inserted data packet's FreshnessPeriod value.
-   *        If the packet needs to be marked "stale" after application-defined period of time,
-   *        the application must supply proper @p mustBeFreshProcessingWindow value.
+   *  @param mustBeFreshProcessingWindow Beyond this time period after the data is inserted, the
+   *         data can only be used to answer interest without MustBeFresh selector.
    *
    *  @note Packets are considered duplicate if the name with implicit digest matches.
    *  The new Data packet with the identical name, but a different payload
@@ -325,16 +325,21 @@ private:
   init();
 
 public:
-  static constexpr time::milliseconds INFINITE_WINDOW = -1_ms;
+  static const time::milliseconds INFINITE_WINDOW;
+
+private:
+  static const time::milliseconds ZERO_WINDOW;
 
 private:
   Cache m_cache;
   /// user defined maximum capacity of the in-memory storage in packets
-  size_t m_limit = 0;
+  size_t m_limit;
+  /// initial capacity, used as minimum capacity
+  const size_t m_initCapacity = 16;
   /// current capacity of the in-memory storage in packets
-  size_t m_capacity = 0;
+  size_t m_capacity;
   /// current number of packets in in-memory storage
-  size_t m_nPackets = 0;
+  size_t m_nPackets;
   /// memory pool
   std::stack<InMemoryStorageEntry*> m_freeEntries;
   /// scheduler

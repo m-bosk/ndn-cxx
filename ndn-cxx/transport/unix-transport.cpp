@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -22,6 +22,7 @@
 #include "ndn-cxx/transport/unix-transport.hpp"
 #include "ndn-cxx/transport/detail/stream-transport-impl.hpp"
 
+#include "ndn-cxx/face.hpp"
 #include "ndn-cxx/net/face-uri.hpp"
 #include "ndn-cxx/util/logger.hpp"
 
@@ -40,29 +41,33 @@ UnixTransport::~UnixTransport() = default;
 std::string
 UnixTransport::getSocketNameFromUri(const std::string& uriString)
 {
-  // Use path from the provided URI, if valid.
-  if (!uriString.empty()) {
-    try {
-      const FaceUri uri(uriString);
-      if (uri.getScheme() != "unix") {
-        NDN_THROW(Error("Cannot create UnixTransport from \"" + uri.getScheme() + "\" URI"));
-      }
-      if (!uri.getPath().empty()) {
-        return uri.getPath();
-      }
-    }
-    catch (const FaceUri::Error& error) {
-      NDN_THROW_NESTED(Error(error.what()));
-    }
+  // Assume the default nfd.sock location.
+#ifdef __linux__
+  std::string path = "/run/nfd.sock";
+#else
+  std::string path = "/var/run/nfd.sock";
+#endif // __linux__
+
+  if (uriString.empty()) {
+    return path;
   }
 
-  // Otherwise, use the default nfd.sock location.
-  return
-#ifdef __linux__
-    "/run/nfd/nfd.sock";
-#else
-    "/var/run/nfd/nfd.sock";
-#endif // __linux__
+  try {
+    const FaceUri uri(uriString);
+
+    if (uri.getScheme() != "unix") {
+      NDN_THROW(Error("Cannot create UnixTransport from \"" + uri.getScheme() + "\" URI"));
+    }
+
+    if (!uri.getPath().empty()) {
+      path = uri.getPath();
+    }
+  }
+  catch (const FaceUri::Error& error) {
+    NDN_THROW_NESTED(Error(error.what()));
+  }
+
+  return path;
 }
 
 shared_ptr<UnixTransport>
@@ -72,13 +77,13 @@ UnixTransport::create(const std::string& uri)
 }
 
 void
-UnixTransport::connect(boost::asio::io_context& ioCtx, ReceiveCallback receiveCallback)
+UnixTransport::connect(boost::asio::io_service& ioService, ReceiveCallback receiveCallback)
 {
   NDN_LOG_DEBUG("connect path=" << m_unixSocket);
 
   if (m_impl == nullptr) {
-    Transport::connect(ioCtx, std::move(receiveCallback));
-    m_impl = make_shared<Impl>(*this, ioCtx);
+    Transport::connect(ioService, std::move(receiveCallback));
+    m_impl = make_shared<Impl>(*this, ioService);
   }
 
   m_impl->connect(boost::asio::local::stream_protocol::endpoint(m_unixSocket));

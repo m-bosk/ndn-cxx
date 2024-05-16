@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2020 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -22,9 +22,17 @@
 #include "ndn-cxx/security/certificate-cache.hpp"
 #include "ndn-cxx/util/logger.hpp"
 
-namespace ndn::security {
+namespace ndn {
+namespace security {
+inline namespace v2 {
 
 NDN_LOG_INIT(ndn.security.CertificateCache);
+
+time::nanoseconds
+CertificateCache::getDefaultLifetime()
+{
+  return 1_h;
+}
 
 CertificateCache::CertificateCache(const time::nanoseconds& maxLifetime)
   : m_certsByTime(m_certs.get<0>())
@@ -36,14 +44,14 @@ CertificateCache::CertificateCache(const time::nanoseconds& maxLifetime)
 void
 CertificateCache::insert(const Certificate& cert)
 {
-  auto notAfterTime = cert.getValidityPeriod().getPeriod().second;
-  auto now = time::system_clock::now();
+  time::system_clock::TimePoint notAfterTime = cert.getValidityPeriod().getPeriod().second;
+  time::system_clock::TimePoint now = time::system_clock::now();
   if (notAfterTime < now) {
     NDN_LOG_DEBUG("Not adding " << cert.getName() << ": already expired at " << time::toIsoString(notAfterTime));
     return;
   }
 
-  auto removalTime = std::min(notAfterTime, now + m_maxLifetime);
+  time::system_clock::TimePoint removalTime = std::min(notAfterTime, now + m_maxLifetime);
   NDN_LOG_DEBUG("Adding " << cert.getName() << ", will remove in "
                 << time::duration_cast<time::seconds>(removalTime - now));
   m_certs.insert(Entry(cert, removalTime));
@@ -90,7 +98,7 @@ CertificateCache::find(const Interest& interest) const
 void
 CertificateCache::refresh()
 {
-  auto now = time::system_clock::now();
+  time::system_clock::TimePoint now = time::system_clock::now();
 
   auto cIt = m_certsByTime.begin();
   while (cIt != m_certsByTime.end() && cIt->removalTime < now) {
@@ -99,4 +107,6 @@ CertificateCache::refresh()
   }
 }
 
-} // namespace ndn::security
+} // inline namespace v2
+} // namespace security
+} // namespace ndn

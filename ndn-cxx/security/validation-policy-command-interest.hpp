@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -29,7 +29,9 @@
 #include <boost/multi_index/sequenced_index.hpp>
 #include <boost/multi_index/key_extractors.hpp>
 
-namespace ndn::security {
+namespace ndn {
+namespace security {
+inline namespace v2 {
 
 /**
  * @brief Validation policy for stop-and-wait command Interests.
@@ -112,7 +114,7 @@ protected:
               const ValidationContinuation& continueValidation) override;
 
 private:
-  static std::tuple<bool, Name, time::system_clock::time_point>
+  static std::tuple<bool, Name, time::system_clock::TimePoint>
   parseCommandInterest(const Interest& interest, const shared_ptr<ValidationState>& state);
 
   void
@@ -120,10 +122,10 @@ private:
 
   bool
   checkTimestamp(const shared_ptr<ValidationState>& state,
-                 const Name& keyName, time::system_clock::time_point timestamp);
+                 const Name& keyName, time::system_clock::TimePoint timestamp);
 
   void
-  insertNewRecord(const Name& keyName, time::system_clock::time_point timestamp);
+  insertNewRecord(const Name& keyName, time::system_clock::TimePoint timestamp);
 
 private:
   Options m_options;
@@ -131,8 +133,8 @@ private:
   struct LastTimestampRecord
   {
     Name keyName;
-    time::system_clock::time_point timestamp;
-    time::steady_clock::time_point lastRefreshed;
+    time::system_clock::TimePoint timestamp;
+    time::steady_clock::TimePoint lastRefreshed;
   };
 
   using Container = boost::multi_index_container<
@@ -152,6 +154,8 @@ private:
   Queue& m_queue;
 };
 
-} // namespace ndn::security
+} // inline namespace v2
+} // namespace security
+} // namespace ndn
 
 #endif // NDN_CXX_SECURITY_VALIDATION_POLICY_COMMAND_INTEREST_HPP

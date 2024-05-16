@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -44,23 +44,19 @@ public:
     using tlv::Error::Error;
   };
 
-  /**
-   * @brief Construct an unsigned Data packet with given @p name and empty Content.
-   *
-   * @warning In certain contexts that use `Data::shared_from_this()`, the Data must be created
-   *          using `std::make_shared`. Otherwise, `shared_from_this()` will throw `std::bad_weak_ptr`.
-   *          One example where this is necessary is storing Data into a subclass of InMemoryStorage.
+  /** @brief Construct an unsigned Data packet with given @p name and empty Content.
+   *  @warning In certain contexts that use `Data::shared_from_this()`, Data must be created using
+   *           `std::make_shared`. Otherwise, `shared_from_this()` may trigger undefined behavior.
+   *           One example where this is necessary is storing Data into a subclass of InMemoryStorage.
    */
   explicit
   Data(const Name& name = Name());
 
-  /**
-   * @brief Construct a Data packet by decoding from @p wire.
-   * @param wire TLV element of type tlv::Data; may be signed or unsigned.
-   *
-   * @warning In certain contexts that use `Data::shared_from_this()`, the Data must be created
-   *          using `std::make_shared`. Otherwise, `shared_from_this()` will throw `std::bad_weak_ptr`.
-   *          One example where this is necessary is storing Data into a subclass of InMemoryStorage.
+  /** @brief Construct a Data packet by decoding from @p wire.
+   *  @param wire TLV block of type tlv::Data; may be signed or unsigned.
+   *  @warning In certain contexts that use `Data::shared_from_this()`, Data must be created using
+   *           `std::make_shared`. Otherwise, `shared_from_this()` may trigger undefined behavior.
+   *           One example where this is necessary is storing Data into a subclass of InMemoryStorage.
    */
   explicit
   Data(const Block& wire);
@@ -99,21 +95,18 @@ public:
   const Block&
   wireEncode(EncodingBuffer& encoder, span<const uint8_t> signature) const;
 
-  /**
-   * @brief Encode into a Block.
-   * @pre Data must be signed.
+  /** @brief Encode into a Block.
+   *  @pre Data must be signed.
    */
   const Block&
   wireEncode() const;
 
-  /**
-   * @brief Decode from @p wire.
+  /** @brief Decode from @p wire.
    */
   void
   wireDecode(const Block& wire);
 
-  /**
-   * @brief Check if this instance has cached wire encoding.
+  /** @brief Check if this instance has cached wire encoding.
    */
   bool
   hasWire() const noexcept
@@ -121,17 +114,16 @@ public:
     return m_wire.hasWire();
   }
 
-  /**
-   * @brief Get the full name (including implicit digest).
-   * @pre hasWire() == true, i.e., wireEncode() must have been called.
-   * @throw Error Data has no wire encoding
+  /** @brief Get full name including implicit digest
+   *  @pre hasWire() == true; i.e. wireEncode() must have been called
+   *  @throw Error Data has no wire encoding
    */
   const Name&
   getFullName() const;
 
 public: // Data fields
   /**
-   * @brief Get the %Data name.
+   * @brief Get the data name.
    */
   const Name&
   getName() const noexcept
@@ -140,7 +132,7 @@ public: // Data fields
   }
 
   /**
-   * @brief Set the %Data name.
+   * @brief Set the data name.
    * @return A reference to this Data, to allow chaining.
    */
   Data&
@@ -192,7 +184,7 @@ public: // Data fields
 
   /**
    * @brief Set `Content` from a Block.
-   * @param block TLV element to be used as Content; must be valid
+   * @param block TLV block to be used as Content; must be valid
    * @return A reference to this Data, to allow chaining.
    *
    * If the block's TLV-TYPE is tlv::Content, it will be used directly as this Data's
@@ -210,23 +202,12 @@ public: // Data fields
   setContent(span<const uint8_t> value);
 
   /**
-   * @brief Set `Content` by copying from a string.
-   * @param value string with the TLV-VALUE of the content
-   * @return A reference to this Data, to allow chaining.
-   */
-  Data&
-  setContent(std::string_view value);
-
-  /**
    * @brief Set `Content` from a shared buffer.
-   * @param value buffer with the TLV-VALUE of the content; must not be null
+   * @param value buffer with the TLV-VALUE of the content; must not be nullptr
    * @return A reference to this Data, to allow chaining.
    */
   Data&
   setContent(ConstBufferPtr value);
-
-  Data&
-  setContent(std::nullptr_t) = delete;
 
   /**
    * @brief Remove the `Content` element.
@@ -245,15 +226,14 @@ public: // Data fields
     return m_signatureInfo;
   }
 
-  /**
-   * @brief Set the `SignatureInfo` element.
+  /** @brief Set the `SignatureInfo` element.
    *
-   * This is a low-level function that should not normally be called directly by applications.
-   * Instead, provide a SignatureInfo to the SigningInfo object passed to KeyChain::sign().
+   *  This is a low-level function that should not normally be called directly by applications.
+   *  Instead, provide a SignatureInfo to the SigningInfo object passed to KeyChain::sign().
    *
-   * @return A reference to this Data, to allow chaining.
-   * @warning SignatureInfo is overwritten when the packet is signed via KeyChain::sign().
-   * @sa SigningInfo
+   *  @return A reference to this Data, to allow chaining.
+   *  @warning SignatureInfo is overwritten when the packet is signed via KeyChain::sign().
+   *  @sa SigningInfo
    */
   Data&
   setSignatureInfo(const SignatureInfo& info);
@@ -282,7 +262,7 @@ public: // Data fields
 
   /**
    * @brief Set `SignatureValue` from a shared buffer.
-   * @param value buffer containing the TLV-VALUE of the SignatureValue; must not be null
+   * @param value buffer containing the TLV-VALUE of the SignatureValue; must not be nullptr
    * @return A reference to this Data, to allow chaining.
    *
    * This is a low-level function that should not normally be called directly by applications.
@@ -293,66 +273,45 @@ public: // Data fields
   Data&
   setSignatureValue(ConstBufferPtr value);
 
-  Data&
-  setSignatureValue(std::nullptr_t) = delete;
-
-  /**
-   * @brief Extract ranges of Data covered by the signature.
-   * @throw Error Data cannot be encoded or is missing ranges necessary for signing
-   * @warning The returned pointers will be invalidated if wireDecode() or wireEncode() are called.
+  /** @brief Extract ranges of Data covered by the signature.
+   *  @throw Error Data cannot be encoded or is missing ranges necessary for signing
+   *  @warning The returned pointers will be invalidated if wireDecode() or wireEncode() are called.
    */
-  [[nodiscard]] InputBuffers
+  InputBuffers
   extractSignedRanges() const;
 
 public: // MetaInfo fields
-  /**
-   * @copydoc MetaInfo::getType()
-   */
   uint32_t
-  getContentType() const noexcept
+  getContentType() const
   {
     return m_metaInfo.getType();
   }
 
-  /**
-   * @copydoc MetaInfo::setType()
-   */
   Data&
   setContentType(uint32_t type);
 
-  /**
-   * @copydoc MetaInfo::getFreshnessPeriod()
-   */
   time::milliseconds
-  getFreshnessPeriod() const noexcept
+  getFreshnessPeriod() const
   {
     return m_metaInfo.getFreshnessPeriod();
   }
 
-  /**
-   * @copydoc MetaInfo::setFreshnessPeriod()
-   */
   Data&
   setFreshnessPeriod(time::milliseconds freshnessPeriod);
 
-  /**
-   * @copydoc MetaInfo::getFinalBlock()
-   */
-  const std::optional<name::Component>&
-  getFinalBlock() const noexcept
+  const optional<name::Component>&
+  getFinalBlock() const
   {
     return m_metaInfo.getFinalBlock();
   }
 
-  /**
-   * @copydoc MetaInfo::setFinalBlock()
-   */
   Data&
-  setFinalBlock(std::optional<name::Component> finalBlockId);
+  setFinalBlock(optional<name::Component> finalBlockId);
 
 public: // SignatureInfo fields
   /**
-   * @copydoc SignatureInfo::getSignatureType()
+   * @brief Get the `SignatureType`.
+   * @return tlv::SignatureTypeValue, or -1 to indicate the signature is invalid.
    */
   int32_t
   getSignatureType() const noexcept
@@ -363,19 +322,15 @@ public: // SignatureInfo fields
   /**
    * @brief Get the `KeyLocator` element.
    */
-  std::optional<KeyLocator>
+  optional<KeyLocator>
   getKeyLocator() const noexcept
   {
-    if (m_signatureInfo.hasKeyLocator()) {
-      return m_signatureInfo.getKeyLocator();
-    }
-    return std::nullopt;
+    return m_signatureInfo.hasKeyLocator() ? make_optional(m_signatureInfo.getKeyLocator()) : nullopt;
   }
 
 protected:
-  /**
-   * @brief Clear wire encoding and cached FullName.
-   * @note This does not clear the SignatureValue.
+  /** @brief Clear wire encoding and cached FullName
+   *  @note This does not clear the SignatureValue.
    */
   void
   resetWire();

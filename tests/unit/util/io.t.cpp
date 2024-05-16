@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2023 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -25,48 +25,49 @@
 #include "tests/key-chain-fixture.hpp"
 
 #include <boost/filesystem.hpp>
-#include <boost/mp11/list.hpp>
+#include <boost/mpl/vector.hpp>
 
-namespace ndn::tests {
+namespace ndn {
+namespace tests {
 
 BOOST_AUTO_TEST_SUITE(Util)
 BOOST_AUTO_TEST_SUITE(TestIo)
 
 struct NoEncoding
 {
-  static constexpr io::IoEncoding encoding = io::NO_ENCODING;
-  static inline const std::vector<uint8_t> blob{0xd1, 0x0, 0xb0, 0x1a};
+  const io::IoEncoding encoding{io::NO_ENCODING};
+  const std::vector<uint8_t> blob{0xd1, 0x0, 0xb0, 0x1a};
   std::istringstream stream{std::string("\xd1\x00\xb0\x1a", 4), std::ios_base::binary};
 };
 
 struct Base64Encoding
 {
-  static constexpr io::IoEncoding encoding = io::BASE64;
-  static inline const std::vector<uint8_t> blob{0x42, 0x61, 0x73, 0x65, 0x36, 0x34, 0x45, 0x6e, 0x63};
+  const io::IoEncoding encoding = io::BASE64;
+  const std::vector<uint8_t> blob{0x42, 0x61, 0x73, 0x65, 0x36, 0x34, 0x45, 0x6e, 0x63};
   std::istringstream stream{"QmFzZTY0RW5j\n", std::ios_base::binary};
 };
 
 struct HexEncoding
 {
-  static constexpr io::IoEncoding encoding = io::HEX;
-  static inline const std::vector<uint8_t> blob{0x48, 0x65, 0x78, 0x45, 0x6e, 0x63};
+  const io::IoEncoding encoding = io::HEX;
+  const std::vector<uint8_t> blob{0x48, 0x65, 0x78, 0x45, 0x6e, 0x63};
   std::istringstream stream{"486578456E63", std::ios_base::binary};
 };
 
-using Encodings = boost::mp11::mp_list<NoEncoding, Base64Encoding, HexEncoding>;
+using Encodings = boost::mpl::vector<NoEncoding, Base64Encoding, HexEncoding>;
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(LoadBuffer, T, Encodings)
 {
   T t;
-  shared_ptr<Buffer> buf = io::loadBuffer(t.stream, T::encoding);
-  BOOST_CHECK_EQUAL_COLLECTIONS(buf->begin(), buf->end(), T::blob.begin(), T::blob.end());
+  shared_ptr<Buffer> buf = io::loadBuffer(t.stream, t.encoding);
+  BOOST_CHECK_EQUAL_COLLECTIONS(buf->begin(), buf->end(), t.blob.begin(), t.blob.end());
 }
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(SaveBuffer, T, Encodings)
 {
   T t;
   std::ostringstream os(std::ios_base::binary);
-  io::saveBuffer(T::blob, os, T::encoding);
+  io::saveBuffer(t.blob, os, t.encoding);
   BOOST_CHECK_EQUAL(os.str(), t.stream.str());
 }
 
@@ -397,4 +398,5 @@ BOOST_FIXTURE_TEST_CASE(IdCert, IdCertFixture)
 BOOST_AUTO_TEST_SUITE_END() // TestIo
 BOOST_AUTO_TEST_SUITE_END() // Util
 
-} // namespace ndn::tests
+} // namespace tests
+} // namespace ndn

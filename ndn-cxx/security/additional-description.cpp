@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2020 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -21,12 +21,22 @@
 
 #include "ndn-cxx/security/additional-description.hpp"
 #include "ndn-cxx/encoding/block-helpers.hpp"
+#include "ndn-cxx/util/concepts.hpp"
 #include "ndn-cxx/util/ostream-joiner.hpp"
 
-namespace ndn::security {
+namespace ndn {
+namespace security {
+inline namespace v2 {
 
-constexpr size_t KEY_OFFSET = 0;
-constexpr size_t VALUE_OFFSET = 1;
+BOOST_CONCEPT_ASSERT((boost::EqualityComparable<AdditionalDescription>));
+BOOST_CONCEPT_ASSERT((WireEncodable<AdditionalDescription>));
+BOOST_CONCEPT_ASSERT((WireEncodableWithEncodingBuffer<AdditionalDescription>));
+BOOST_CONCEPT_ASSERT((WireDecodable<AdditionalDescription>));
+static_assert(std::is_base_of<tlv::Error, AdditionalDescription::Error>::value,
+              "AdditionalDescription::Error must inherit from tlv::Error");
+
+static const size_t KEY_OFFSET = 0;
+static const size_t VALUE_OFFSET = 1;
 
 AdditionalDescription::AdditionalDescription(const Block& block)
 {
@@ -36,11 +46,11 @@ AdditionalDescription::AdditionalDescription(const Block& block)
 const std::string&
 AdditionalDescription::get(const std::string& key) const
 {
-  if (auto it = m_info.find(key); it != m_info.end()) {
-    return it->second;
-  }
+  auto it = m_info.find(key);
+  if (it == m_info.end())
+    NDN_THROW(Error("Entry does not exist for key (" + key + ")"));
 
-  NDN_THROW(Error("Entry does not exist for key (" + key + ")"));
+  return it->second;
 }
 
 void
@@ -52,7 +62,7 @@ AdditionalDescription::set(const std::string& key, const std::string& value)
 bool
 AdditionalDescription::has(const std::string& key) const
 {
-  return m_info.find(key) != m_info.end();
+  return (m_info.find(key) != m_info.end());
 }
 
 AdditionalDescription::iterator
@@ -166,4 +176,6 @@ operator<<(std::ostream& os, const AdditionalDescription& desc)
   return os << "]";
 }
 
-} // namespace ndn::security
+} // inline namespace v2
+} // namespace security
+} // namespace ndn

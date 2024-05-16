@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2018 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -27,9 +27,10 @@
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/classification.hpp>
 
-namespace ndn::util {
+namespace ndn {
+namespace util {
 
-IndentedStream::IndentedStream(std::ostream& os, std::string_view indent)
+IndentedStream::IndentedStream(std::ostream& os, const std::string& indent)
   : std::ostream(&m_buffer)
   , m_buffer(os, indent)
 {
@@ -40,7 +41,7 @@ IndentedStream::~IndentedStream()
   flush();
 }
 
-IndentedStream::StreamBuf::StreamBuf(std::ostream& os, std::string_view indent)
+IndentedStream::StreamBuf::StreamBuf(std::ostream& os, const std::string& indent)
   : m_output(os)
   , m_indent(indent)
 {
@@ -49,9 +50,9 @@ IndentedStream::StreamBuf::StreamBuf(std::ostream& os, std::string_view indent)
 int
 IndentedStream::StreamBuf::sync()
 {
-  using StringView = boost::iterator_range<std::string::const_iterator>;
+  typedef boost::iterator_range<std::string::const_iterator> StringView;
 
-  std::string output = str();
+  const std::string& output = str();
   std::vector<StringView> splitOutput;
   boost::split(splitOutput, output, boost::is_any_of("\n"));
 
@@ -65,4 +66,5 @@ IndentedStream::StreamBuf::sync()
   return 0; // success
 }
 
-} // namespace ndn::util
+} // namespace util
+} // namespace ndn

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2021 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -79,11 +79,11 @@ public:
    *
    * @throw tlv::Error @p discoveryInterestName is not valid
    */
-  [[nodiscard]] Data
+  NDN_CXX_NODISCARD Data
   makeData(Name discoveryInterestName,
            KeyChain& keyChain,
            const ndn::security::SigningInfo& si = security::SigningInfo(),
-           std::optional<uint64_t> version = std::nullopt,
+           optional<uint64_t> version = nullopt,
            time::milliseconds freshnessPeriod = 10_ms) const;
 
   /**
@@ -123,7 +123,7 @@ public: // static methods
    *
    * @param name prefix of data collection
    */
-  [[nodiscard]] static Interest
+  NDN_CXX_NODISCARD static Interest
   makeDiscoveryInterest(Name name);
 
 private:

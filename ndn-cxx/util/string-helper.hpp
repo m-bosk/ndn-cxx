@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -24,11 +24,6 @@
 
 #include "ndn-cxx/encoding/buffer.hpp"
 #include "ndn-cxx/util/span.hpp"
-
-#include <ostream>
-#include <stdexcept>
-#include <string>
-#include <string_view>
 
 namespace ndn {
 
@@ -104,7 +99,7 @@ private:
  * Each octet of input is always converted to two hex characters (e.g., "00" for octet==0).
  * The output string is a continuous sequence of hex characters without any whitespace separators.
  */
-[[nodiscard]] std::string
+NDN_CXX_NODISCARD std::string
 toHex(span<const uint8_t> buffer, bool wantUpperCase = true);
 
 /**
@@ -113,13 +108,13 @@ toHex(span<const uint8_t> buffer, bool wantUpperCase = true);
  *        without any whitespace separators (e.g., "48656C6C6F2C20776F726C6421")
  * @throw StringHelperError Input string is invalid
  */
-std::shared_ptr<Buffer>
-fromHex(std::string_view hexString);
+shared_ptr<Buffer>
+fromHex(const std::string& hexString);
 
 /**
  * @brief Convert (the least significant nibble of) @p n to the corresponding hex character.
  */
-[[nodiscard]] constexpr char
+NDN_CXX_NODISCARD constexpr char
 toHexChar(unsigned int n, bool wantUpperCase = true) noexcept
 {
   return wantUpperCase ?
@@ -130,7 +125,7 @@ toHexChar(unsigned int n, bool wantUpperCase = true) noexcept
 /**
  * @brief Convert the hex character @p c to an integer in [0, 15], or -1 if it's not a hex character.
  */
-[[nodiscard]] constexpr int
+NDN_CXX_NODISCARD constexpr int
 fromHexChar(char c) noexcept
 {
   return (c >= '0' && c <= '9') ? int(c - '0') :
@@ -156,11 +151,11 @@ fromHexChar(char c) noexcept
  *
  * @see RFC 3986 section 2
  */
-[[nodiscard]] std::string
-escape(std::string_view str);
+NDN_CXX_NODISCARD std::string
+escape(const std::string& str);
 
 void
-escape(std::ostream& os, std::string_view str);
+escape(std::ostream& os, const char* str, size_t len);
 
 /**
  * @brief Decode a percent-encoded string.
@@ -176,11 +171,11 @@ escape(std::ostream& os, std::string_view str);
  *
  * @see RFC 3986 section 2
  */
-[[nodiscard]] std::string
-unescape(std::string_view str);
+NDN_CXX_NODISCARD std::string
+unescape(const std::string& str);
 
 void
-unescape(std::ostream& os, std::string_view str);
+unescape(std::ostream& os, const char* str, size_t len);
 
 } // namespace ndn
 

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2021 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -26,7 +26,10 @@
 
 #include <boost/filesystem.hpp>
 
-namespace ndn::tests {
+namespace ndn {
+namespace security {
+namespace tpm {
+namespace tests {
 
 /**
  * @brief A wrapper of tpm::BackEndFile for unit test template.
@@ -36,7 +39,7 @@ class BackEndWrapperFile
 public:
   BackEndWrapperFile()
     : m_tmpPath(boost::filesystem::path(UNIT_TESTS_TMPDIR) / "TpmBackEndFile")
-    , m_impl(make_unique<security::tpm::BackEndFile>(m_tmpPath.string()))
+    , m_impl(make_unique<BackEndFile>(m_tmpPath.string()))
   {
   }
 
@@ -45,7 +48,7 @@ public:
     boost::filesystem::remove_all(m_tmpPath);
   }
 
-  security::tpm::BackEnd&
+  BackEnd&
   getTpm()
   {
     return *m_impl;
@@ -59,9 +62,12 @@ public:
 
 private:
   const boost::filesystem::path m_tmpPath;
-  const unique_ptr<security::tpm::BackEnd> m_impl;
+  const unique_ptr<BackEnd> m_impl;
 };
 
-} // namespace ndn::tests
+} // namespace tests
+} // namespace tpm
+} // namespace security
+} // namespace ndn
 
 #endif // NDN_CXX_TESTS_UNIT_SECURITY_TPM_BACK_END_WRAPPER_FILE_HPP

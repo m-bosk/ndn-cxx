@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -24,23 +24,22 @@
 
 #include "ndn-cxx/security/signing-info.hpp"
 
-namespace ndn::nfd {
+namespace ndn {
+namespace nfd {
 
-/**
- * \ingroup management
- * \brief Contains options for ControlCommand execution.
- * \note This type is intentionally copyable.
+/** \ingroup management
+ *  \brief Contains options for ControlCommand execution.
+ *  \note This type is intentionally copyable
  */
 class CommandOptions
 {
 public:
-  /**
-   * \brief Constructs CommandOptions.
-   * \post getTimeout() == DEFAULT_TIMEOUT
-   * \post getPrefix() == DEFAULT_PREFIX
-   * \post getSigningInfo().getSignerType() == SIGNER_TYPE_NULL
+  /** \brief Constructs CommandOptions.
+   *  \post getTimeout() == DEFAULT_TIMEOUT
+   *  \post getPrefix() == DEFAULT_PREFIX
+   *  \post getSigningInfo().getSignerType() == SIGNER_TYPE_NULL
    */
-  CommandOptions() = default;
+  CommandOptions();
 
   /**
    * \brief Returns the command timeout.
@@ -51,14 +50,13 @@ public:
     return m_timeout;
   }
 
-  /**
-   * \brief Sets the command timeout.
-   * \param timeout the new command timeout, must be positive
-   * \return self
-   * \throw std::out_of_range if timeout is non-positive
+  /** \brief Sets the command timeout.
+   *  \param timeout the new command timeout, must be positive
+   *  \throw std::out_of_range if timeout is non-positive
+   *  \return self
    */
   CommandOptions&
-  setTimeout(time::milliseconds timeout);
+  setTimeout(const time::milliseconds& timeout);
 
   /**
    * \brief Returns the command prefix.
@@ -69,12 +67,11 @@ public:
     return m_prefix;
   }
 
-  /**
-   * \brief Sets the command prefix.
-   * \return self
+  /** \brief Sets the command prefix.
+   *  \return self
    */
   CommandOptions&
-  setPrefix(Name prefix);
+  setPrefix(const Name& prefix);
 
   /**
    * \brief Returns the signing parameters.
@@ -85,26 +82,26 @@ public:
     return m_signingInfo;
   }
 
-  /**
-   * \brief Sets the signing parameters.
-   * \return self
+  /** \brief Sets the signing parameters.
+   *  \return self
    */
   CommandOptions&
-  setSigningInfo(security::SigningInfo signingInfo);
+  setSigningInfo(const security::SigningInfo& signingInfo);
 
 public:
   /// The default command timeout: 10 seconds.
-  static constexpr time::milliseconds DEFAULT_TIMEOUT = 10_s;
+  static const time::milliseconds DEFAULT_TIMEOUT;
 
   /// The default command prefix: `/localhost/nfd`.
-  static inline const Name DEFAULT_PREFIX{"/localhost/nfd"};
+  static const Name DEFAULT_PREFIX;
 
 private:
-  time::milliseconds m_timeout = DEFAULT_TIMEOUT;
-  Name m_prefix = DEFAULT_PREFIX;
+  time::milliseconds m_timeout;
+  Name m_prefix;
   security::SigningInfo m_signingInfo;
 };
 
-} // namespace ndn::nfd
+} // namespace nfd
+} // namespace ndn
 
 #endif // NDN_CXX_MGMT_NFD_COMMAND_OPTIONS_HPP

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -21,18 +21,17 @@
 
 #include "ndn-cxx/security/pib/identity-container.hpp"
 #include "ndn-cxx/security/pib/impl/pib-memory.hpp"
-#include "ndn-cxx/util/concepts.hpp"
 
 #include "tests/boost-test.hpp"
 #include "tests/unit/security/pib/pib-data-fixture.hpp"
 
-namespace ndn::tests {
-
-using namespace ndn::security::pib;
-
-NDN_CXX_ASSERT_FORWARD_ITERATOR(IdentityContainer::const_iterator);
+namespace ndn {
+namespace security {
+namespace pib {
+namespace tests {
 
 BOOST_AUTO_TEST_SUITE(Security)
+BOOST_AUTO_TEST_SUITE(Pib)
 BOOST_FIXTURE_TEST_SUITE(TestIdentityContainer, PibDataFixture)
 
 BOOST_AUTO_TEST_CASE(AddGetRemove)
@@ -72,7 +71,7 @@ BOOST_AUTO_TEST_CASE(AddGetRemove)
     Identity identity2 = container.get(id2);
     BOOST_CHECK_EQUAL(identity1.getName(), id1);
     BOOST_CHECK_EQUAL(identity2.getName(), id2);
-    BOOST_CHECK_THROW(container.get(Name("/non-existing")), Pib::Error);
+    BOOST_CHECK_THROW(container.get(Name("/non-existing")), pib::Pib::Error);
   }
 
   {
@@ -148,6 +147,10 @@ BOOST_AUTO_TEST_CASE(Iterator)
 }
 
 BOOST_AUTO_TEST_SUITE_END() // TestIdentityContainer
+BOOST_AUTO_TEST_SUITE_END() // Pib
 BOOST_AUTO_TEST_SUITE_END() // Security
 
-} // namespace ndn::tests
+} // namespace tests
+} // namespace pib
+} // namespace security
+} // namespace ndn

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2021 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -24,7 +24,9 @@
 
 #include "ndn-cxx/security/transform/transform-base.hpp"
 
-namespace ndn::security::transform {
+namespace ndn {
+namespace security {
+namespace transform {
 
 /**
  * @brief The module to perform hexadecimal encoding transformation.
@@ -36,15 +38,12 @@ class HexEncode final : public Transform
 {
 public:
   /**
-   * @brief Create a hex encoding module.
+   * @brief Create a hex encoding module
    *
    * @param useUpperCase if true, use upper case letters, otherwise lower case
    */
   explicit
-  HexEncode(bool useUpperCase = false)
-    : m_useUpperCase(useUpperCase)
-  {
-  }
+  HexEncode(bool useUpperCase = false);
 
 private:
   /**
@@ -62,12 +61,14 @@ private:
   toHex(const uint8_t* data, size_t dataLen);
 
 private:
-  bool m_useUpperCase = false;
+  bool m_useUpperCase;
 };
 
 unique_ptr<Transform>
 hexEncode(bool useUpperCase = false);
 
-} // namespace ndn::security::transform
+} // namespace transform
+} // namespace security
+} // namespace ndn
 
 #endif // NDN_CXX_SECURITY_TRANSFORM_HEX_ENCODE_HPP

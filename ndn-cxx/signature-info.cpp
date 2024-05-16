@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -21,16 +21,23 @@
 
 #include "ndn-cxx/signature-info.hpp"
 #include "ndn-cxx/encoding/block-helpers.hpp"
+#include "ndn-cxx/util/concepts.hpp"
 #include "ndn-cxx/util/string-helper.hpp"
 
-#include <algorithm>
 #include <boost/range/adaptor/reversed.hpp>
 
 namespace ndn {
 
+BOOST_CONCEPT_ASSERT((boost::EqualityComparable<SignatureInfo>));
+BOOST_CONCEPT_ASSERT((WireEncodable<SignatureInfo>));
+BOOST_CONCEPT_ASSERT((WireEncodableWithEncodingBuffer<SignatureInfo>));
+BOOST_CONCEPT_ASSERT((WireDecodable<SignatureInfo>));
+static_assert(std::is_base_of<tlv::Error, SignatureInfo::Error>::value,
+              "SignatureInfo::Error must inherit from tlv::Error");
+
 SignatureInfo::SignatureInfo() = default;
 
-SignatureInfo::SignatureInfo(tlv::SignatureTypeValue type, std::optional<KeyLocator> keyLocator)
+SignatureInfo::SignatureInfo(tlv::SignatureTypeValue type, optional<KeyLocator> keyLocator)
   : m_type(type)
   , m_keyLocator(std::move(keyLocator))
 {
@@ -110,7 +117,7 @@ void
 SignatureInfo::wireDecode(const Block& wire, SignatureInfo::Type type)
 {
   m_type = -1;
-  m_keyLocator = std::nullopt;
+  m_keyLocator = nullopt;
   m_otherTlvs.clear();
 
   m_wire = wire;
@@ -189,7 +196,7 @@ SignatureInfo::getKeyLocator() const
 }
 
 SignatureInfo&
-SignatureInfo::setKeyLocator(std::optional<KeyLocator> keyLocator)
+SignatureInfo::setKeyLocator(optional<KeyLocator> keyLocator)
 {
   if (keyLocator != m_keyLocator) {
     m_keyLocator = std::move(keyLocator);
@@ -209,7 +216,7 @@ SignatureInfo::getValidityPeriod() const
 }
 
 SignatureInfo&
-SignatureInfo::setValidityPeriod(std::optional<security::ValidityPeriod> validityPeriod)
+SignatureInfo::setValidityPeriod(optional<security::ValidityPeriod> validityPeriod)
 {
   if (!validityPeriod) {
     removeCustomTlv(tlv::ValidityPeriod);
@@ -220,18 +227,18 @@ SignatureInfo::setValidityPeriod(std::optional<security::ValidityPeriod> validit
   return *this;
 }
 
-std::optional<std::vector<uint8_t>>
+optional<std::vector<uint8_t>>
 SignatureInfo::getNonce() const
 {
   auto it = findOtherTlv(tlv::SignatureNonce);
   if (it == m_otherTlvs.end()) {
-    return std::nullopt;
+    return nullopt;
   }
   return std::vector<uint8_t>(it->value_begin(), it->value_end());
 }
 
 SignatureInfo&
-SignatureInfo::setNonce(std::optional<span<const uint8_t>> nonce)
+SignatureInfo::setNonce(optional<span<const uint8_t>> nonce)
 {
   if (!nonce) {
     removeCustomTlv(tlv::SignatureNonce);
@@ -242,18 +249,18 @@ SignatureInfo::setNonce(std::optional<span<const uint8_t>> nonce)
   return *this;
 }
 
-std::optional<time::system_clock::time_point>
+optional<time::system_clock::time_point>
 SignatureInfo::getTime() const
 {
   auto it = findOtherTlv(tlv::SignatureTime);
   if (it == m_otherTlvs.end()) {
-    return std::nullopt;
+    return nullopt;
   }
   return time::fromUnixTimestamp(time::milliseconds(readNonNegativeInteger(*it)));
 }
 
 SignatureInfo&
-SignatureInfo::setTime(std::optional<time::system_clock::time_point> time)
+SignatureInfo::setTime(optional<time::system_clock::time_point> time)
 {
   if (!time) {
     removeCustomTlv(tlv::SignatureTime);
@@ -265,18 +272,18 @@ SignatureInfo::setTime(std::optional<time::system_clock::time_point> time)
   return *this;
 }
 
-std::optional<uint64_t>
+optional<uint64_t>
 SignatureInfo::getSeqNum() const
 {
   auto it = findOtherTlv(tlv::SignatureSeqNum);
   if (it == m_otherTlvs.end()) {
-    return std::nullopt;
+    return nullopt;
   }
   return readNonNegativeInteger(*it);
 }
 
 SignatureInfo&
-SignatureInfo::setSeqNum(std::optional<uint64_t> seqNum)
+SignatureInfo::setSeqNum(optional<uint64_t> seqNum)
 {
   if (!seqNum) {
     removeCustomTlv(tlv::SignatureSeqNum);
@@ -287,12 +294,12 @@ SignatureInfo::setSeqNum(std::optional<uint64_t> seqNum)
   return *this;
 }
 
-std::optional<Block>
+optional<Block>
 SignatureInfo::getCustomTlv(uint32_t type) const
 {
   auto it = findOtherTlv(type);
   if (it == m_otherTlvs.end()) {
-    return std::nullopt;
+    return nullopt;
   }
   return *it;
 }

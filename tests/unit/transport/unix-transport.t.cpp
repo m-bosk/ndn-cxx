@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2020 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -23,7 +23,8 @@
 
 #include "tests/boost-test.hpp"
 
-namespace ndn::tests {
+namespace ndn {
+namespace tests {
 
 BOOST_AUTO_TEST_SUITE(Transport)
 BOOST_AUTO_TEST_SUITE(TestUnixTransport)
@@ -34,9 +35,9 @@ BOOST_AUTO_TEST_CASE(GetSocketNameFromUri)
 {
   BOOST_CHECK_EQUAL(UnixTransport::getSocketNameFromUri("unix:///tmp/test/nfd.sock"), "/tmp/test/nfd.sock");
 #ifdef __linux__
-  BOOST_CHECK_EQUAL(UnixTransport::getSocketNameFromUri(""), "/run/nfd/nfd.sock");
+  BOOST_CHECK_EQUAL(UnixTransport::getSocketNameFromUri(""), "/run/nfd.sock");
 #else
-  BOOST_CHECK_EQUAL(UnixTransport::getSocketNameFromUri(""), "/var/run/nfd/nfd.sock");
+  BOOST_CHECK_EQUAL(UnixTransport::getSocketNameFromUri(""), "/var/run/nfd.sock");
 #endif // __linux__
   BOOST_CHECK_EXCEPTION(UnixTransport::getSocketNameFromUri("tcp://"),
                         Transport::Error,
@@ -53,4 +54,5 @@ BOOST_AUTO_TEST_CASE(GetSocketNameFromUri)
 BOOST_AUTO_TEST_SUITE_END() // TestUnixTransport
 BOOST_AUTO_TEST_SUITE_END() // Transport
 
-} // namespace ndn::tests
+} // namespace tests
+} // namespace ndn

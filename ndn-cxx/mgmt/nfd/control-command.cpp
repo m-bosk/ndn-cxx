@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -21,7 +21,8 @@
 
 #include "ndn-cxx/mgmt/nfd/control-command.hpp"
 
-namespace ndn::nfd {
+namespace ndn {
+namespace nfd {
 
 ControlCommand::ControlCommand(const std::string& module, const std::string& verb)
   : m_module(module)
@@ -38,7 +39,7 @@ ControlCommand::validateRequest(const ControlParameters& parameters) const
 }
 
 void
-ControlCommand::applyDefaultsToRequest(ControlParameters&) const
+ControlCommand::applyDefaultsToRequest(ControlParameters& parameters) const
 {
 }
 
@@ -49,7 +50,7 @@ ControlCommand::validateResponse(const ControlParameters& parameters) const
 }
 
 void
-ControlCommand::applyDefaultsToResponse(ControlParameters&) const
+ControlCommand::applyDefaultsToResponse(ControlParameters& parameters) const
 {
 }
 
@@ -80,11 +81,11 @@ ControlCommand::FieldValidator::validate(const ControlParameters& parameters) co
     bool isPresent = presentFields[i];
     if (m_required[i]) {
       if (!isPresent) {
-        NDN_THROW(ArgumentError(std::string(CONTROL_PARAMETER_FIELD[i]) + " is required but missing"));
+        NDN_THROW(ArgumentError(CONTROL_PARAMETER_FIELD[i] + " is required but missing"));
       }
     }
     else if (isPresent && !m_optional[i]) {
-      NDN_THROW(ArgumentError(std::string(CONTROL_PARAMETER_FIELD[i]) + " is forbidden but present"));
+      NDN_THROW(ArgumentError(CONTROL_PARAMETER_FIELD[i] + " is forbidden but present"));
     }
   }
 
@@ -418,4 +419,5 @@ RibUnregisterCommand::validateResponse(const ControlParameters& parameters) cons
   }
 }
 
-} // namespace ndn::nfd
+} // namespace nfd
+} // namespace ndn

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -23,7 +23,8 @@
 
 #include "tests/boost-test.hpp"
 
-namespace ndn::tests {
+namespace ndn {
+namespace tests {
 
 BOOST_AUTO_TEST_SUITE(Encoding)
 BOOST_AUTO_TEST_SUITE(TestBufferStream)
@@ -32,7 +33,7 @@ BOOST_AUTO_TEST_CASE(Empty)
 {
   OBufferStream os;
 
-  std::shared_ptr<Buffer> buf = os.buf();
+  shared_ptr<Buffer> buf = os.buf();
   BOOST_CHECK_EQUAL(buf->size(), 0);
 }
 
@@ -42,7 +43,7 @@ BOOST_AUTO_TEST_CASE(Put)
   os.put(0x33);
   os.put(0x44);
 
-  std::shared_ptr<Buffer> buf = os.buf();
+  shared_ptr<Buffer> buf = os.buf();
   BOOST_REQUIRE_EQUAL(buf->size(), 2);
   BOOST_CHECK_EQUAL(buf->at(0), 0x33);
   BOOST_CHECK_EQUAL(buf->at(1), 0x44);
@@ -53,16 +54,15 @@ BOOST_AUTO_TEST_CASE(Write)
   OBufferStream os;
   os.write("\x11\x22", 2);
 
-  std::shared_ptr<Buffer> buf = os.buf();
+  shared_ptr<Buffer> buf = os.buf();
   BOOST_REQUIRE_EQUAL(buf->size(), 2);
   BOOST_CHECK_EQUAL(buf->at(0), 0x11);
   BOOST_CHECK_EQUAL(buf->at(1), 0x22);
 }
 
-BOOST_AUTO_TEST_CASE(Destructor,
-  * ut::description("test for bug #3727"))
+BOOST_AUTO_TEST_CASE(Destructor) // Bug 3727
 {
-  auto os = std::make_unique<OBufferStream>();
+  auto os = make_unique<OBufferStream>();
   auto buf = os->buf();
   *os << 'x';
   // do NOT flush or call buf() here
@@ -71,8 +71,7 @@ BOOST_AUTO_TEST_CASE(Destructor,
   BOOST_CHECK_EQUAL(buf->size(), 1);
 }
 
-BOOST_AUTO_TEST_CASE(Close,
-  * ut::description("test for bug #5240"))
+BOOST_AUTO_TEST_CASE(Close) // Bug 5240
 {
   OBufferStream os;
   os << "foo";
@@ -85,4 +84,5 @@ BOOST_AUTO_TEST_CASE(Close,
 BOOST_AUTO_TEST_SUITE_END() // TestBufferStream
 BOOST_AUTO_TEST_SUITE_END() // Encoding
 
-} // namespace ndn::tests
+} // namespace tests
+} // namespace ndn

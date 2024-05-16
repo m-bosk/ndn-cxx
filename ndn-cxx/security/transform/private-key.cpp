@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -54,7 +54,9 @@
       NDN_THROW(Error("Private key has already been loaded")); \
   } while (false)
 
-namespace ndn::security::transform {
+namespace ndn {
+namespace security {
+namespace transform {
 
 class PrivateKey::Impl : noncopyable
 {
@@ -118,14 +120,14 @@ PrivateKey::getKeyDigest(DigestAlgorithm algo) const
                     boost::lexical_cast<std::string>(getKeyType())));
 
   size_t len = 0;
-  if (EVP_PKEY_get_raw_private_key(m_impl->key, nullptr, &len) != 1)
-    NDN_THROW(Error("Failed to get raw key length"));
-  Buffer digest(len);
-  if (EVP_PKEY_get_raw_private_key(m_impl->key, digest.data(), &len) != 1)
-    NDN_THROW(Error("Failed to get raw key"));
+  const uint8_t* buf = EVP_PKEY_get0_hmac(m_impl->key, &len);
+  if (buf == nullptr)
+    NDN_THROW(Error("Failed to obtain raw key pointer"));
+  if (len * 8 != getKeySize())
+    NDN_THROW(Error("Key length mismatch"));
 
   OBufferStream os;
-  bufferSource(digest) >> digestFilter(algo) >> streamSink(os);
+  bufferSource(make_span(buf, len)) >> digestFilter(algo) >> streamSink(os);
   return os.buf();
 }
 
@@ -542,4 +544,6 @@ generatePrivateKey(const KeyParams& keyParams)
   }
 }
 
-} // namespace ndn::security::transform
+} // namespace transform
+} // namespace security
+} // namespace ndn

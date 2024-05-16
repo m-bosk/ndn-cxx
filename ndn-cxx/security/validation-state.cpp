@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -24,7 +24,9 @@
 #include "ndn-cxx/security/verification-helpers.hpp"
 #include "ndn-cxx/util/logger.hpp"
 
-namespace ndn::security {
+namespace ndn {
+namespace security {
+inline namespace v2 {
 
 NDN_LOG_INIT(ndn.security.ValidationState);
 
@@ -90,7 +92,7 @@ DataValidationState::~DataValidationState()
 }
 
 void
-DataValidationState::verifyOriginalPacket(const std::optional<Certificate>& trustedCert)
+DataValidationState::verifyOriginalPacket(const optional<Certificate>& trustedCert)
 {
   if (verifySignature(m_data, trustedCert)) {
     NDN_LOG_TRACE_DEPTH("OK signature for data `" << m_data.getName() << "`");
@@ -143,7 +145,7 @@ InterestValidationState::~InterestValidationState()
 }
 
 void
-InterestValidationState::verifyOriginalPacket(const std::optional<Certificate>& trustedCert)
+InterestValidationState::verifyOriginalPacket(const optional<Certificate>& trustedCert)
 {
   if (verifySignature(m_interest, trustedCert)) {
     NDN_LOG_TRACE_DEPTH("OK signature for interest `" << m_interest.getName() << "`");
@@ -174,4 +176,6 @@ InterestValidationState::fail(const ValidationError& error)
   m_outcome = false;
 }
 
-} // namespace ndn::security
+} // inline namespace v2
+} // namespace security
+} // namespace ndn

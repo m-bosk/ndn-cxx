@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -22,40 +22,49 @@
 #ifndef NDN_CXX_LP_FIELD_HPP
 #define NDN_CXX_LP_FIELD_HPP
 
+#include "ndn-cxx/detail/common.hpp"
 #include "ndn-cxx/encoding/encoding-buffer.hpp"
+#include "ndn-cxx/util/concepts.hpp"
 
-#include <boost/concept/usage.hpp>
-
-namespace ndn::lp {
+namespace ndn {
+namespace lp {
 
 /**
  * \brief Indicates where a field may occur.
  */
 namespace field_location_tags {
 
+class Base
+{
+};
+
 /**
  * \brief A header field.
  */
-struct Header {};
+class Header : public Base
+{
+};
 
 /**
  * \brief The Fragment field.
  */
-struct Fragment {};
+class Fragment : public Base
+{
+};
 
 } // namespace field_location_tags
 
 /**
- * \brief Concept check for NDNLPv2 fields.
+ * \brief Concept check for fields.
  */
-template<typename X>
+template<class X>
 struct Field
 {
-  static_assert(std::is_same_v<typename X::TlvType::value_type, uint32_t>);
-  static_assert(std::is_same_v<typename X::IsRepeatable::value_type, bool>);
-  static_assert(std::is_default_constructible_v<typename X::ValueType>);
-  static_assert(std::is_copy_constructible_v<typename X::ValueType>);
-
+  static_assert(std::is_base_of<field_location_tags::Base, typename X::FieldLocation>::value, "");
+  static_assert(std::is_same<typename X::TlvType::value_type, uint64_t>::value, "");
+  static_assert(std::is_same<typename X::IsRepeatable::value_type, bool>::value, "");
+  static_assert(std::is_default_constructible<typename X::ValueType>::value, "");
+  static_assert(std::is_copy_constructible<typename X::ValueType>::value, "");
   BOOST_CONCEPT_USAGE(Field)
   {
     Block wire;
@@ -66,6 +75,7 @@ struct Field
   }
 };
 
-} // namespace ndn::lp
+} // namespace lp
+} // namespace ndn
 
 #endif // NDN_CXX_LP_FIELD_HPP

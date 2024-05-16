@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -35,9 +35,10 @@
 #include <mutex>
 #include <thread>
 
-#include <boost/mp11/list.hpp>
+#include <boost/mpl/vector.hpp>
 
-namespace ndn::tests {
+namespace ndn {
+namespace tests {
 
 static Name
 makeVeryLongName(Name prefix = Name())
@@ -68,7 +69,7 @@ class FaceFixture : public KeyChainFixture
 protected:
   FaceFixture()
     : face(TransportType::create(""), m_keyChain)
-    , sched(face.getIoContext())
+    , sched(face.getIoService())
   {
   }
 
@@ -82,7 +83,7 @@ protected:
   sendInterest(time::nanoseconds delay, const Interest& interest, char& outcome)
   {
     if (face2 == nullptr) {
-      face2 = make_unique<Face>(TransportType::create(""), face.getIoContext(), m_keyChain);
+      face2 = make_unique<Face>(TransportType::create(""), face.getIoService(), m_keyChain);
     }
 
     outcome = '?';
@@ -101,13 +102,13 @@ protected:
     return sendInterest(delay, interest, ignoredOutcome);
   }
 
-  /** \brief Stop io_context after a delay
+  /** \brief Stop io_service after a delay
    *  \return scheduled event id
    */
   scheduler::EventId
   terminateAfter(time::nanoseconds delay)
   {
-    return sched.schedule(delay, [this] { face.getIoContext().stop(); });
+    return sched.schedule(delay, [this] { face.getIoService().stop(); });
   }
 
 protected:
@@ -116,7 +117,7 @@ protected:
   Scheduler sched;
 };
 
-using Transports = boost::mp11::mp_list<UnixTransport, TcpTransport>;
+using Transports = boost::mpl::vector<UnixTransport, TcpTransport>;
 
 BOOST_AUTO_TEST_SUITE(Consumer)
 
@@ -327,8 +328,7 @@ BOOST_AUTO_TEST_SUITE_END() // Producer
 
 BOOST_FIXTURE_TEST_SUITE(IoRoutine, FaceFixture<UnixTransport>)
 
-BOOST_AUTO_TEST_CASE(ShutdownWhileSendInProgress,
-  * ut::description("test for bug #3136"))
+BOOST_AUTO_TEST_CASE(ShutdownWhileSendInProgress) // Bug #3136
 {
   this->face.expressInterest(*makeInterest("/Hello/World"), nullptr, nullptr, nullptr);
   this->face.processEvents(1_s);
@@ -342,16 +342,14 @@ BOOST_AUTO_TEST_CASE(ShutdownWhileSendInProgress,
   BOOST_CHECK(true);
 }
 
-BOOST_AUTO_TEST_CASE(LargeDelayBetweenFaceConstructorAndProcessEvents,
-  * ut::description("test for bug #2742"))
+BOOST_AUTO_TEST_CASE(LargeDelayBetweenFaceConstructorAndProcessEvents) // Bug #2742
 {
   std::this_thread::sleep_for(std::chrono::seconds(5)); // simulate setup workload
   this->face.processEvents(1_s); // should not throw
   BOOST_CHECK(true);
 }
 
-BOOST_AUTO_TEST_CASE(ProcessEventsBlocksForeverWhenNothingScheduled,
-  * ut::description("test for bug #3957"))
+BOOST_AUTO_TEST_CASE(ProcessEventsBlocksForeverWhenNothingScheduled) // Bug #3957
 {
   std::mutex m;
   std::condition_variable cv;
@@ -379,4 +377,5 @@ BOOST_AUTO_TEST_CASE(ProcessEventsBlocksForeverWhenNothingScheduled,
 
 BOOST_AUTO_TEST_SUITE_END() // IoRoutine
 
-} // namespace ndn::tests
+} // namespace tests
+} // namespace ndn

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -22,7 +22,9 @@
 #include "ndn-cxx/security/detail/certificate-bundle-decoder.hpp"
 #include "ndn-cxx/util/scope.hpp"
 
-namespace ndn::security::detail {
+namespace ndn {
+namespace security {
+namespace detail {
 
 void
 CertificateBundleDecoder::append(const Block& segment)
@@ -41,7 +43,9 @@ CertificateBundleDecoder::decode()
   auto onThrow = make_scope_fail([this] { m_hasError = true; });
 
   while (!m_bufferedData.empty()) {
-    auto [isOk, element] = Block::fromBuffer(m_bufferedData);
+    bool isOk;
+    Block element;
+    std::tie(isOk, element) = Block::fromBuffer(m_bufferedData);
     if (!isOk) {
       return;
     }
@@ -58,4 +62,6 @@ CertificateBundleDecoder::decode()
   }
 }
 
-} // namespace ndn::security::detail
+} // namespace detail
+} // namespace security
+} // namespace ndn

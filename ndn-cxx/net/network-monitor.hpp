@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2021 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -27,12 +27,11 @@
 
 #include "ndn-cxx/detail/asio-fwd.hpp"
 #include "ndn-cxx/net/network-interface.hpp"
-#include "ndn-cxx/util/signal/emit.hpp"
-#include "ndn-cxx/util/signal/signal.hpp"
 
 #include <vector>
 
-namespace ndn::net {
+namespace ndn {
+namespace net {
 
 class NetworkMonitorImpl;
 
@@ -60,10 +59,10 @@ public:
   /**
    * @brief Construct instance, request enumeration of all network interfaces, and start
    *        monitoring for network state changes.
-   * @param ioCtx io_context instance that will dispatch events
+   * @param io io_service instance that will dispatch events
    */
   explicit
-  NetworkMonitor(boost::asio::io_context& ioCtx);
+  NetworkMonitor(boost::asio::io_service& io);
 
   enum Capability : uint32_t {
     /// NetworkMonitor is not supported and is a no-op
@@ -93,7 +92,7 @@ public:
    * @warning May return incomplete results if called before the
    *          #onEnumerationCompleted signal has been emitted.
    */
-  [[nodiscard]] std::vector<shared_ptr<const NetworkInterface>>
+  NDN_CXX_NODISCARD std::vector<shared_ptr<const NetworkInterface>>
   listNetworkInterfaces() const;
 
 protected:
@@ -113,20 +112,20 @@ private:
 
 public: // signals
   /// Fires when the enumeration of all network interfaces on the system is complete.
-  signal::Signal<NetworkMonitorImpl>& onEnumerationCompleted;
+  util::Signal<NetworkMonitorImpl>& onEnumerationCompleted;
 
   /// Fires whenever a new interface is detected on the system.
-  signal::Signal<NetworkMonitorImpl, shared_ptr<const NetworkInterface>>& onInterfaceAdded;
+  util::Signal<NetworkMonitorImpl, shared_ptr<const NetworkInterface>>& onInterfaceAdded;
 
   /**
    * @brief Fires whenever an interface disappears from the system.
    * @note The NetworkInterface object has already been removed from the list
    *       returned by listNetworkInterfaces() when this signal is emitted.
    */
-  signal::Signal<NetworkMonitorImpl, shared_ptr<const NetworkInterface>>& onInterfaceRemoved;
+  util::Signal<NetworkMonitorImpl, shared_ptr<const NetworkInterface>>& onInterfaceRemoved;
 
   /// @deprecated Only for backward compatibility
-  signal::Signal<NetworkMonitorImpl>& onNetworkStateChanged;
+  util::Signal<NetworkMonitorImpl>& onNetworkStateChanged;
 };
 
 class NetworkMonitorImpl : noncopyable
@@ -151,10 +150,10 @@ protected:
   makeNetworkInterface();
 
 public:
-  signal::Signal<NetworkMonitorImpl> onEnumerationCompleted;
-  signal::Signal<NetworkMonitorImpl, shared_ptr<const NetworkInterface>> onInterfaceAdded;
-  signal::Signal<NetworkMonitorImpl, shared_ptr<const NetworkInterface>> onInterfaceRemoved;
-  signal::Signal<NetworkMonitorImpl> onNetworkStateChanged;
+  util::Signal<NetworkMonitorImpl> onEnumerationCompleted;
+  util::Signal<NetworkMonitorImpl, shared_ptr<const NetworkInterface>> onInterfaceAdded;
+  util::Signal<NetworkMonitorImpl, shared_ptr<const NetworkInterface>> onInterfaceRemoved;
+  util::Signal<NetworkMonitorImpl> onNetworkStateChanged;
 
 protected:
   DECLARE_SIGNAL_EMIT(onEnumerationCompleted)
@@ -163,6 +162,7 @@ protected:
   DECLARE_SIGNAL_EMIT(onNetworkStateChanged)
 };
 
-} // namespace ndn::net
+} // namespace net
+} // namespace ndn
 
 #endif // NDN_CXX_NET_NETWORK_MONITOR_HPP

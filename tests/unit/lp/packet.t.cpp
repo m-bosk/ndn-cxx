@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -20,15 +20,14 @@
  */
 
 #include "ndn-cxx/lp/packet.hpp"
-#include "ndn-cxx/lp/fields.hpp"
 #include "ndn-cxx/prefix-announcement.hpp"
 
 #include "tests/key-chain-fixture.hpp"
 #include "tests/test-common.hpp"
 
-namespace ndn::tests {
-
-using namespace ndn::lp;
+namespace ndn {
+namespace lp {
+namespace tests {
 
 BOOST_AUTO_TEST_SUITE(Lp)
 BOOST_AUTO_TEST_SUITE(TestPacket)
@@ -214,7 +213,8 @@ BOOST_AUTO_TEST_CASE(DecodeNormal)
   BOOST_CHECK_EQUAL(packet.get<AckField>(2), 2);
 
   BOOST_CHECK_EQUAL(packet.count<FragmentField>(), 1);
-  auto [first, last] = packet.get<FragmentField>(0);
+  Buffer::const_iterator first, last;
+  std::tie(first, last) = packet.get<FragmentField>(0);
   BOOST_CHECK_EQUAL(2, last - first);
   BOOST_CHECK_EQUAL(0x03, *first);
   BOOST_CHECK_EQUAL(0xe8, *(last - 1));
@@ -253,7 +253,8 @@ BOOST_AUTO_TEST_CASE(DecodeFragment)
   packet.wireDecode(wire);
   BOOST_CHECK_EQUAL(1, packet.count<FragmentField>());
   BOOST_CHECK_EQUAL(0, packet.count<FragIndexField>());
-  auto [first, last] = packet.get<FragmentField>(0);
+  Buffer::const_iterator first, last;
+  std::tie(first, last) = packet.get<FragmentField>(0);
   BOOST_CHECK_EQUAL(2, last - first);
   BOOST_CHECK_EQUAL(0x03, *first);
   BOOST_CHECK_EQUAL(0xe8, *(last - 1));
@@ -426,10 +427,10 @@ BOOST_AUTO_TEST_CASE(DecodeUnrecognizedTlvType)
   BOOST_CHECK_THROW(packet.wireDecode(wire), Packet::Error);
 }
 
-BOOST_FIXTURE_TEST_CASE(DecodePrefixAnnouncement, KeyChainFixture)
+BOOST_FIXTURE_TEST_CASE(DecodePrefixAnnouncement, ndn::tests::KeyChainFixture)
 {
   // Construct Data which prefix announcement is attached to
-  auto data0 = makeData("/edu/ua/cs/news/index.html");
+  auto data0 = ndn::tests::makeData("/edu/ua/cs/news/index.html");
 
   Packet packet0;
   packet0.wireDecode(data0->wireEncode());
@@ -456,4 +457,6 @@ BOOST_FIXTURE_TEST_CASE(DecodePrefixAnnouncement, KeyChainFixture)
 BOOST_AUTO_TEST_SUITE_END() // TestPacket
 BOOST_AUTO_TEST_SUITE_END() // Lp
 
-} // namespace ndn::tests
+} // namespace tests
+} // namespace lp
+} // namespace ndn

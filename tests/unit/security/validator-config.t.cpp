@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -29,7 +29,11 @@
 #include "tests/key-chain-fixture.hpp"
 #include "tests/unit/security/validator-config/common.hpp"
 
-namespace ndn::tests {
+namespace ndn {
+namespace security {
+namespace tests {
+
+using namespace ndn::tests;
 
 BOOST_AUTO_TEST_SUITE(Security)
 BOOST_FIXTURE_TEST_SUITE(TestValidatorConfig, KeyChainFixture)
@@ -38,12 +42,12 @@ BOOST_FIXTURE_TEST_SUITE(TestValidatorConfig, KeyChainFixture)
 
 BOOST_AUTO_TEST_CASE(Construct)
 {
-  DummyClientFace face;
+  util::DummyClientFace face;
 
   ValidatorConfig v1(face);
   BOOST_CHECK_EQUAL(v1.m_policyConfig.m_isConfigured, false);
 
-  ValidatorConfig v2(make_unique<security::CertificateFetcherOffline>());
+  ValidatorConfig v2(make_unique<CertificateFetcherOffline>());
   BOOST_CHECK_EQUAL(v2.m_policyConfig.m_isConfigured, false);
 }
 
@@ -52,7 +56,7 @@ class ValidatorConfigFixture : public KeyChainFixture
 public:
   ValidatorConfigFixture()
     : path(boost::filesystem::path(UNIT_TESTS_TMPDIR) / "security" / "validator-config")
-    , validator(make_unique<security::CertificateFetcherOffline>())
+    , validator(make_unique<CertificateFetcherOffline>())
   {
     boost::filesystem::create_directories(path);
     config = R"CONF(
@@ -114,22 +118,22 @@ BOOST_AUTO_TEST_CASE(FromIstream)
 
 BOOST_AUTO_TEST_CASE(FromSection)
 {
-  validator.load(makeSection(config), "config-file-from-section");
+  validator.load(validator_config::tests::makeSection(config), "config-file-from-section");
   BOOST_CHECK_EQUAL(validator.m_policyConfig.m_isConfigured, true);
 
   // should reload policy
-  validator.load(makeSection(config), "config-file-from-section");
+  validator.load(validator_config::tests::makeSection(config), "config-file-from-section");
   BOOST_CHECK_EQUAL(validator.m_policyConfig.m_isConfigured, true);
 }
 
 BOOST_AUTO_TEST_SUITE_END() // Loads
 
-BOOST_FIXTURE_TEST_CASE(ValidateCommandInterestWithDigestSha256, ValidatorConfigFixture,
-  * ut::description("test for bug #4635"))
+
+BOOST_FIXTURE_TEST_CASE(ValidateCommandInterestWithDigestSha256, ValidatorConfigFixture) // Bug 4635
 {
   validator.load(configFile);
 
-  security::InterestSigner signer(m_keyChain);
+  InterestSigner signer(m_keyChain);
   auto i = signer.makeCommandInterest("/hello/world/CMD", signingWithSha256());
   size_t nValidated = 0, nFailed = 0;
 
@@ -151,7 +155,7 @@ BOOST_FIXTURE_TEST_CASE(ValidateSignedInterest, ValidatorConfigFixture)
 {
   validator.load(configFile);
 
-  security::InterestSigner signer(m_keyChain);
+  InterestSigner signer(m_keyChain);
   Interest i1("/hello/world");
   signer.makeSignedInterest(i1);
   size_t nValidated = 0, nFailed = 0;
@@ -175,7 +179,7 @@ BOOST_FIXTURE_TEST_CASE(ValidateCommandInterest, ValidatorConfigFixture)
 {
   validator.load(configFile);
 
-  security::InterestSigner signer(m_keyChain);
+  InterestSigner signer(m_keyChain);
   auto i1 = signer.makeCommandInterest("/hello/world");
   size_t nValidated = 0, nFailed = 0;
 
@@ -196,4 +200,6 @@ BOOST_FIXTURE_TEST_CASE(ValidateCommandInterest, ValidatorConfigFixture)
 BOOST_AUTO_TEST_SUITE_END() // TestValidatorConfig
 BOOST_AUTO_TEST_SUITE_END() // Security
 
-} // namespace ndn::tests
+} // namespace tests
+} // namespace security
+} // namespace ndn

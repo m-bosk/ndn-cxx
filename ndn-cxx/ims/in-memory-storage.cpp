@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2019 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -24,8 +24,16 @@
 
 namespace ndn {
 
-constexpr size_t MIN_CAPACITY = 16;
-constexpr time::milliseconds ZERO_WINDOW = 0_ms;
+const time::milliseconds InMemoryStorage::INFINITE_WINDOW(-1);
+const time::milliseconds InMemoryStorage::ZERO_WINDOW(0);
+
+InMemoryStorage::const_iterator::const_iterator(const Data* ptr, const Cache* cache,
+                                                Cache::index<byFullName>::type::iterator it)
+  : m_ptr(ptr)
+  , m_cache(cache)
+  , m_it(it)
+{
+}
 
 InMemoryStorage::const_iterator&
 InMemoryStorage::const_iterator::operator++()
@@ -37,27 +45,62 @@ InMemoryStorage::const_iterator::operator++()
   else {
     m_ptr = nullptr;
   }
+
   return *this;
+}
+
+InMemoryStorage::const_iterator
+InMemoryStorage::const_iterator::operator++(int)
+{
+  InMemoryStorage::const_iterator i(*this);
+  this->operator++();
+  return i;
+}
+
+InMemoryStorage::const_iterator::reference
+InMemoryStorage::const_iterator::operator*()
+{
+  return *m_ptr;
+}
+
+InMemoryStorage::const_iterator::pointer
+InMemoryStorage::const_iterator::operator->()
+{
+  return m_ptr;
+}
+
+bool
+InMemoryStorage::const_iterator::operator==(const const_iterator& rhs)
+{
+  return m_it == rhs.m_it;
+}
+
+bool
+InMemoryStorage::const_iterator::operator!=(const const_iterator& rhs)
+{
+  return m_it != rhs.m_it;
 }
 
 InMemoryStorage::InMemoryStorage(size_t limit)
   : m_limit(limit)
+  , m_nPackets(0)
 {
   init();
 }
 
-InMemoryStorage::InMemoryStorage(boost::asio::io_context& ioCtx, size_t limit)
+InMemoryStorage::InMemoryStorage(boost::asio::io_service& ioService, size_t limit)
   : m_limit(limit)
+  , m_nPackets(0)
 {
-  m_scheduler = make_unique<Scheduler>(ioCtx);
+  m_scheduler = make_unique<Scheduler>(ioService);
   init();
 }
 
 void
 InMemoryStorage::init()
 {
-  // TODO: consider a more suitable initial value
-  m_capacity = MIN_CAPACITY;
+  // TODO consider a more suitable initial value
+  m_capacity = m_initCapacity;
 
   if (m_limit != std::numeric_limits<size_t>::max() && m_capacity > m_limit) {
     m_capacity = m_limit;
@@ -88,7 +131,7 @@ void
 InMemoryStorage::setCapacity(size_t capacity)
 {
   size_t oldCapacity = m_capacity;
-  m_capacity = std::max(capacity, MIN_CAPACITY);
+  m_capacity = std::max(capacity, m_initCapacity);
 
   if (size() > m_capacity) {
     ssize_t nAllowedFailures = size() - m_capacity;
@@ -122,7 +165,7 @@ InMemoryStorage::insert(const Data& data, const time::milliseconds& mustBeFreshP
   if (it != m_cache.get<byFullName>().end())
     return;
 
-  // if full, double the capacity
+  //if full, double the capacity
   bool doesReachLimit = (getLimit() == getCapacity());
   if (isFull() && !doesReachLimit) {
     // note: This is incorrect if 2*capacity overflows, but memory should run out before that
@@ -130,24 +173,24 @@ InMemoryStorage::insert(const Data& data, const time::milliseconds& mustBeFreshP
     setCapacity(newCapacity);
   }
 
-  // if full and reach limitation of the capacity, employ replacement policy
+  //if full and reach limitation of the capacity, employ replacement policy
   if (isFull() && doesReachLimit) {
     evictItem();
   }
 
-  // insert to cache
+  //insert to cache
   BOOST_ASSERT(m_freeEntries.size() > 0);
   // take entry for the memory pool
   InMemoryStorageEntry* entry = m_freeEntries.top();
   m_freeEntries.pop();
   m_nPackets++;
   entry->setData(data);
-  if (m_scheduler != nullptr && mustBeFreshProcessingWindow >= ZERO_WINDOW) {
+  if (m_scheduler != nullptr && mustBeFreshProcessingWindow > ZERO_WINDOW) {
     entry->scheduleMarkStale(*m_scheduler, mustBeFreshProcessingWindow);
   }
   m_cache.insert(entry);
 
-  // let derived class do something with the entry
+  //let derived class do something with the entry
   afterInsert(entry);
 }
 
@@ -324,17 +367,17 @@ InMemoryStorage::end() const
 }
 
 void
-InMemoryStorage::afterInsert(InMemoryStorageEntry*)
+InMemoryStorage::afterInsert(InMemoryStorageEntry* entry)
 {
 }
 
 void
-InMemoryStorage::beforeErase(InMemoryStorageEntry*)
+InMemoryStorage::beforeErase(InMemoryStorageEntry* entry)
 {
 }
 
 void
-InMemoryStorage::afterAccess(InMemoryStorageEntry*)
+InMemoryStorage::afterAccess(InMemoryStorageEntry* entry)
 {
 }
 

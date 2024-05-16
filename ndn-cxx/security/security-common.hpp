@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -22,47 +22,36 @@
 #ifndef NDN_CXX_SECURITY_SECURITY_COMMON_HPP
 #define NDN_CXX_SECURITY_SECURITY_COMMON_HPP
 
+#include "ndn-cxx/detail/common.hpp"
 #include "ndn-cxx/util/span.hpp"
 
-#include <cstdint>
-#include <iosfwd>
 #include <vector>
 
 namespace ndn {
 
 namespace signed_interest {
 
-/// \deprecated The old Signed %Interest format is deprecated.
-inline constexpr ssize_t POS_SIG_VALUE = -1;
-/// \deprecated The old Signed %Interest format is deprecated.
-inline constexpr ssize_t POS_SIG_INFO = -2;
+const ssize_t POS_SIG_VALUE = -1;
+const ssize_t POS_SIG_INFO = -2;
 
-/**
- * \brief Minimum number of name components for an old-style Signed %Interest.
- * \deprecated The old Signed %Interest format is deprecated.
- * \sa https://redmine.named-data.net/projects/ndn-cxx/wiki/SignedInterest
+/** \brief Minimum number of name components for an old-style Signed %Interest.
+ *  \sa https://redmine.named-data.net/projects/ndn-cxx/wiki/SignedInterest
  */
-inline constexpr size_t MIN_SIZE = 2;
+const size_t MIN_SIZE = 2;
 
 } // namespace signed_interest
 
 namespace command_interest {
 
-/// \deprecated The Command %Interest format is deprecated.
-inline constexpr ssize_t POS_SIG_VALUE = -1;
-/// \deprecated The Command %Interest format is deprecated.
-inline constexpr ssize_t POS_SIG_INFO = -2;
-/// \deprecated The Command %Interest format is deprecated.
-inline constexpr ssize_t POS_RANDOM_VAL = -3;
-/// \deprecated The Command %Interest format is deprecated.
-inline constexpr ssize_t POS_TIMESTAMP = -4;
+using signed_interest::POS_SIG_VALUE;
+using signed_interest::POS_SIG_INFO;
+const ssize_t POS_RANDOM_VAL = -3;
+const ssize_t POS_TIMESTAMP = -4;
 
-/**
- * \brief Minimum number of name components for a Command %Interest.
- * \deprecated The Command %Interest format is deprecated.
- * \sa https://redmine.named-data.net/projects/ndn-cxx/wiki/CommandInterest
+/** \brief Minimum number of name components for a Command %Interest.
+ *  \sa https://redmine.named-data.net/projects/ndn-cxx/wiki/CommandInterest
  */
-inline constexpr size_t MIN_SIZE = 4;
+const size_t MIN_SIZE = 4;
 
 } // namespace command_interest
 

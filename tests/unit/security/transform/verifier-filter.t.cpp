@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2023 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -33,9 +33,12 @@
 
 #include "tests/boost-test.hpp"
 
-namespace ndn::tests {
+#include <openssl/opensslv.h>
 
-using namespace ndn::security::transform;
+namespace ndn {
+namespace security {
+namespace transform {
+namespace tests {
 
 BOOST_AUTO_TEST_SUITE(Security)
 BOOST_AUTO_TEST_SUITE(Transform)
@@ -163,12 +166,14 @@ BOOST_AUTO_TEST_CASE(Hmac)
 
   BOOST_CHECK_THROW(VerifierFilter(DigestAlgorithm::NONE, *sKey, *sig), Error);
 
+#if OPENSSL_VERSION_NUMBER < 0x30000000L // FIXME #5154
   bool result = false;
   bufferSource(DATA) >>
     verifierFilter(DigestAlgorithm::SHA256, *sKey, *sig) >>
     boolSink(result);
 
   BOOST_CHECK_EQUAL(result, true);
+#endif
 }
 
 BOOST_AUTO_TEST_CASE(InvalidKey)
@@ -183,4 +188,7 @@ BOOST_AUTO_TEST_SUITE_END() // TestVerifierFilter
 BOOST_AUTO_TEST_SUITE_END() // Transform
 BOOST_AUTO_TEST_SUITE_END() // Security
 
-} // namespace ndn::tests
+} // namespace tests
+} // namespace transform
+} // namespace security
+} // namespace ndn

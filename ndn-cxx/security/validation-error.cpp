@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2024 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -20,11 +20,10 @@
  */
 
 #include "ndn-cxx/security/validation-error.hpp"
-#include "ndn-cxx/util/backports.hpp"
 
-#include <ostream>
-
-namespace ndn::security {
+namespace ndn {
+namespace security {
+inline namespace v2 {
 
 std::ostream&
 operator<<(std::ostream& os, ValidationError::Code code)
@@ -72,4 +71,6 @@ ValidationError::print(std::ostream& os) const
   }
 }
 
-} // namespace ndn::security
+} // inline namespace v2
+} // namespace security
+} // namespace ndn
