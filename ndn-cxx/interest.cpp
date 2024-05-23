@@ -82,6 +82,11 @@ Interest::wireEncode(EncodingImpl<TAG>& encoder) const
     totalLength += prependBlock(encoder, block);
   }
 
+  // SoftStateInterest
+  if (getIsSoftState()) {
+    totalLength += prependEmptyBlock(encoder, tlv::IsSoftState);
+  }
+
   // HopLimit
   if (m_hopLimit) {
     totalLength += prependBinaryBlock(encoder, tlv::HopLimit, {*m_hopLimit});
@@ -162,6 +167,7 @@ Interest::wireDecode(const Block& wire)
   //              [Priority]
   //              [InterestLifetime]
   //              [HopLimit]
+  //              [IsSoftState]
   //              [ApplicationParameters [InterestSignature]]
 
   auto element = m_wire.elements_begin();
@@ -295,13 +301,24 @@ Interest::wireDecode(const Block& wire)
         lastElement = 8;
         break;
       }
-      case tlv::ApplicationParameters: {
+       case tlv::IsSoftState: {
         if (lastElement >= 9) {
+          break; // IsSoftState is non-critical, ignore out-of-order appearance
+        }
+        if (element->value_size() != 0) {
+          NDN_THROW(Error("IsSoftState element has non-zero TLV-LENGTH"));
+        }
+        m_isSoftState = true;
+        lastElement = 9;
+        break;
+      }
+      case tlv::ApplicationParameters: {
+        if (lastElement >= 10) {
           break; // ApplicationParameters is non-critical, ignore out-of-order appearance
         }
         BOOST_ASSERT(!hasApplicationParameters());
         m_parameters.push_back(*element);
-        lastElement = 9;
+        lastElement = 10;
         break;
       }
       default: { // unrecognized element

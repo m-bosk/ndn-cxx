@@ -89,6 +89,7 @@ enum : uint32_t {
   ApplicationParameters           = 36,
   InterestSignatureInfo           = 44,
   InterestSignatureValue          = 46,
+  IsSoftState                     = 101,  // Soft state interest implementation
 
   MetaInfo                        = 20,
   Content                         = 21,

@@ -222,6 +222,28 @@ public: // Interest fields
   setMustBeFresh(bool mustBeFresh);
 
   /**
+   * @brief Check whether the `IsSoftState` element is present.
+   */
+  bool
+  getIsSoftState() const noexcept
+  {
+    return m_isSoftState;
+  }
+
+  /**
+   * @brief Add or remove `MustBeFresh` element.
+   * @param mustBeFresh Whether the element should be present.
+   */
+  Interest&
+  setIsSoftState(bool isSoftState)
+  {
+    m_isSoftState = isSoftState;
+    m_wire.reset();
+    return *this;
+  }
+
+
+  /**
    * @brief Get the delegations (names) in the `ForwardingHint`.
    */
   span<const Name>
@@ -543,6 +565,9 @@ private:
   std::optional<uint8_t> m_hopLimit;
   bool m_canBePrefix = false;
   bool m_mustBeFresh = false;
+
+  // Defines if soft state interest processign should be applied
+  bool m_isSoftState = false;
 
   // Stores the "Interest parameters", i.e., all maybe-unrecognized non-critical TLV
   // elements that appear at the end of the Interest, starting from ApplicationParameters.

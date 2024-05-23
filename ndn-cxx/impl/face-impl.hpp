@@ -148,6 +148,13 @@ public: // consumer
         hasForwarderMatch = true;
       }
 
+      // For SoftState interest, we should return here false?
+      // WE NEED TO TAKE CARE OF THE INTEREST LIFETIME SOMEHOW!!!
+      NDN_LOG_DEBUG("   " << *entry.getInterest() << "; soft status: " << entry.getInterest()->getIsSoftState() << "; lifetime " <<  entry.getInterest()->getInterestLifetime() );
+      if (entry.getInterest()->getIsSoftState()) {
+        return false;
+      }
+
       return true;
     });
 
