@@ -88,6 +88,9 @@ ControlParameters::wireEncode(EncodingImpl<TAG>& encoder) const
   if (this->hasUri()) {
     totalLength += prependStringBlock(encoder, tlv::nfd::Uri, m_uri);
   }
+  if (this->hasGroupId()) {
+    totalLength += prependNonNegativeIntegerBlock(encoder, tlv::nfd::GroupId, m_groupId);
+  }
   if (this->hasPriority()) {
     totalLength += prependNonNegativeIntegerBlock(encoder, tlv::nfd::Priority, m_priority);
   }
@@ -148,6 +151,12 @@ ControlParameters::wireDecode(const Block& block)
   m_hasFields[CONTROL_PARAMETER_PRIORITY] = val != m_wire.elements_end();
   if (this->hasPriority()) {
     m_priority = readNonNegativeIntegerAs<uint8_t>(*val);
+  }
+
+  val = m_wire.find(tlv::nfd::GroupId);
+  m_hasFields[CONTROL_PARAMETER_GROUP_ID] = val != m_wire.elements_end();
+  if (this->hasGroupId()) {
+    m_groupId = readNonNegativeIntegerAs<uint64_t>(*val);
   }
 
   val = m_wire.find(tlv::nfd::Uri);
@@ -385,6 +394,10 @@ operator<<(std::ostream& os, const ControlParameters& parameters)
 
   if (parameters.hasMtu()) {
     os << "Mtu: " << parameters.getMtu() << ", ";
+  }
+
+  if (parameters.hasGroupId()) {
+    os << "GroupId: " << parameters.getGroupId() << ", ";
   }
 
   os << ")";

@@ -70,6 +70,11 @@ FaceQueryFilter::wireEncode(EncodingImpl<TAG>& encoder) const
                    tlv::nfd::Priority, *m_priority);
   }
 
+  if (m_groupId) {
+    totalLength += prependNonNegativeIntegerBlock(encoder,
+                   tlv::nfd::GroupId, *m_groupId);
+  }
+
   if (m_faceId) {
     totalLength += prependNonNegativeIntegerBlock(encoder,
                    tlv::nfd::FaceId, *m_faceId);
@@ -127,6 +132,14 @@ FaceQueryFilter::wireDecode(const Block& block)
     m_priority = std::nullopt;
   }
 
+  if (val != m_wire.elements_end() && val->type() == tlv::nfd::GroupId) {
+    m_groupId = readNonNegativeIntegerAs<uint64_t>(*val);
+    ++val;
+  }
+  else {
+    m_groupId = std::nullopt;
+  }
+
   if (val != m_wire.elements_end() && val->type() == tlv::nfd::UriScheme) {
     m_uriScheme = readString(*val);
     ++val;
@@ -181,6 +194,7 @@ FaceQueryFilter::empty() const
 {
   return !this->hasFaceId() &&
          !this->hasPriority() &&
+         !this->hasGroupId() &&
          !this->hasUriScheme() &&
          !this->hasRemoteUri() &&
          !this->hasLocalUri() &&
@@ -218,6 +232,22 @@ FaceQueryFilter::unsetPriority()
 {
   m_wire.reset();
   m_priority = std::nullopt;
+  return *this;
+}
+
+FaceQueryFilter&
+FaceQueryFilter::setGroupId(uint64_t groupId)
+{
+  m_wire.reset();
+  m_groupId = groupId;
+  return *this;
+}
+
+FaceQueryFilter&
+FaceQueryFilter::unsetGroupId()
+{
+  m_wire.reset();
+  m_groupId = std::nullopt;
   return *this;
 }
 
@@ -318,6 +348,8 @@ operator==(const FaceQueryFilter& a, const FaceQueryFilter& b)
          (!a.hasFaceId() || a.getFaceId() == b.getFaceId()) &&
          a.hasPriority() == b.hasPriority() &&
          (!a.hasPriority() || a.getPriority() == b.getPriority()) &&
+         a.hasGroupId() == b.hasGroupId() &&
+         (!a.hasGroupId() || a.getGroupId() == b.getGroupId()) &&
          a.hasUriScheme() == b.hasUriScheme() &&
          (!a.hasUriScheme() || a.getUriScheme() == b.getUriScheme()) &&
          a.hasRemoteUri() == b.hasRemoteUri() &&
@@ -342,6 +374,10 @@ operator<<(std::ostream& os, const FaceQueryFilter& filter)
 
   if (filter.hasPriority()) {
     os << "Priority: " << filter.getPriority() << ",\n";
+  }
+
+  if (filter.hasGroupId()) {
+    os << "GroupId: " << filter.getGroupId() << ",\n";
   }
 
   if (filter.hasUriScheme()) {

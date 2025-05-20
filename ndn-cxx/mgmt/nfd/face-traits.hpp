@@ -71,6 +71,20 @@ public:
     return static_cast<C&>(*this);
   }
 
+  uint64_t
+  getGroupId() const
+  {
+    return m_groupId;
+  }
+
+  C&
+  setGroupId(uint64_t groupId)
+  {
+    m_wire.reset();
+    m_groupId = groupId;
+    return static_cast<C&>(*this);
+  }
+
   const std::string&
   getRemoteUri() const
   {
@@ -195,6 +209,7 @@ protected:
   FacePersistency  m_facePersistency = FACE_PERSISTENCY_PERSISTENT;
   LinkType m_linkType = LINK_TYPE_POINT_TO_POINT;
   uint64_t m_flags = 0;
+  uint64_t m_groupId = INVALID_FACE_GROUP_ID;
 
   mutable Block m_wire;
 };

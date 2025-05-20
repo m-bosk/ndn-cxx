@@ -107,7 +107,8 @@ FaceCreateCommand::FaceCreateCommand()
     .optional(CONTROL_PARAMETER_DEFAULT_CONGESTION_THRESHOLD)
     .optional(CONTROL_PARAMETER_MTU)
     .optional(CONTROL_PARAMETER_FLAGS)
-    .optional(CONTROL_PARAMETER_MASK);
+    .optional(CONTROL_PARAMETER_MASK)
+    .optional(CONTROL_PARAMETER_GROUP_ID);
   m_responseValidator
     .required(CONTROL_PARAMETER_FACE_ID)
     .required(CONTROL_PARAMETER_PRIORITY)
@@ -117,7 +118,8 @@ FaceCreateCommand::FaceCreateCommand()
     .optional(CONTROL_PARAMETER_BASE_CONGESTION_MARKING_INTERVAL)
     .optional(CONTROL_PARAMETER_DEFAULT_CONGESTION_THRESHOLD)
     .optional(CONTROL_PARAMETER_MTU)
-    .required(CONTROL_PARAMETER_FLAGS);
+    .required(CONTROL_PARAMETER_FLAGS)
+    .optional(CONTROL_PARAMETER_GROUP_ID);
 }
 
 void
@@ -149,7 +151,8 @@ FaceUpdateCommand::FaceUpdateCommand()
     .optional(CONTROL_PARAMETER_DEFAULT_CONGESTION_THRESHOLD)
     .optional(CONTROL_PARAMETER_MTU)
     .optional(CONTROL_PARAMETER_FLAGS)
-    .optional(CONTROL_PARAMETER_MASK);
+    .optional(CONTROL_PARAMETER_MASK)
+    .optional(CONTROL_PARAMETER_GROUP_ID);
   m_responseValidator
     .required(CONTROL_PARAMETER_FACE_ID)
     .required(CONTROL_PARAMETER_PRIORITY)
@@ -157,7 +160,8 @@ FaceUpdateCommand::FaceUpdateCommand()
     .optional(CONTROL_PARAMETER_BASE_CONGESTION_MARKING_INTERVAL)
     .optional(CONTROL_PARAMETER_DEFAULT_CONGESTION_THRESHOLD)
     .optional(CONTROL_PARAMETER_MTU)
-    .required(CONTROL_PARAMETER_FLAGS);
+    .required(CONTROL_PARAMETER_FLAGS)
+    .optional(CONTROL_PARAMETER_GROUP_ID);
 }
 
 void

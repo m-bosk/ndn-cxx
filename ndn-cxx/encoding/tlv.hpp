@@ -84,6 +84,7 @@ enum : uint32_t {
   ForwardingHint                  = 30,
   Nonce                           = 10,
   Priority                        = 37,
+  GroupId                         = 38,
   InterestLifetime                = 12,
   HopLimit                        = 34,
   ApplicationParameters           = 36,

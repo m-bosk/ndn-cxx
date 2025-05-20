@@ -51,6 +51,7 @@ enum ControlParameterField {
   CONTROL_PARAMETER_BASE_CONGESTION_MARKING_INTERVAL,
   CONTROL_PARAMETER_DEFAULT_CONGESTION_THRESHOLD,
   CONTROL_PARAMETER_MTU,
+  CONTROL_PARAMETER_GROUP_ID,
   CONTROL_PARAMETER_UBOUND,
 };
 
@@ -72,6 +73,7 @@ inline constexpr std::string_view CONTROL_PARAMETER_FIELD[CONTROL_PARAMETER_UBOU
   "BaseCongestionMarkingInterval"sv,
   "DefaultCongestionThreshold"sv,
   "Mtu"sv,
+  "GroupId"sv,
 };
 
 /**
@@ -633,6 +635,36 @@ public: // getters & setters
     return m_hasFields;
   }
 
+  bool
+  hasGroupId() const
+  {
+    return m_hasFields[CONTROL_PARAMETER_GROUP_ID];
+  }
+
+  uint64_t
+  getGroupId() const
+  {
+    BOOST_ASSERT(this->hasGroupId());
+    return m_groupId;
+  }
+
+  ControlParameters&
+  setGroupId(uint64_t groupId)
+  {
+    m_wire.reset();
+    m_groupId = groupId;
+    m_hasFields[CONTROL_PARAMETER_GROUP_ID] = true;
+    return *this;
+  }
+
+  ControlParameters&
+  unsetGroupId()
+  {
+    m_wire.reset();
+    m_hasFields[CONTROL_PARAMETER_GROUP_ID] = false;
+    return *this;
+  }
+
 public: // Flags and Mask helpers
   /**
    * \return whether bit is enabled in Mask
@@ -685,6 +717,7 @@ private: // fields
   time::nanoseconds   m_baseCongestionMarkingInterval;
   uint64_t            m_defaultCongestionThreshold;
   uint64_t            m_mtu;
+  uint64_t            m_groupId;
 
 private:
   mutable Block m_wire;

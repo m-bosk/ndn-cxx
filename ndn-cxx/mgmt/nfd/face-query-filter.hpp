@@ -110,6 +110,25 @@ public: // getters & setters
   unsetPriority();
 
   bool
+  hasGroupId() const
+  {
+    return m_groupId.has_value();
+  }
+
+  uint64_t
+  getGroupId() const
+  {
+    BOOST_ASSERT(this->hasGroupId());
+    return m_groupId.value();
+  }
+
+  FaceQueryFilter&
+  setGroupId(uint64_t groupId);
+
+  FaceQueryFilter&
+  unsetGroupId();
+
+  bool
   hasUriScheme() const
   {
     return !m_uriScheme.empty();
@@ -232,6 +251,7 @@ private:
   std::optional<FaceScope> m_faceScope;
   std::optional<FacePersistency> m_facePersistency;
   std::optional<LinkType> m_linkType;
+  std::optional<uint64_t> m_groupId;
 
   mutable Block m_wire;
 };
