@@ -1,4 +1,4 @@
-**This branch contains modifications enabling ICN-based architecture for IVNs.** Supporting material for a bublication submitted to IEEE Access.
+**This branch contains modifications enabling ICN-based architecture for IVNs.** Supporting material for a publication submitted to IEEE Access.
 
 Modifications created by Marcin Bosk and Oluwatobiloba Victor Olalusi before 14 February 2026.
 
