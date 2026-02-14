@@ -63,6 +63,7 @@ makeFaceCreateResponse()
 {
   ControlParameters resp;
   resp.setFaceId(22)
+      .setPriority(2)
       .setUri("tcp4://192.0.2.1:6363")
       .setLocalUri("tcp4://192.0.2.2:10847")
       .setFacePersistency(ndn::nfd::FacePersistency::FACE_PERSISTENCY_PERSISTENT)

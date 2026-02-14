@@ -65,6 +65,7 @@ Interest::wireEncode(EncodingImpl<TAG>& encoder) const
   //              [MustBeFresh]
   //              [ForwardingHint]
   //              [Nonce]
+  //              [Priority]
   //              [InterestLifetime]
   //              [HopLimit]
   //              [ApplicationParameters [InterestSignature]]
@@ -102,6 +103,11 @@ Interest::wireEncode(EncodingImpl<TAG>& encoder) const
   if (getInterestLifetime() != DEFAULT_INTEREST_LIFETIME) {
     totalLength += prependNonNegativeIntegerBlock(encoder, tlv::InterestLifetime,
                                                   static_cast<uint64_t>(getInterestLifetime().count()));
+  }
+
+  // Priority
+  if (m_priority) {
+    totalLength += prependNonNegativeIntegerBlock(encoder, tlv::Priority, m_priority);
   }
 
   // Nonce
@@ -166,6 +172,7 @@ Interest::wireDecode(const Block& wire)
   //              [MustBeFresh]
   //              [ForwardingHint]
   //              [Nonce]
+  //              [Priority]
   //              [InterestLifetime]
   //              [HopLimit]
   //              [IsSoftState]
@@ -190,7 +197,8 @@ Interest::wireDecode(const Block& wire)
   m_canBePrefix = m_mustBeFresh = false;
   m_forwardingHint.clear();
   m_nonce.reset();
-  m_interestLifetime = DEFAULT_INTEREST_LIFETIME;
+  m_priority.unset();
+  m_interestLifetime = DEFAULT_INTEREST_LIFETIME.count();
   m_hopLimit.reset();
   m_parameters.clear();
 
@@ -271,43 +279,54 @@ Interest::wireDecode(const Block& wire)
         lastElement = 5;
         break;
       }
-      case tlv::InterestLifetime: {
+      case tlv::Priority: {
         if (lastElement >= 6) {
-          NDN_THROW(Error("InterestLifetime element is out of order"));
+          NDN_THROW(Error("Priority element is out of order"));
         }
-        m_interestLifetime = time::milliseconds(readNonNegativeInteger(*element));
+        if (element->value_size() != 1) {
+          NDN_THROW(Error("Priority element is malformed"));
+        }
+        m_priority = readNonNegativeIntegerAs<uint8_t>(*element);
         lastElement = 6;
         break;
       }
-      case tlv::HopLimit: {
+      case tlv::InterestLifetime: {
         if (lastElement >= 7) {
+          NDN_THROW(Error("InterestLifetime element is out of order"));
+        }
+        m_interestLifetime = readNonNegativeInteger(*element);
+        lastElement = 7;
+        break;
+      }
+      case tlv::HopLimit: {
+        if (lastElement >= 8) {
           break; // HopLimit is non-critical, ignore out-of-order appearance
         }
         if (element->value_size() != 1) {
           NDN_THROW(Error("HopLimit element is malformed"));
         }
         m_hopLimit = *element->value();
-        lastElement = 7;
-        break;
-      }
-      case tlv::IsSoftState: {
-        if (lastElement >= 8) {
-          break; // IsSoftState is non-critical, ignore out-of-order appearance
-        }
-        if (element->value_size() != 0) {
-          NDN_THROW(Error("MustBeFresh element has non-zero TLV-LENGTH"));
-        }
-        m_isSoftState = true;
         lastElement = 8;
         break;
       }
-      case tlv::ApplicationParameters: {
+       case tlv::IsSoftState: {
         if (lastElement >= 9) {
+          break; // IsSoftState is non-critical, ignore out-of-order appearance
+        }
+        if (element->value_size() != 0) {
+          NDN_THROW(Error("IsSoftState element has non-zero TLV-LENGTH"));
+        }
+        m_isSoftState = true;
+        lastElement = 9;
+        break;
+      }
+      case tlv::ApplicationParameters: {
+        if (lastElement >= 10) {
           break; // ApplicationParameters is non-critical, ignore out-of-order appearance
         }
         BOOST_ASSERT(!hasApplicationParameters());
         m_parameters.push_back(*element);
-        lastElement = 9;
+        lastElement = 10;
         break;
       }
       default: { // unrecognized element
@@ -448,6 +467,23 @@ Interest::refreshNonce()
     m_nonce = generateNonce();
 
   m_wire.reset();
+}
+
+Interest&
+Interest::setPriority(const InterestPriority& priority)
+{
+  m_priority = priority;
+  m_wire.reset();
+  return *this;
+}
+
+time::milliseconds
+Interest::getInterestLifetime() const noexcept
+{
+  if (m_interestLifetime > static_cast<uint64_t>(time::milliseconds::max().count())) {
+    return time::milliseconds::max();
+  }
+  return time::milliseconds(m_interestLifetime);
 }
 
 Interest&
@@ -787,6 +823,9 @@ operator<<(std::ostream& os, const Interest& interest)
   }
   if (interest.hasNonce()) {
     printOne("Nonce=", interest.getNonce());
+  }
+  if (interest.getPriority()) {
+    printOne("Priority=", interest.getPriority());
   }
   if (interest.getInterestLifetime() != DEFAULT_INTEREST_LIFETIME) {
     printOne("Lifetime=", interest.getInterestLifetime().count());

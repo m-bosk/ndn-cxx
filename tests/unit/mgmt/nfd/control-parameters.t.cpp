@@ -38,6 +38,7 @@ BOOST_AUTO_TEST_CASE(Fields)
   ControlParameters decoded(input.wireEncode());
   BOOST_CHECK_EQUAL(decoded.hasName(), false);
   BOOST_CHECK_EQUAL(decoded.hasFaceId(), false);
+  BOOST_CHECK_EQUAL(decoded.hasPriority(), false);
   BOOST_CHECK_EQUAL(decoded.hasUri(), false);
   BOOST_CHECK_EQUAL(decoded.hasLocalUri(), false);
   BOOST_CHECK_EQUAL(decoded.hasOrigin(), false);
@@ -52,6 +53,7 @@ BOOST_AUTO_TEST_CASE(Fields)
 
   input.setName("/name");
   input.setFaceId(2634);
+  input.setPriority(2);
   input.setUri("udp4://192.0.2.1:6363");
   input.setLocalUri("udp4://192.0.2.2:6363");
   input.setOrigin(ROUTE_ORIGIN_NLSR);
@@ -67,6 +69,7 @@ BOOST_AUTO_TEST_CASE(Fields)
   decoded.wireDecode(input.wireEncode());
   BOOST_CHECK_EQUAL(decoded.hasName(), true);
   BOOST_CHECK_EQUAL(decoded.hasFaceId(), true);
+  BOOST_CHECK_EQUAL(decoded.hasPriority(), true);
   BOOST_CHECK_EQUAL(decoded.hasUri(), true);
   BOOST_CHECK_EQUAL(decoded.hasLocalUri(), true);
   BOOST_CHECK_EQUAL(decoded.hasOrigin(), true);
@@ -81,6 +84,7 @@ BOOST_AUTO_TEST_CASE(Fields)
 
   BOOST_CHECK_EQUAL(decoded.getName(), "/name");
   BOOST_CHECK_EQUAL(decoded.getFaceId(), 2634);
+  BOOST_CHECK_EQUAL(decoded.getPriority(), 2);
   BOOST_CHECK_EQUAL(decoded.getUri(), "udp4://192.0.2.1:6363");
   BOOST_CHECK_EQUAL(decoded.getLocalUri(), "udp4://192.0.2.2:6363");
   BOOST_CHECK_EQUAL(decoded.getOrigin(), ROUTE_ORIGIN_NLSR);
@@ -95,6 +99,7 @@ BOOST_AUTO_TEST_CASE(Fields)
 
   input.unsetName();
   input.unsetFaceId();
+  input.unsetPriority();
   input.unsetUri();
   input.unsetLocalUri();
   input.unsetOrigin();
@@ -108,6 +113,7 @@ BOOST_AUTO_TEST_CASE(Fields)
   input.unsetFacePersistency();
   BOOST_CHECK_EQUAL(input.hasName(), false);
   BOOST_CHECK_EQUAL(input.hasFaceId(), false);
+  BOOST_CHECK_EQUAL(input.hasPriority(), false);
   BOOST_CHECK_EQUAL(input.hasUri(), false);
   BOOST_CHECK_EQUAL(input.hasLocalUri(), false);
   BOOST_CHECK_EQUAL(input.hasOrigin(), false);

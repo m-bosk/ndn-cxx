@@ -79,6 +79,7 @@ BOOST_AUTO_TEST_CASE(FaceCreateResponse)
   // good
   ControlParameters p1;
   p1.setFaceId(3208)
+    .setPriority(2)
     .setUri("tcp4://192.0.2.1:6363")
     .setLocalUri("tcp4://192.0.2.2:32114")
     .setFacePersistency(FACE_PERSISTENCY_PERMANENT)
@@ -130,6 +131,7 @@ BOOST_AUTO_TEST_CASE(FaceUpdate)
   // Good request, bad response (Mask is forbidden but present)
   ControlParameters p2;
   p2.setFaceId(1)
+    .setPriority(2)
     .setFacePersistency(FACE_PERSISTENCY_PERSISTENT)
     .setBaseCongestionMarkingInterval(765_ns)
     .setDefaultCongestionThreshold(54321)

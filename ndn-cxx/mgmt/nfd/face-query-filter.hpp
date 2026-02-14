@@ -22,6 +22,7 @@
 #ifndef NDN_CXX_MGMT_NFD_FACE_QUERY_FILTER_HPP
 #define NDN_CXX_MGMT_NFD_FACE_QUERY_FILTER_HPP
 
+#include "ndn-cxx/interest-priority.hpp"
 #include "ndn-cxx/encoding/block.hpp"
 #include "ndn-cxx/encoding/nfd-constants.hpp"
 #include "ndn-cxx/util/optional.hpp"
@@ -88,6 +89,44 @@ public: // getters & setters
 
   FaceQueryFilter&
   unsetFaceId();
+
+  bool
+  hasPriority() const
+  {
+    return m_priority.has_value();
+  }
+
+  const InterestPriority&
+  getPriority() const
+  {
+    BOOST_ASSERT(this->hasPriority());
+    return m_priority.value();
+  }
+
+  FaceQueryFilter&
+  setPriority(const InterestPriority& priority);
+
+  FaceQueryFilter&
+  unsetPriority();
+
+  bool
+  hasGroupId() const
+  {
+    return m_groupId.has_value();
+  }
+
+  uint64_t
+  getGroupId() const
+  {
+    BOOST_ASSERT(this->hasGroupId());
+    return m_groupId.value();
+  }
+
+  FaceQueryFilter&
+  setGroupId(uint64_t groupId);
+
+  FaceQueryFilter&
+  unsetGroupId();
 
   bool
   hasUriScheme() const
@@ -204,13 +243,15 @@ public: // getters & setters
   unsetLinkType();
 
 private:
-  optional<uint64_t> m_faceId;
+  std::optional<uint64_t> m_faceId;
+  std::optional<InterestPriority> m_priority;
   std::string m_uriScheme;
   std::string m_remoteUri;
   std::string m_localUri;
-  optional<FaceScope> m_faceScope;
-  optional<FacePersistency> m_facePersistency;
-  optional<LinkType> m_linkType;
+  std::optional<FaceScope> m_faceScope;
+  std::optional<FacePersistency> m_facePersistency;
+  std::optional<LinkType> m_linkType;
+  std::optional<uint64_t> m_groupId;
 
   mutable Block m_wire;
 };

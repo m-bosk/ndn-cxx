@@ -23,6 +23,7 @@
 #define NDN_CXX_INTEREST_HPP
 
 #include "ndn-cxx/detail/packet-base.hpp"
+#include "ndn-cxx/interest-priority.hpp"
 #include "ndn-cxx/name.hpp"
 #include "ndn-cxx/security/security-common.hpp"
 #include "ndn-cxx/signature-info.hpp"
@@ -245,6 +246,28 @@ public: // element access
     return *this;
   }
 
+
+  /**
+   * @brief Get the delegations (names) in the `ForwardingHint`.
+   */
+  bool
+  getIsSoftState() const noexcept
+  {
+    return m_isSoftState;
+  }
+
+  /**
+   * @brief Add or remove `MustBeFresh` element.
+   * @param mustBeFresh Whether the element should be present.
+   */
+  Interest&
+  setIsSoftState(bool isSoftState)
+  {
+    m_isSoftState = isSoftState;
+    m_wire.reset();
+    return *this;
+  }
+
   span<const Name>
   getForwardingHint() const noexcept
   {
@@ -287,6 +310,26 @@ public: // element access
    */
   void
   refreshNonce();
+
+  /**
+   * @brief Get the %Interest's priority
+   *
+   * If priority was not present, it is added and assigned the default priority
+   */
+  const InterestPriority&
+  getPriority() const noexcept
+  {
+    return m_priority;
+  }
+
+  /**
+   * @brief Set the %Interest's priority
+   *
+   * Use `setPriority(std::nullopt)` to explicitly remove
+   * the Priority block from the Interest
+   */
+  Interest&
+  setPriority(const InterestPriority& priority);
 
   /**
    * @brief Get the %Interest's lifetime.
@@ -515,9 +558,10 @@ private:
 
   Name m_name;
   std::vector<Name> m_forwardingHint;
-  mutable optional<Nonce> m_nonce;
-  time::milliseconds m_interestLifetime = DEFAULT_INTEREST_LIFETIME;
-  optional<uint8_t> m_hopLimit;
+  mutable std::optional<Nonce> m_nonce;
+  InterestPriority m_priority;
+  uint64_t m_interestLifetime = DEFAULT_INTEREST_LIFETIME.count();
+  std::optional<uint8_t> m_hopLimit;
   bool m_canBePrefix = false;
   bool m_mustBeFresh = false;
 

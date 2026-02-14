@@ -24,6 +24,7 @@
 
 #include "ndn-cxx/name.hpp"
 #include "ndn-cxx/encoding/nfd-constants.hpp"
+#include "ndn-cxx/interest-priority.hpp"
 #include "ndn-cxx/mgmt/control-parameters.hpp"
 #include "ndn-cxx/util/time.hpp"
 
@@ -36,6 +37,7 @@ namespace nfd {
 enum ControlParameterField {
   CONTROL_PARAMETER_NAME,
   CONTROL_PARAMETER_FACE_ID,
+  CONTROL_PARAMETER_PRIORITY,
   CONTROL_PARAMETER_URI,
   CONTROL_PARAMETER_LOCAL_URI,
   CONTROL_PARAMETER_ORIGIN,
@@ -50,26 +52,29 @@ enum ControlParameterField {
   CONTROL_PARAMETER_BASE_CONGESTION_MARKING_INTERVAL,
   CONTROL_PARAMETER_DEFAULT_CONGESTION_THRESHOLD,
   CONTROL_PARAMETER_MTU,
-  CONTROL_PARAMETER_UBOUND
+  CONTROL_PARAMETER_GROUP_ID,
+  CONTROL_PARAMETER_UBOUND,
 };
 
-const std::string CONTROL_PARAMETER_FIELD[CONTROL_PARAMETER_UBOUND] = {
-  "Name",
-  "FaceId",
-  "Uri",
-  "LocalUri",
-  "Origin",
-  "Cost",
-  "Capacity",
-  "Count",
-  "Flags",
-  "Mask",
-  "Strategy",
-  "ExpirationPeriod",
-  "FacePersistency",
-  "BaseCongestionMarkingInterval",
-  "DefaultCongestionThreshold",
-  "Mtu"
+inline constexpr std::string_view CONTROL_PARAMETER_FIELD[CONTROL_PARAMETER_UBOUND] = {
+  "Name"sv,
+  "FaceId"sv,
+  "Priority"sv,
+  "Uri"sv,
+  "LocalUri"sv,
+  "Origin"sv,
+  "Cost"sv,
+  "Capacity"sv,
+  "Count"sv,
+  "Flags"sv,
+  "Mask"sv,
+  "Strategy"sv,
+  "ExpirationPeriod"sv,
+  "FacePersistency"sv,
+  "BaseCongestionMarkingInterval"sv,
+  "DefaultCongestionThreshold"sv,
+  "Mtu"sv,
+  "GroupId"sv,
 };
 
 /**
@@ -160,6 +165,36 @@ public: // getters & setters
   {
     m_wire.reset();
     m_hasFields[CONTROL_PARAMETER_FACE_ID] = false;
+    return *this;
+  }
+
+  bool
+  hasPriority() const
+  {
+    return m_hasFields[CONTROL_PARAMETER_PRIORITY];
+  }
+
+  const InterestPriority&
+  getPriority() const
+  {
+    BOOST_ASSERT(this->hasPriority());
+    return m_priority;
+  }
+
+  ControlParameters&
+  setPriority(const InterestPriority& priority)
+  {
+    m_wire.reset();
+    m_priority = priority;
+    m_hasFields[CONTROL_PARAMETER_PRIORITY] = true;
+    return *this;
+  }
+
+  ControlParameters&
+  unsetPriority()
+  {
+    m_wire.reset();
+    m_hasFields[CONTROL_PARAMETER_PRIORITY] = false;
     return *this;
   }
 
@@ -601,6 +636,36 @@ public: // getters & setters
     return m_hasFields;
   }
 
+  bool
+  hasGroupId() const
+  {
+    return m_hasFields[CONTROL_PARAMETER_GROUP_ID];
+  }
+
+  uint64_t
+  getGroupId() const
+  {
+    BOOST_ASSERT(this->hasGroupId());
+    return m_groupId;
+  }
+
+  ControlParameters&
+  setGroupId(uint64_t groupId)
+  {
+    m_wire.reset();
+    m_groupId = groupId;
+    m_hasFields[CONTROL_PARAMETER_GROUP_ID] = true;
+    return *this;
+  }
+
+  ControlParameters&
+  unsetGroupId()
+  {
+    m_wire.reset();
+    m_hasFields[CONTROL_PARAMETER_GROUP_ID] = false;
+    return *this;
+  }
+
 public: // Flags and Mask helpers
   /**
    * \return whether bit is enabled in Mask
@@ -640,6 +705,7 @@ private: // fields
   uint64_t            m_faceId;
   std::string         m_uri;
   std::string         m_localUri;
+  InterestPriority    m_priority;
   RouteOrigin         m_origin;
   uint64_t            m_cost;
   uint64_t            m_capacity;
@@ -652,6 +718,7 @@ private: // fields
   time::nanoseconds   m_baseCongestionMarkingInterval;
   uint64_t            m_defaultCongestionThreshold;
   uint64_t            m_mtu;
+  uint64_t            m_groupId;
 
 private:
   mutable Block m_wire;

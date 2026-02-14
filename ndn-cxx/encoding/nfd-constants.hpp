@@ -27,7 +27,8 @@
 namespace ndn {
 namespace nfd {
 
-const uint64_t INVALID_FACE_ID = 0;
+inline constexpr uint64_t INVALID_FACE_ID = 0;
+inline constexpr uint64_t INVALID_FACE_GROUP_ID = 0;
 
 /** \ingroup management
  */

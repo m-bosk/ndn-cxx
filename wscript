@@ -12,7 +12,7 @@ def options(opt):
     opt.load(['cross', 'default-compiler-flags', 'compiler-features',
               'coverage', 'pch', 'sanitizers', 'osx-frameworks',
               'boost', 'openssl', 'sqlite3',
-              'doxygen', 'sphinx_build'],
+              'doxygen', 'sphinx', 'clang_compilation_database'],
              tooldir=['.waf-tools'])
 
     opt = opt.add_option_group('ndn-cxx Options')
@@ -157,6 +157,9 @@ def configure(conf):
     # will not appear in the config header, but will instead be passed directly to the
     # compiler on the command line.
     conf.write_config_header('ndn-cxx/detail/config.hpp', define_prefix='NDN_CXX_')
+
+    # generate compilation database
+    conf.load('clang_compilation_database')
 
 def build(bld):
     version(bld)

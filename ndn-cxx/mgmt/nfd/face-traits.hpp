@@ -24,6 +24,7 @@
 
 #include "ndn-cxx/encoding/block.hpp"
 #include "ndn-cxx/encoding/nfd-constants.hpp"
+#include "ndn-cxx/interest-priority.hpp"
 
 namespace ndn {
 namespace nfd {
@@ -54,6 +55,34 @@ public:
   {
     m_wire.reset();
     m_faceId = faceId;
+    return static_cast<C&>(*this);
+  }
+
+  const InterestPriority&
+  getPriority() const
+  {
+    return m_priority;
+  }
+
+  C&
+  setPriority(const InterestPriority& priority)
+  {
+    m_wire.reset();
+    m_priority = priority;
+    return static_cast<C&>(*this);
+  }
+
+  uint64_t
+  getGroupId() const
+  {
+    return m_groupId;
+  }
+
+  C&
+  setGroupId(uint64_t groupId)
+  {
+    m_wire.reset();
+    m_groupId = groupId;
     return static_cast<C&>(*this);
   }
 
@@ -180,13 +209,15 @@ protected:
   }
 
 protected:
-  uint64_t m_faceId;
+  uint64_t m_faceId = INVALID_FACE_ID;
+  InterestPriority m_priority;
   std::string m_remoteUri;
   std::string m_localUri;
-  FaceScope m_faceScope;
-  FacePersistency  m_facePersistency;
-  LinkType m_linkType;
-  uint64_t m_flags;
+  FaceScope m_faceScope = FACE_SCOPE_NON_LOCAL;
+  FacePersistency  m_facePersistency = FACE_PERSISTENCY_PERSISTENT;
+  LinkType m_linkType = LINK_TYPE_POINT_TO_POINT;
+  uint64_t m_flags = 0;
+  uint64_t m_groupId = INVALID_FACE_GROUP_ID;
 
   mutable Block m_wire;
 };

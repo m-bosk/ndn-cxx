@@ -83,6 +83,8 @@ FaceStatus::wireEncode(EncodingImpl<TAG>& encoder) const
   }
   totalLength += prependStringBlock(encoder, tlv::nfd::LocalUri, m_localUri);
   totalLength += prependStringBlock(encoder, tlv::nfd::Uri, m_remoteUri);
+  totalLength += prependNonNegativeIntegerBlock(encoder, tlv::nfd::GroupId, m_groupId);
+  totalLength += prependNonNegativeIntegerBlock(encoder, tlv::nfd::Priority, m_priority);
   totalLength += prependNonNegativeIntegerBlock(encoder, tlv::nfd::FaceId, m_faceId);
 
   totalLength += encoder.prependVarNumber(totalLength);
@@ -125,6 +127,22 @@ FaceStatus::wireDecode(const Block& block)
   }
   else {
     NDN_THROW(Error("missing required FaceId field"));
+  }
+
+  if (val != m_wire.elements_end() && val->type() == tlv::nfd::Priority) {
+    m_priority = readNonNegativeIntegerAs<uint8_t>(*val);
+    ++val;
+  }
+  else {
+    NDN_THROW(Error("missing required Priority field"));
+  }
+
+  if (val != m_wire.elements_end() && val->type() == tlv::nfd::GroupId) {
+    m_groupId = readNonNegativeIntegerAs<uint64_t>(*val);
+    ++val;
+  }
+  else {
+    NDN_THROW(Error("missing required GroupId field"));
   }
 
   if (val != m_wire.elements_end() && val->type() == tlv::nfd::Uri) {
@@ -404,6 +422,8 @@ bool
 operator==(const FaceStatus& a, const FaceStatus& b)
 {
   return a.getFaceId() == b.getFaceId() &&
+      a.getPriority() == b.getPriority() &&
+      a.getGroupId() == b.getGroupId() &&
       a.getRemoteUri() == b.getRemoteUri() &&
       a.getLocalUri() == b.getLocalUri() &&
       a.getFaceScope() == b.getFaceScope() &&
@@ -434,6 +454,8 @@ std::ostream&
 operator<<(std::ostream& os, const FaceStatus& status)
 {
   os << "Face(FaceId: " << status.getFaceId() << ",\n"
+     << "     Priority: " << status.getPriority() << ",\n"
+     << "     GroupId: " << status.getGroupId() << ",\n"
      << "     RemoteUri: " << status.getRemoteUri() << ",\n"
      << "     LocalUri: " << status.getLocalUri() << ",\n";
 

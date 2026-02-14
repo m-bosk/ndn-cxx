@@ -53,6 +53,8 @@ FaceEventNotification::wireEncode(EncodingImpl<TAG>& encoder) const
   totalLength += prependNonNegativeIntegerBlock(encoder, tlv::nfd::FaceScope, m_faceScope);
   totalLength += prependStringBlock(encoder, tlv::nfd::LocalUri, m_localUri);
   totalLength += prependStringBlock(encoder, tlv::nfd::Uri, m_remoteUri);
+  totalLength += prependNonNegativeIntegerBlock(encoder, tlv::nfd::GroupId, m_groupId);
+  totalLength += prependNonNegativeIntegerBlock(encoder, tlv::nfd::Priority, m_priority);
   totalLength += prependNonNegativeIntegerBlock(encoder, tlv::nfd::FaceId, m_faceId);
   totalLength += prependNonNegativeIntegerBlock(encoder, tlv::nfd::FaceEventKind, m_kind);
 
@@ -104,6 +106,22 @@ FaceEventNotification::wireDecode(const Block& block)
   }
   else {
     NDN_THROW(Error("missing required FaceId field"));
+  }
+
+  if (val != m_wire.elements_end() && val->type() == tlv::nfd::Priority) {
+    m_priority = readNonNegativeIntegerAs<uint8_t>(*val);
+    ++val;
+  }
+  else {
+    NDN_THROW(Error("missing required Priority field"));
+  }
+
+  if (val != m_wire.elements_end() && val->type() == tlv::nfd::GroupId) {
+    m_groupId = readNonNegativeIntegerAs<uint64_t>(*val);
+    ++val;
+  }
+  else {
+    NDN_THROW(Error("missing required GroupId field"));
   }
 
   if (val != m_wire.elements_end() && val->type() == tlv::nfd::Uri) {
@@ -167,6 +185,8 @@ bool
 operator==(const FaceEventNotification& a, const FaceEventNotification& b)
 {
   return a.getFaceId() == b.getFaceId() &&
+      a.getPriority() == b.getPriority() &&
+      a.getGroupId() == b.getGroupId() &&
       a.getRemoteUri() == b.getRemoteUri() &&
       a.getLocalUri() == b.getLocalUri() &&
       a.getFaceScope() == b.getFaceScope() &&
@@ -181,6 +201,8 @@ operator<<(std::ostream& os, const FaceEventNotification& notification)
 {
   os << "FaceEvent(Kind: " << notification.getKind() << ",\n"
      << "          FaceId: " << notification.getFaceId() << ",\n"
+     << "          Priority: " << notification.getPriority() << ",\n"
+     << "          GroupId: " << notification.getGroupId() << ",\n"
      << "          RemoteUri: " << notification.getRemoteUri() << ",\n"
      << "          LocalUri: " << notification.getLocalUri() << ",\n"
      << "          FaceScope: " << notification.getFaceScope() << ",\n"
