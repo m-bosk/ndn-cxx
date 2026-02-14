@@ -60,6 +60,7 @@ Interest::wireEncode(EncodingImpl<TAG>& encoder) const
   //              [Nonce]
   //              [InterestLifetime]
   //              [HopLimit]
+  //              [Reservation]
   //              [ApplicationParameters [InterestSignature]]
   // (elements are encoded in reverse order)
 
@@ -79,6 +80,11 @@ Interest::wireEncode(EncodingImpl<TAG>& encoder) const
   // ApplicationParameters and following elements (in reverse order)
   for (const auto& block : m_parameters | boost::adaptors::reversed) {
     totalLength += prependBlock(encoder, block);
+  }
+
+  // Reservation
+  if (hasReservation()) {
+    totalLength += prependNonNegativeIntegerBlock(encoder, tlv::Reservation, m_reservation.value());
   }
 
   // HopLimit
@@ -155,6 +161,7 @@ Interest::wireDecode(const Block& wire)
   //              [Nonce]
   //              [InterestLifetime]
   //              [HopLimit]
+  //              [Reservation]
   //              [ApplicationParameters [InterestSignature]]
 
   auto element = m_wire.elements_begin();
@@ -179,6 +186,7 @@ Interest::wireDecode(const Block& wire)
   m_interestLifetime = DEFAULT_INTEREST_LIFETIME.count();
   m_hopLimit.reset();
   m_parameters.clear();
+  m_reservation.reset();
 
   int lastElement = 1; // last recognized element index, in spec order
   for (++element; element != m_wire.elements_end(); ++element) {
@@ -276,13 +284,21 @@ Interest::wireDecode(const Block& wire)
         lastElement = 7;
         break;
       }
-      case tlv::ApplicationParameters: {
+      case tlv::Reservation: {
         if (lastElement >= 8) {
+          break;
+        }
+        m_reservation = readNonNegativeInteger(*element);
+        lastElement = 8;
+        break;
+      }
+      case tlv::ApplicationParameters: {
+        if (lastElement >= 9) {
           break; // ApplicationParameters is non-critical, ignore out-of-order appearance
         }
         BOOST_ASSERT(!hasApplicationParameters());
         m_parameters.push_back(*element);
-        lastElement = 8;
+        lastElement = 9;
         break;
       }
       default: { // unrecognized element
@@ -469,6 +485,14 @@ Interest::setHopLimit(std::optional<uint8_t> hopLimit)
     m_hopLimit = hopLimit;
     m_wire.reset();
   }
+  return *this;
+}
+
+Interest&
+Interest::setReservation(uint64_t reservation)
+{
+  m_reservation = reservation;
+  m_wire.reset();
   return *this;
 }
 
@@ -796,6 +820,9 @@ operator<<(std::ostream& os, const Interest& interest)
   }
   if (interest.getHopLimit()) {
     printOne("HopLimit=", static_cast<unsigned>(*interest.getHopLimit()));
+  }
+  if (interest.hasReservation()) {
+    printOne("Reservation=", interest.getReservation().value());
   }
 
   return os;

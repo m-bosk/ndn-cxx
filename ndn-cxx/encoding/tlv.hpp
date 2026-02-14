@@ -104,6 +104,8 @@ enum : uint32_t {
   SignatureTime                   = 40,
   SignatureSeqNum                 = 42,
 
+  Reservation                     = 128,
+
   ValidityPeriod                  = 253,
   NotBefore                       = 254,
   NotAfter                        = 255,

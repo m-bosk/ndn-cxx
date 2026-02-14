@@ -450,6 +450,32 @@ public: // Interest fields
   setSignatureValue(std::nullptr_t) = delete;
 
   /**
+   * @brief Get Reservation optional
+   * @return optional of reservation value
+   */
+  std::optional<uint64_t>
+  getReservation() const
+  {
+    return m_reservation;
+  }
+
+   /**
+   * @brief Set Reservation value
+   * @param reservation uint64_t value for Reservation
+   */
+  Interest&
+  setReservation(uint64_t reservation);
+
+  /**
+   * @brief Check if reservation has value
+   */
+  bool
+  hasReservation() const noexcept
+  {
+    return m_reservation.has_value();
+  }
+
+  /**
    * @brief Extract ranges of Interest covered by the signature.
    * @throw Error Interest cannot be encoded or is missing ranges necessary for signing
    * @warning The returned pointers will be invalidated if wireDecode() or wireEncode() are called.
@@ -521,6 +547,9 @@ private:
   std::optional<uint8_t> m_hopLimit;
   bool m_canBePrefix = false;
   bool m_mustBeFresh = false;
+
+  // Test value-> change later for qdisc reservation!
+  mutable std::optional<uint64_t> m_reservation;
 
   // Stores the "Interest parameters", i.e., all maybe-unrecognized non-critical TLV
   // elements that appear at the end of the Interest, starting from ApplicationParameters.
